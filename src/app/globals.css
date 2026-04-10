@@ -1,26 +1,227 @@
 @import "tailwindcss";
 
+/* ============================================================
+   Astro Trader Insights - Design System
+   Premium dark-mode financial application
+   ============================================================ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* ── Surface Colors ──────────────────────────────────────── */
+  --bg-primary: #09090b;        /* zinc-950 */
+  --bg-secondary: #18181b;      /* zinc-900 */
+  --bg-tertiary: #27272a;       /* zinc-800 */
+  --bg-card: #1c1c22;
+  --bg-card-hover: #242430;
+
+  /* ── Text Colors ─────────────────────────────────────────── */
+  --text-primary: #fafafa;      /* zinc-50 */
+  --text-secondary: #a1a1aa;    /* zinc-400 */
+  --text-muted: #71717a;        /* zinc-500 */
+
+  /* ── Accent Colors ───────────────────────────────────────── */
+  --accent-cyan: #22d3ee;
+  --accent-cyan-dim: #0891b2;
+  --accent-emerald: #34d399;
+  --accent-emerald-dim: #059669;
+  --accent-violet: #a78bfa;
+  --accent-violet-dim: #7c3aed;
+  --accent-amber: #fbbf24;
+  --accent-amber-dim: #d97706;
+  --accent-rose: #fb7185;
+  --accent-rose-dim: #e11d48;
+
+  /* ── Signal Colors ───────────────────────────────────────── */
+  --signal-strong-buy: #34d399;
+  --signal-buy: #22d3ee;
+  --signal-hold: #fbbf24;
+  --signal-avoid: #fb7185;
+
+  /* ── Borders & Misc ──────────────────────────────────────── */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-active: rgba(255, 255, 255, 0.12);
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
+
+  /* ── Shadows ─────────────────────────────────────────────── */
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --shadow-glow-cyan: 0 0 20px rgba(34, 211, 238, 0.15);
+  --shadow-glow-emerald: 0 0 20px rgba(52, 211, 153, 0.15);
+
+  /* ── Radii ───────────────────────────────────────────────── */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--bg-primary);
+  --color-foreground: var(--text-primary);
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ── Base Resets ────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ── Glass Card ────────────────────────────────────────────── */
+.glass-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ── Gradient Borders ──────────────────────────────────────── */
+.gradient-border {
+  position: relative;
+}
+
+.gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(34, 211, 238, 0.3),
+    rgba(168, 85, 247, 0.3),
+    rgba(251, 191, 36, 0.1)
+  );
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  pointer-events: none;
+}
+
+/* ── Signal Badge ──────────────────────────────────────────── */
+.badge-strong-buy {
+  background: rgba(52, 211, 153, 0.12);
+  color: var(--signal-strong-buy);
+  border: 1px solid rgba(52, 211, 153, 0.2);
+}
+
+.badge-buy {
+  background: rgba(34, 211, 238, 0.12);
+  color: var(--signal-buy);
+  border: 1px solid rgba(34, 211, 238, 0.2);
+}
+
+.badge-hold {
+  background: rgba(251, 191, 36, 0.12);
+  color: var(--signal-hold);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+}
+
+.badge-avoid {
+  background: rgba(251, 113, 133, 0.12);
+  color: var(--signal-avoid);
+  border: 1px solid rgba(251, 113, 133, 0.2);
+}
+
+/* ── Slider (range input) ──────────────────────────────────── */
+input[type="range"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  background: var(--bg-tertiary);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent-cyan);
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.4);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.6);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent-cyan);
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.4);
+  cursor: pointer;
+  border: none;
+}
+
+/* ── Utility Animations ────────────────────────────────────── */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.4s ease-out;
+}
+
+/* ── Score Ring ─────────────────────────────────────────────── */
+.score-ring {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.score-ring svg {
+  transform: rotate(-90deg);
 }
