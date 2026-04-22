@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Astro Trader
 
-## Getting Started
+Aplicación de análisis financiero que combina datos de mercado (acciones y criptomonedas) con indicadores astrológicos y cósmicos — fases lunares, retrogradaciones de Mercurio, actividad solar — para generar puntuaciones y recomendaciones.
 
-First, run the development server:
+## Stack
+
+- **Next.js 16** (App Router) + **React 19** + **TypeScript**
+- **Tailwind CSS 4**, Framer Motion, ECharts
+- **Zustand** (estado global)
+- **PostgreSQL (Neon)** + **Drizzle ORM**
+- **Yahoo Finance2** (datos bursátiles) + **CoinGecko** (cripto)
+- **next-intl** (ES / EN)
+
+## Puesta en marcha
 
 ```bash
+# 1. Instalar dependencias
+npm install
+
+# 2. Configurar variables de entorno
+cp .env.example .env.local
+# editar .env.local con tus credenciales
+
+# 3. Aplicar schema de base de datos
+npx drizzle-kit push
+
+# 4. Arrancar servidor de desarrollo
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Variables de entorno
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Descripción |
+|---|---|
+| `DATABASE_URL` | Cadena de conexión de PostgreSQL (Neon) |
+| `FMP_API_KEY` | API key de Financial Modeling Prep (legacy — en migración a Yahoo Finance) |
 
-## Learn More
+## Estructura
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── app/          # Rutas Next.js (explorer, screener, macro, crypto)
+├── components/   # Componentes React
+├── lib/
+│   ├── api/      # Clientes Yahoo Finance, CoinGecko
+│   ├── *-data.ts # Datos lunares, solares, mercurianos
+│   ├── algorithm.ts, crypto-algorithm.ts, macro-algorithm.ts
+│   └── cosmic-fluidity.ts
+├── db/           # Schema Drizzle
+└── messages/     # i18n
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Análisis incluidos
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Screener de acciones** con puntuación multi-factor (valuation, trend, timing, cosmic)
+- **Crypto screener** con scoring tokenómico
+- **Ciclos lunares** — fases y energía de mercado
+- **Mercurio retrógrado** — períodos de volatilidad teórica
+- **Actividad solar**
+- **Turbulence index** — índice macro agregado
+- **Fibonacci confluence**
+- **Rotación sectorial**
 
-## Deploy on Vercel
+## Scripts
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Comando | Acción |
+|---|---|
+| `npm run dev` | Servidor de desarrollo |
+| `npm run build` | Build de producción |
+| `npm run start` | Servir build |
+| `npm run lint` | ESLint |
