@@ -1,10 +1,5 @@
-import { redirect } from "next/navigation";
+import HomeView from "@/components/HomeView";
 
-export default async function LocaleRootPage({
-    params,
-}: {
-    params: Promise<{ locale: string }>;
-}) {
-    const { locale } = await params;
-    redirect(`/${locale}/macro`);
+export default function LocaleHomePage() {
+    return <div style={{ marginLeft: 72 }}><HomeView /></div>;
 }

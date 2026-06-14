@@ -5,7 +5,7 @@
 export type MarketGroupId = "us_large" | "us_mid" | "us_small" | "eu_major" | "ibex_mc" | "sp500_top";
 
 export interface MarketGroup {
-    id: MarketGroupId;
+    id: MarketGroupId | CryptoGroupId;
     label: string;
     flag: string;
     description: string;
@@ -98,10 +98,10 @@ export function getTickersForMarket(market: MarketGroupId): string[] {
 export type CryptoGroupId = "all" | "layer-1" | "decentralized-finance-defi" | "artificial-intelligence" | "gaming" | "meme-token";
 
 export const CRYPTO_GROUPS: Record<CryptoGroupId, MarketGroup> = {
-    "all": { id: "all" as any, label: "Top 250 Global", flag: "🌍", description: "The largest cryptocurrencies by market cap", tickers: [] },
-    "layer-1": { id: "layer-1" as any, label: "Layer 1 Blockchains", flag: "⛓️", description: "Base layer networks like Ethereum, Solana, and Avalanche", tickers: [] },
-    "decentralized-finance-defi": { id: "decentralized-finance-defi" as any, label: "DeFi Protocols", flag: "🏦", description: "Decentralized exchanges, lending, and yield platforms", tickers: [] },
-    "artificial-intelligence": { id: "artificial-intelligence" as any, label: "AI & Compute", flag: "🤖", description: "Tokens powering artificial intelligence and decentralized compute", tickers: [] },
-    "gaming": { id: "gaming" as any, label: "GameFi & Metaverse", flag: "🎮", description: "Gaming economies and virtual world assets", tickers: [] },
-    "meme-token": { id: "meme-token" as any, label: "Memecoins", flag: "🐕", description: "High-risk, community and momentum-driven tokens", tickers: [] },
+    "all": { id: "all", label: "Top 250 Global", flag: "🌍", description: "The largest cryptocurrencies by market cap", tickers: [] },
+    "layer-1": { id: "layer-1", label: "Layer 1 Blockchains", flag: "⛓️", description: "Base layer networks like Ethereum, Solana, and Avalanche", tickers: [] },
+    "decentralized-finance-defi": { id: "decentralized-finance-defi", label: "DeFi Protocols", flag: "🏦", description: "Decentralized exchanges, lending, and yield platforms", tickers: [] },
+    "artificial-intelligence": { id: "artificial-intelligence", label: "AI & Compute", flag: "🤖", description: "Tokens powering artificial intelligence and decentralized compute", tickers: [] },
+    "gaming": { id: "gaming", label: "GameFi & Metaverse", flag: "🎮", description: "Gaming economies and virtual world assets", tickers: [] },
+    "meme-token": { id: "meme-token", label: "Memecoins", flag: "🐕", description: "High-risk, community and momentum-driven tokens", tickers: [] },
 };

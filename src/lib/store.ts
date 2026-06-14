@@ -11,6 +11,8 @@ import type { MarketGroupId } from "./market-groups";
 export type DataSource = "mock" | "live";
 export type ActiveSection = "macro" | "explorer" | "screener" | "watchlist" | "wiki" | "settings";
 export type AssetClass = "stocks" | "crypto";
+/** Top-level app mode: esoteric (cosmic) vs serious (fundamental analysis). */
+export type AppMode = "esoteric" | "serious";
 export type MacroSubSection = "overview" | "turbulence" | "lunar" | "mercury" | "solar" | "backtest" | "sectors" | "fibonacci";
 
 interface AppState {
@@ -23,6 +25,7 @@ interface AppState {
     // ── Navigation ────────────────────────────────────────────
     activeSection: ActiveSection;
     assetClass: AssetClass;
+    appMode: AppMode;
     macroSubSection: MacroSubSection;
     selectedMarket: MarketGroupId | null | string; // crypto markets can be strings like "decentralized-finance-defi"
 
@@ -40,12 +43,13 @@ interface AppState {
     initializeData: () => void;
     setActiveSection: (section: ActiveSection) => void;
     setAssetClass: (assetClass: AssetClass) => void;
+    setAppMode: (mode: AppMode) => void;
     setDataSource: (source: DataSource) => void;
     setMacroSubSection: (sub: MacroSubSection) => void;
     setSelectedMarket: (market: MarketGroupId | string | null) => void;
     fetchLiveData: (market?: MarketGroupId | string) => Promise<void>;
     fetchCompanyDetail: (ticker: string) => Promise<void>;
-    addCompanyByTicker: (ticker: string) => Promise<void>;
+    addCompanyByTicker: (ticker: string, assetType?: "s" | "c") => Promise<void>;
     setFilter: <K extends keyof ExplorerFilters>(key: K, value: ExplorerFilters[K]) => void;
     setMacro: (macro: Partial<MacroContext>) => void;
     selectCompany: (id: string | null) => void;
@@ -59,6 +63,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     dataSource: "live",
     activeSection: "macro",
     assetClass: "stocks",
+    appMode: "serious",
     macroSubSection: "overview",
     selectedMarket: null,
 
@@ -89,6 +94,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     setAssetClass: (assetClass) => {
         set({ assetClass, selectedMarket: null, companies: [], scores: [], selectedCompanyId: null, isDetailOpen: false });
     },
+
+    setAppMode: (mode) => set({ appMode: mode }),
 
     setDataSource: (source) => {
         set({ dataSource: source, error: null });
@@ -195,9 +202,15 @@ export const useAppStore = create<AppState>((set, get) => ({
         }
     },
 
-    addCompanyByTicker: async (ticker: string) => {
-        const upper = ticker.toUpperCase().trim();
-        const existing = get().companies.find((c) => c.ticker === upper);
+    addCompanyByTicker: async (ticker: string, assetType?: "s" | "c") => {
+        const isCrypto = assetType === "c";
+        // Crypto tickers are CoinGecko IDs (lowercase, hyphens) — don't uppercase
+        const lookupTicker = isCrypto ? ticker.trim() : ticker.toUpperCase().trim();
+        // For crypto, Company.ticker is the symbol (e.g. "HBAR"), not the CoinGecko ID,
+        // so we match by ID prefix instead.
+        const existing = get().companies.find((c) =>
+            isCrypto ? c.id === `cg_${lookupTicker}` : c.ticker === lookupTicker
+        );
         if (existing) {
             get().selectCompany(existing.id);
             return;
@@ -206,10 +219,11 @@ export const useAppStore = create<AppState>((set, get) => ({
         set({ isLoading: true, error: null });
 
         try {
-            const res = await fetch(`/api/company/${upper}`);
+            const queryParam = isCrypto ? "?type=c" : "";
+            const res = await fetch(`/api/company/${encodeURIComponent(lookupTicker)}${queryParam}`);
             if (!res.ok) {
                 const errData = await res.json();
-                throw new Error(errData.error || `Ticker "${upper}" not found`);
+                throw new Error(errData.error || `Ticker "${lookupTicker}" not found`);
             }
 
             const data = await res.json();
