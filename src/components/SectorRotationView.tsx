@@ -5,6 +5,9 @@ import Header from "./Header";
 import { motion, AnimatePresence } from "framer-motion";
 import { PieChart, X, TrendingUp, Info } from "lucide-react";
 import ReactECharts from "echarts-for-react";
+import { compareRegimes, formatPValue } from "@/lib/stats";
+import type { EChartParam } from "@/lib/echarts-types";
+import { planetaryDignity, zodiacSign, ZODIAC } from "@/lib/astro/ephemeris";
 
 // --- Types & Data ---
 
@@ -32,47 +35,10 @@ const SECTORS: SectorConfig[] = [
     { id: "healthcare", label: "Healthcare", symbol: "XLV", planet: "Neptune", color: "#14b8a6", bg: "bg-teal-500/10", border: "border-teal-500/20" },
 ];
 
-const ORBITAL_PERIODS: Record<string, number> = {
-    "Moon": 29.5,
-    "Mercury": 88,
-    "Venus": 224,
-    "Mars": 687,
-    "Jupiter": 4332,
-    "Saturn": 10759,
-    "Uranus": 30688,
-    "Neptune": 60182,
-};
-
-// Pure deterministic pseudo-dignity generator based on date and orbit cycle.
-// Returns a value between -100 (Debilitated) and +100 (Dignified).
+// Real essential dignity from the planet's actual zodiac position
+// (rulership/exaltation/detriment/fall) — NOT a sine wave. -90..+90.
 function getPlanetaryDignity(planetName: string, dateObj: Date) {
-    const orbitDays = ORBITAL_PERIODS[planetName] || 365;
-    const epoch = new Date("2000-01-01").getTime();
-    const daysSince = (dateObj.getTime() - epoch) / 86400000;
-
-    // Create a smooth sine wave cycle. Offset by arbitrary string sum to individualize planets.
-    const offset = Array.from(planetName).reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    const rad = ((daysSince + offset * orbitDays) / orbitDays) * Math.PI * 2;
-
-    // -1 to 1 
-    let score = Math.sin(rad);
-
-    // For slow outer planets (Saturn, Uranus, Neptune, etc.), their primary orbit is so slow 
-    // it never changes phase within 20 years. We inject Earth's annual retrograde cycle view.
-    if (orbitDays > 1000) {
-        const retroRad = ((daysSince + offset) / 365.25) * Math.PI * 2;
-        score = (score + Math.cos(retroRad)) / 2;
-    }
-
-    return Math.round(score * 100);
-}
-
-// Compute simple annualized stats natively here instead of depending on other files
-function computeAnnualized(returnsData: number[], totalTrackingDays: number) {
-    if (returnsData.length === 0 || totalTrackingDays === 0) return 0;
-    const totalReturn = returnsData.reduce((acc, val) => acc + val, 0);
-    const yrs = totalTrackingDays / 252;
-    return yrs > 0 ? totalReturn / yrs : totalReturn;
+    return planetaryDignity(planetName, dateObj);
 }
 
 export default function SectorRotationView() {
@@ -82,11 +48,12 @@ export default function SectorRotationView() {
 
     const today = new Date();
 
-    // Decorate sectors with current dignity
+    // Decorate sectors with current dignity + the planet's real zodiac sign
     const currentSectors = useMemo(() => {
         return SECTORS.map(s => {
             const dig = getPlanetaryDignity(s.planet, today);
-            return { ...s, currentDignity: dig };
+            const sign = ZODIAC[zodiacSign(s.planet, today)];
+            return { ...s, currentDignity: dig, currentSign: sign };
         }).sort((a, b) => b.currentDignity - a.currentDignity);
     }, [today]);
 
@@ -94,16 +61,17 @@ export default function SectorRotationView() {
     useEffect(() => {
         if (!selectedSector) return;
         let isActive = true;
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- loading must flip true when a new sector is selected
         setLoading(true);
         setPriceData([]);
 
         fetch(`/api/ticker?symbol=${selectedSector.symbol}`)
             .then(r => r.json())
-            .then(res => {
+            .then((res: { data?: { date: string; price: number }[] }) => {
                 if (!isActive || !res.data) return;
 
                 // compute the planetary dignity per day for this sector's planet
-                const decorated = res.data.map((d: any) => ({
+                const decorated = res.data.map((d) => ({
                     ...d,
                     dignity: getPlanetaryDignity(selectedSector.planet, new Date(d.date))
                 }));
@@ -116,32 +84,35 @@ export default function SectorRotationView() {
         return () => { isActive = false; };
     }, [selectedSector]);
 
-    // Compute metrics
+    // Compute metrics — proper compounded annualization + significance test
     const metrics = useMemo(() => {
         if (priceData.length < 30) return null;
 
-        const favReturns = [];
-        const chalReturns = [];
-        let favDays = 0;
-        let chalDays = 0;
+        const favReturns: number[] = [];
+        const chalReturns: number[] = [];
 
         for (let i = 1; i < priceData.length; i++) {
             const prev = priceData[i - 1].price;
             const cur = priceData[i].price;
             if (prev <= 0) continue;
 
-            const r = ((cur - prev) / prev) * 100;
-            const isFavorable = priceData[i].dignity >= 0;
-
-            if (isFavorable) { favReturns.push(r); favDays++; }
-            else { chalReturns.push(r); chalDays++; }
+            const r = (cur - prev) / prev; // decimal daily return
+            if (priceData[i].dignity >= 0) favReturns.push(r);
+            else chalReturns.push(r);
         }
 
-        const favAnn = computeAnnualized(favReturns, priceData.length);
-        const chalAnn = computeAnnualized(chalReturns, priceData.length);
-        const gap = favAnn - chalAnn;
+        // Permutation test: does the "favorable" window actually earn more than "challenging"?
+        const cmp = compareRegimes(favReturns, chalReturns, { periodsPerYear: 252, method: "permutation", iterations: 2000, seed: 17 });
 
-        return { favAnn, chalAnn, gap, favDays, chalDays };
+        return {
+            favAnn: cmp.annualizedA * 100,   // percent
+            chalAnn: cmp.annualizedB * 100,
+            gap: cmp.diffAnnualized * 100,
+            favDays: cmp.nA,
+            chalDays: cmp.nB,
+            pValue: cmp.pValue,
+            significant: cmp.significant,
+        };
     }, [priceData]);
 
     const chartOptions = useMemo(() => {
@@ -169,7 +140,7 @@ export default function SectorRotationView() {
                 backgroundColor: "rgba(0,0,0,0.9)",
                 borderColor: "rgba(255,255,255,0.1)",
                 textStyle: { color: "#fff", fontSize: 11 },
-                formatter: (params: any) => {
+                formatter: (params: EChartParam[]) => {
                     const p = params[0];
                     if (!p) return "";
                     return `
@@ -224,7 +195,7 @@ export default function SectorRotationView() {
                         </div>
                         <div>
                             <h1 className="text-xl font-bold text-zinc-100">Sector Rotation & Planetary Rulers</h1>
-                            <p className="text-xs text-zinc-500">Evaluating the GICS 11 Sectors based on Astrological Dignity</p>
+                            <p className="text-xs text-zinc-500">GICS 11 sectors mapped to each ruling planet&apos;s real essential dignity (rulership/exaltation/detriment/fall) from the ephemeris</p>
                         </div>
                     </div>
                 </motion.div>
@@ -257,7 +228,7 @@ export default function SectorRotationView() {
                                 <div className="mt-auto">
                                     <div className="flex items-center gap-1.5 mb-1">
                                         <div className="w-1.5 h-1.5 rounded-full" style={{ background: s.color }} />
-                                        <span className="text-xs font-medium text-zinc-400">Ruler: <span className="text-zinc-200">{s.planet}</span></span>
+                                        <span className="text-xs font-medium text-zinc-400">Ruler: <span className="text-zinc-200">{s.planet}</span> <span className="text-zinc-500">en {s.currentSign}</span></span>
                                     </div>
                                     <div className="flex items-end justify-between items-center">
                                         <span className="text-[10px] text-zinc-500 uppercase">Astro Score</span>
@@ -303,7 +274,7 @@ export default function SectorRotationView() {
                                     </div>
                                     <div>
                                         <h2 className="text-xl font-bold text-zinc-100">{selectedSector.label} <span className="text-zinc-500 font-normal">({selectedSector.symbol})</span></h2>
-                                        <p className="text-xs text-zinc-400 mt-0.5">Ruled by <strong>{selectedSector.planet}</strong> · Orbital cycle: {ORBITAL_PERIODS[selectedSector.planet]} days</p>
+                                        <p className="text-xs text-zinc-400 mt-0.5">Ruled by <strong>{selectedSector.planet}</strong> · currently in {ZODIAC[zodiacSign(selectedSector.planet, today)]} (dignity {getPlanetaryDignity(selectedSector.planet, today)})</p>
                                     </div>
                                 </div>
                                 <button onClick={() => setSelectedSector(null)} className="p-2 rounded-lg hover:bg-white/10 text-zinc-500 hover:text-white transition-colors cursor-pointer">
@@ -348,9 +319,15 @@ export default function SectorRotationView() {
                                                 </div>
                                                 <div className="text-lg font-bold text-zinc-200 mb-2">
                                                     {Math.abs(metrics.gap).toFixed(2)}% <span className="text-xs font-normal text-zinc-500">/yr difference</span>
+                                                    <span className={`ml-2 text-xs font-mono ${metrics.significant ? "text-emerald-400" : "text-amber-400"}`}>{formatPValue(metrics.pValue)}</span>
                                                 </div>
                                                 <p className="text-[11px] text-zinc-400 leading-relaxed">
-                                                    {metrics.gap > 0 ? "This sector performs distinctly better when its ruling planet is in a state of high dignity, validating traditional financial astrology principles." : "Historically, this ETF shows a contrarian effect, performing slightly better when its astrological ruler is computationally debilitated."}
+                                                    {metrics.significant
+                                                        ? `The gap between dignified and debilitated windows is statistically significant (${formatPValue(metrics.pValue)}) on this data — though significance on one sector among eleven invites multiple-testing caution.`
+                                                        : `The difference is not distinguishable from chance (${formatPValue(metrics.pValue)}). Splitting returns by this cycle does not separate good from bad periods any better than a random split would.`}
+                                                </p>
+                                                <p className="text-[10px] text-amber-500/70 italic mt-2 leading-relaxed">
+                                                    &ldquo;Dignity&rdquo; is now the ruling planet&apos;s real classical essential dignity, computed from its true zodiac position. It is a genuine astrological measure — but astrological dignity predicting sector returns remains unproven, so check the p-value above before trusting any gap.
                                                 </p>
                                             </div>
                                         </div>

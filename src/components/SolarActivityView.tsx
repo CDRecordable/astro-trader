@@ -9,9 +9,11 @@ import React, { useState, useMemo, useEffect } from "react";
 import ReactECharts from "echarts-for-react";
 import Header from "./Header";
 import { motion } from "framer-motion";
-import { Sun, BookOpen, Info, Calendar, Activity, ChevronDown } from "lucide-react";
-import { MONTHLY_SUNSPOT_DATA, getSunspotNumber, getSolarCyclePhase, classifySolarDay, SOLAR_THRESHOLDS, getSolarTimeline } from "@/lib/solar-data";
+import { Sun, BookOpen, Info, Calendar, ChevronDown } from "lucide-react";
+import { MONTHLY_SUNSPOT_DATA, getSunspotNumber, getSolarCyclePhase, classifySolarDay, SOLAR_THRESHOLDS, getSolarTimeline, hydrateSunspots, hasSunspotData, type SunspotPoint } from "@/lib/solar-data";
 import { OVERLAY_INDICES, type OverlayIndex } from "@/lib/overlay-indices";
+import { compareRegimes, formatPValue } from "@/lib/stats";
+import type { EChartParam } from "@/lib/echarts-types";
 import { useTranslations } from "next-intl";
 
 // ── Types ────────────────────────────────────────────────────
@@ -66,10 +68,15 @@ function computeStats(returns: number[]): RegimeStats {
 // ── Component ────────────────────────────────────────────────
 export default function SolarActivityView() {
     const t = useTranslations("solarActivity");
+    const ts = useTranslations("stats");
     const [allData, setAllData] = useState<Record<string, DailyPrice[]>>({});
     const [loading, setLoading] = useState(true);
     const [selectedIndex, setSelectedIndex] = useState<OverlayIndex>(OVERLAY_INDICES[0]);
     const [dropdownOpen, setDropdownOpen] = useState(false);
+    // Live SILSO provenance — updated once the real data is hydrated
+    const [solarSource, setSolarSource] = useState<string>("SILSO / Royal Observatory of Belgium");
+    const [solarLive, setSolarLive] = useState<boolean>(false);
+    const [solarVersion, setSolarVersion] = useState(0); // bump → recompute regime memo
 
     useEffect(() => {
         setLoading(true);
@@ -86,13 +93,35 @@ export default function SolarActivityView() {
             .catch((e) => { console.error("Failed to fetch daily data", e); setLoading(false); });
     }, []);
 
-    const selectedData = allData[selectedIndex.key] || [];
-    // Keep sp500 + btc refs for regime cards
-    const dailySp500 = allData["sp500"] || [];
-    const dailyBtc = allData["btc"] || [];
+    // Fetch live SILSO sunspot data and hydrate the in-memory series
+    useEffect(() => {
+        fetch("/api/solar")
+            .then((r) => r.json())
+            .then((res: { data: SunspotPoint[]; source: string; live: boolean }) => {
+                if (res.data?.length) {
+                    hydrateSunspots(res.data, res.source);
+                    setSolarSource(res.source);
+                    setSolarLive(res.live);
+                    setSolarVersion((v) => v + 1); // trigger regime recompute with fresh data
+                }
+            })
+            .catch((e) => console.error("Failed to fetch SILSO data", e));
+    }, []);
 
-    const currentSSN = getSunspotNumber(new Date());
-    const currentPhase = getSolarCyclePhase(new Date());
+    const selectedData = allData[selectedIndex.key] || [];
+
+    // Use the latest month that actually has data (SILSO lags ~1 month); avoid
+    // presenting an extrapolated boundary value as if it were a real reading.
+    const ssnRefDate = useMemo(() => {
+        const today = new Date();
+        if (hasSunspotData(today)) return today;
+        const last = MONTHLY_SUNSPOT_DATA[MONTHLY_SUNSPOT_DATA.length - 1];
+        return last ? new Date(last[0], last[1] - 1, 15) : today;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [solarVersion]);
+    const currentSSN = getSunspotNumber(ssnRefDate);
+    const currentPhase = getSolarCyclePhase(ssnRefDate);
+    const ssnIsLatest = !hasSunspotData(new Date()); // true → showing latest available, not "today"
     const phaseLabels: Record<string, string> = {
         minimum: "Solar Minimum",
         ascending: "Ascending Phase",
@@ -133,16 +162,26 @@ export default function SolarActivityView() {
             const modStats = computeStats(modReturns);
             const maxStats = computeStats(maxReturns);
 
+            // Significance: permutation test, solar-minimum vs solar-maximum daily returns.
+            const periodsPerYear = selectedIndex.key === "btc" ? 365 : 252;
+            const comparison = compareRegimes(
+                minReturns.map(r => r / 100),
+                maxReturns.map(r => r / 100),
+                { periodsPerYear, method: "permutation", iterations: 2000, seed: 11 },
+            );
+
             return {
                 min: minStats,
                 mod: modStats,
                 max: maxStats,
+                comparison,
                 yieldGap: minStats.annualizedReturn - maxStats.annualizedReturn,
             };
         };
 
         return analyze(selectedData);
-    }, [selectedData]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedData, solarVersion]); // solarVersion: recompute once live SILSO data is hydrated
 
     // ── Chart: SSN timeline with high-activity shading ───────
     const chartOptions = useMemo(() => {
@@ -195,7 +234,7 @@ export default function SolarActivityView() {
                 backgroundColor: "rgba(15, 15, 20, 0.95)",
                 borderColor: "rgba(255,255,255,0.08)",
                 textStyle: { color: "#e4e4e7", fontSize: 11 },
-                formatter: (params: any) => {
+                formatter: (params: EChartParam[]) => {
                     const date = params[0]?.axisValue ?? "";
                     let html = `<div style="font-weight:600;margin-bottom:4px">${date}</div>`;
                     for (const p of params) {
@@ -289,7 +328,8 @@ export default function SolarActivityView() {
                 },
             ],
         };
-    }, [selectedData, selectedIndex]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedData, selectedIndex, solarVersion]);
 
     // ── Solar cycle milestones ────────────────────────────────
     const cycleHistory = useMemo(() => ([
@@ -417,9 +457,14 @@ export default function SolarActivityView() {
                     <div>
                         <div className="text-sm font-semibold" style={{ color: phaseColors[currentPhase] }}>
                             {phaseLabels[currentPhase]} — SSN {currentSSN.toFixed(1)}
+                            {ssnIsLatest && (
+                                <span className="ml-2 text-[10px] font-normal text-zinc-500">
+                                    (latest available: {ssnRefDate.toLocaleDateString("en-US", { month: "short", year: "numeric" })})
+                                </span>
+                            )}
                         </div>
                         <div className="text-xs text-zinc-500">
-                            Cycle 25 is currently near its peak. Sunspot numbers above {SOLAR_THRESHOLDS.high} indicate solar maximum regime.
+                            Sunspot numbers above {SOLAR_THRESHOLDS.high} indicate a solar-maximum regime; below {SOLAR_THRESHOLDS.low}, a solar minimum.
                         </div>
                     </div>
                     <div className="ml-auto text-right">
@@ -494,9 +539,19 @@ export default function SolarActivityView() {
                                     </p>
                                     <p className="text-xs text-zinc-400">
                                         {solarAnalysis.yieldGap > 0
-                                            ? `This observation aligns with the "Solar-Market Hypothesis" where lower sunspot activity correlates with calmer markets and more consistent returns for this asset.`
-                                            : `Interestingly, this asset has historically seen better performance during high solar activity periods, contrary to traditional expectations of market disruption during Solar Maximums.`}
+                                            ? `Lower sunspot activity coincides with stronger returns for this asset in-sample.`
+                                            : `This asset has historically seen better returns during high solar activity in-sample.`}
                                     </p>
+                                    {/* Honest significance verdict */}
+                                    <div className={`mt-2 p-3 rounded-lg text-xs leading-relaxed ${solarAnalysis.comparison.significant ? "bg-emerald-500/5 border border-emerald-500/15 text-emerald-300/90" : "bg-amber-500/5 border border-amber-500/15 text-amber-300/90"}`}>
+                                        <div className="font-semibold mb-1">{ts("title")} · {ts("pLabel")} {formatPValue(solarAnalysis.comparison.pValue)}</div>
+                                        <p>{solarAnalysis.comparison.significant
+                                            ? ts("significant", { p: formatPValue(solarAnalysis.comparison.pValue) })
+                                            : ts("notSignificant", { p: formatPValue(solarAnalysis.comparison.pValue) })}</p>
+                                        <p className="text-[10px] text-zinc-500 mt-1">
+                                            {ts("sampleSizes", { a: solarAnalysis.comparison.nA, b: solarAnalysis.comparison.nB })} · ~11-yr cycles → few independent regimes.
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </>
@@ -536,6 +591,7 @@ export default function SolarActivityView() {
                             <p><strong className="text-zinc-200">W. Stanley Jevons (1878)</strong> first proposed that sunspot cycles influence economic activity through agricultural effects on credit markets.</p>
                             <p><strong className="text-zinc-200">Krivelyova & Robotti (2003)</strong> found statistically significant correlation between geomagnetic storms (triggered by solar activity) and lower stock returns in the following days.</p>
                             <p><strong className="text-zinc-200">Proposed mechanism:</strong> Solar activity → geomagnetic disturbances → disruption of melatonin/serotonin cycles → altered risk-taking behavior in traders.</p>
+                            <p className="text-amber-500/70 italic">Caveat: Krivelyova &amp; Robotti studied <em>geomagnetic storm</em> indices (Kp/Ap), not the monthly sunspot number this view uses. Treat the regime split below as exploratory — see the significance test for whether it beats chance.</p>
                         </div>
                     </div>
 
@@ -553,7 +609,12 @@ export default function SolarActivityView() {
                             </p>
                             <p>Daily returns are computed and aggregated by regime. The <strong className="text-zinc-200">annualized return</strong> shows what you&apos;d earn per year holding only during that regime.</p>
                             <p>The <strong className="text-zinc-200">~11-year solar cycle</strong> means regime transitions happen slowly. This signal is best used for long-term portfolio positioning, not active trading.</p>
-                            <p className="text-zinc-500 italic">Source: SILSO / Royal Observatory of Belgium.</p>
+                            <p className="text-zinc-500 italic">
+                                Source: {solarSource}
+                                {solarLive
+                                    ? " — fetched live; recent months are SILSO provisional and get revised."
+                                    : " — using bundled offline snapshot (live fetch unavailable); values are real SILSO numbers but may be stale."}
+                            </p>
                         </div>
                     </div>
                 </motion.div>

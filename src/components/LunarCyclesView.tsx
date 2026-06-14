@@ -9,9 +9,11 @@ import React, { useState, useEffect, useMemo } from "react";
 import Header from "./Header";
 import ReactECharts from "echarts-for-react";
 import { motion } from "framer-motion";
-import { Moon, Info, TrendingUp, BarChart2, Calendar, ChevronDown } from "lucide-react";
+import { Moon, Info, BarChart2, Calendar, ChevronDown } from "lucide-react";
 import { getMoonPhase, getMoonEmoji, getMoonPhaseName, getNewMoonDates, getFullMoonDates } from "@/lib/lunar-data";
 import { OVERLAY_INDICES, type OverlayIndex } from "@/lib/overlay-indices";
+import { compareRegimes, formatPValue } from "@/lib/stats";
+import type { EChartParam, EChartObj } from "@/lib/echarts-types";
 import { useTranslations } from "next-intl";
 
 // ── Types ────────────────────────────────────────────────────
@@ -88,15 +90,15 @@ function computeStats(returns: number[]): RegimeStats {
 
 export default function LunarCyclesView() {
     const t = useTranslations("lunarCycles");
+    const ts = useTranslations("stats");
     const [allData, setAllData] = useState<Record<string, DailyPrice[]>>({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedIndex, setSelectedIndex] = useState<OverlayIndex>(OVERLAY_INDICES[0]);
     const [dropdownOpen, setDropdownOpen] = useState(false);
 
-    // Fetch daily data
+    // Fetch daily data (loading initial state is already true)
     useEffect(() => {
-        setLoading(true);
         fetch("/api/macro-daily")
             .then((r) => {
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -119,7 +121,6 @@ export default function LunarCyclesView() {
 
     const selectedData = allData[selectedIndex.key] || [];
     const dailySp500 = allData["sp500"] || [];
-    const dailyBtc = allData["btc"] || [];
 
     // ── Complete lunar calendar ──────────────────────────────
     const lunarCalendar = useMemo(() => {
@@ -157,13 +158,22 @@ export default function LunarCyclesView() {
         const newStats = computeStats(newReturns);
         const fullStats = computeStats(fullReturns);
 
+        // Honest significance: permutation test on the real daily returns (decimal).
+        const periodsPerYear = selectedIndex.key === "btc" ? 365 : 252;
+        const comparison = compareRegimes(
+            newReturns.map(r => r / 100),
+            fullReturns.map(r => r / 100),
+            { periodsPerYear, method: "permutation", iterations: 2000, seed: 7 },
+        );
+
         return days.length >= 30 ? {
             days,
             newStats,
             fullStats,
+            comparison,
             yieldGap: newStats.annualizedReturn - fullStats.annualizedReturn
         } : null;
-    }, [selectedData]);
+    }, [selectedData, selectedIndex]);
 
     // ── Chart: selected index with lunar regime bands ──────────────
     const chartOptions = useMemo(() => {
@@ -174,7 +184,7 @@ export default function LunarCyclesView() {
         const prices = days.map(d => d.price);
 
         // Build markArea bands for regime coloring
-        const bands: any[] = [];
+        const bands: unknown[] = [];
         let bandStart = 0;
         let currentRegime = days[0].regime;
 
@@ -197,7 +207,7 @@ export default function LunarCyclesView() {
         }
 
         // Mark exact new moon and full moon dates on the chart
-        const markPoints: any[] = [];
+        const markPoints: EChartObj[] = [];
         for (const event of lunarCalendar.events) {
             const dateStr = event.date.toISOString().split("T")[0];
             const idx = dates.indexOf(dateStr);
@@ -226,10 +236,10 @@ export default function LunarCyclesView() {
                 padding: 16,
                 borderRadius: 12,
                 textStyle: { color: "#fff", fontSize: 11 },
-                formatter: (params: any) => {
+                formatter: (params: EChartParam[]) => {
                     const p = params[0];
                     if (!p) return "";
-                    const idx = dates.indexOf(p.axisValue);
+                    const idx = dates.indexOf(p.axisValue ?? "");
                     const day = idx >= 0 ? days[idx] : null;
                     const phase = day ? getMoonPhase(new Date(day.date)) : 0;
                     const emoji = day ? getMoonEmoji(phase) : "";
@@ -311,17 +321,8 @@ export default function LunarCyclesView() {
             }));
     }, [lunarCalendar]);
 
-    // ── Stat card component ─────────────────────────────────
-    const StatCard = ({ label, value, sub, color }: { label: string; value: string; sub?: string; color: string }) => (
-        <div className="text-center">
-            <div className="text-[9px] uppercase tracking-widest text-zinc-600 mb-1">{label}</div>
-            <div className="text-lg font-bold" style={{ color }}>{value}</div>
-            {sub && <div className="text-[9px] text-zinc-600 mt-0.5">{sub}</div>}
-        </div>
-    );
-
     // ── Regime comparison card ───────────────────────────────
-    const RegimeCard = ({ title, subtitle, stats, asset }: { title: string; subtitle: string; stats: { newStats: RegimeStats; fullStats: RegimeStats } | null; asset: string }) => {
+    const RegimeCard = ({ title, subtitle, stats }: { title: string; subtitle: string; stats: { newStats: RegimeStats; fullStats: RegimeStats } | null }) => {
         if (!stats) return (
             <div className="glass-card p-5 border border-white/5">
                 <div className="text-sm font-bold text-zinc-300 mb-1">{title}</div>
@@ -507,7 +508,8 @@ export default function LunarCyclesView() {
                     {lunarAnalysis ? (
                         <>
                             <div className="lg:col-span-2">
-                                <RegimeCard title={selectedIndex.label} subtitle={`${selectedData.length > 0 ? selectedData[0].date.slice(0, 4) : "2000"} – present`} stats={lunarAnalysis} asset={selectedIndex.key} />
+                                {/* eslint-disable-next-line react-hooks/static-components -- stateless presentational card, no state to reset */}
+                                <RegimeCard title={selectedIndex.label} subtitle={`${selectedData.length > 0 ? selectedData[0].date.slice(0, 4) : "2000"} – present`} stats={lunarAnalysis} />
                             </div>
                             <div className="lg:col-span-1 glass-card p-6 border border-zinc-500/10 flex flex-col justify-center">
                                 <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2">
@@ -521,6 +523,16 @@ export default function LunarCyclesView() {
                                     <p className="text-xs text-zinc-400">
                                         {lunarAnalysis.yieldGap > 0 ? t("alignsWithDJ") : t("contraryToDJ")}
                                     </p>
+                                    {/* Honest significance verdict */}
+                                    <div className={`mt-2 p-3 rounded-lg text-xs leading-relaxed ${lunarAnalysis.comparison.significant ? "bg-emerald-500/5 border border-emerald-500/15 text-emerald-300/90" : "bg-amber-500/5 border border-amber-500/15 text-amber-300/90"}`}>
+                                        <div className="font-semibold mb-1">{ts("title")} · {ts("pLabel")} {formatPValue(lunarAnalysis.comparison.pValue)}</div>
+                                        <p>{lunarAnalysis.comparison.significant
+                                            ? ts("significant", { p: formatPValue(lunarAnalysis.comparison.pValue) })
+                                            : ts("notSignificant", { p: formatPValue(lunarAnalysis.comparison.pValue) })}</p>
+                                        <p className="text-[10px] text-zinc-500 mt-1">
+                                            {ts("sampleSizes", { a: lunarAnalysis.comparison.nA, b: lunarAnalysis.comparison.nB })} · {ts("permutationNote")}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </>
@@ -557,14 +569,15 @@ export default function LunarCyclesView() {
                         </div>
                         <div className="space-y-3 text-xs text-zinc-400 leading-relaxed">
                             <p>
-                                <strong className="text-zinc-300">Dichev & Janes (2001)</strong> — "Lunar Cycle Effects in Stock Returns"
-                                published in the <em>Journal of Private Equity</em>. Found that stock returns in the 15 days around
-                                new moons were <strong className="text-emerald-400">significantly higher</strong> than around full moons,
-                                across 25 years of data in 48 countries.
+                                <strong className="text-zinc-300">Dichev & Janes (2003)</strong> — &ldquo;Lunar Cycle Effects in Stock Returns&rdquo;
+                                (<em>Journal of Private Equity</em>). Reported that returns in the ~15 days around
+                                new moons were higher than around full moons across 25 years and 48 countries. Later work has
+                                disputed its robustness once multiple-testing is accounted for.
                             </p>
                             <p>
-                                <strong className="text-zinc-300">Yuan, Zheng & Zhu (2006)</strong> — Confirmed the lunar effect in global
-                                markets. The annualized difference is approximately <strong className="text-emerald-400">3-5%</strong>.
+                                <strong className="text-zinc-300">Yuan, Zheng & Zhu (2006)</strong> — Found a lunar effect of roughly
+                                <strong className="text-emerald-400"> 3–5%</strong> annualized in global markets.
+                                <span className="text-zinc-500 italic"> {ts("literatureNote")}</span>
                             </p>
                             <p className="text-zinc-500 italic text-[11px]">
                                 The prevailing hypothesis is not gravitational pull, but rather that mood and risk appetite

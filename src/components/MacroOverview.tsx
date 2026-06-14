@@ -8,7 +8,7 @@
 import React, { useMemo, useState } from "react";
 import Header from "./Header";
 import { motion, AnimatePresence } from "framer-motion";
-import { Gauge, Activity, Moon, RotateCcw, FlaskConical, ArrowRight, Zap, TrendingUp, TrendingDown, Minus, Calendar, LogIn, LogOut, ChevronDown, Shield, Target, Clock } from "lucide-react";
+import { Gauge, Activity, Moon, RotateCcw, ArrowRight, TrendingUp, TrendingDown, Minus, Calendar, LogIn, LogOut, ChevronDown, Shield, Target, Clock } from "lucide-react";
 import { getMoonPhase, getMoonEmoji, getMoonPhaseName, getNewMoonDates } from "@/lib/lunar-data";
 import { isRetrograde, getNextRetrograde, MERCURY_RETROGRADES } from "@/lib/mercury-data";
 import { getSunspotNumber } from "@/lib/solar-data";
@@ -41,7 +41,7 @@ function computeTurbulenceSignal(): { score: number; label: string; value: numbe
     const diff = scoreFuture - score;
     const trend: "up" | "down" | "stable" = diff > 3 ? "up" : diff < -3 ? "down" : "stable";
 
-    return { score: Math.round(score * 10) / 10, label, value: turbulence, detail: `Index: ${turbulence.toFixed(1)} · ${transits}`, trend };
+    return { score: Math.round(score * 10) / 10, label, value: Math.round(turbulence * 10) / 10, detail: transits, trend };
 }
 
 function computeLunarSignal(): { score: number; label: string; emoji: string; phaseName: string; detail: string; trend: "up" | "down" | "stable" } {
@@ -179,74 +179,62 @@ interface SignalEvent {
     confidence: "high" | "medium" | "low";
 }
 
-function computeUpcomingSignals(): SignalEvent[] {
+/**
+ * Compute entry/exit signals over a ±90-day window.
+ * mode "future" → next 90 days (upcoming); mode "past" → previous 90 days (history).
+ * Same deterministic rules in both directions (turbulence regime changes, new moons,
+ * Mercury retrograde boundaries), so the historical view shows exactly the signals
+ * the model WOULD have emitted — useful for eyeballing how they lined up with the market.
+ */
+function computeSignals(mode: "future" | "past"): SignalEvent[] {
     const events: SignalEvent[] = [];
     const now = new Date();
-    const lookAhead = new Date(now);
-    lookAhead.setMonth(lookAhead.getMonth() + 3);
+    const from = new Date(now);
+    const to = new Date(now);
+    if (mode === "future") to.setMonth(to.getMonth() + 3);
+    else from.setMonth(from.getMonth() - 3);
+    const inWindow = (d: Date) => d > from && d < to;
 
-    // 1. Turbulence windows — scan next 90 days for regime changes
+    // 1. Turbulence windows — scan the window for regime changes
     const timeline = generateMacroTimeline(
-        now.toISOString().split("T")[0],
-        lookAhead.toISOString().split("T")[0],
+        from.toISOString().split("T")[0],
+        to.toISOString().split("T")[0],
         90
     );
     let prevTurb = timeline[0]?.turbulenceIndex ?? 50;
     for (let i = 1; i < timeline.length; i++) {
         const pt = timeline[i];
-        // Entry: turbulence drops below 50 from above
         if (prevTurb >= 50 && pt.turbulenceIndex < 50) {
-            events.push({
-                date: new Date(pt.date),
-                type: "entry",
-                reason: "Turbulence drops below 50",
-                icon: "⚡",
-                confidence: pt.turbulenceIndex < 35 ? "high" : "medium",
-            });
+            events.push({ date: new Date(pt.date), type: "entry", reason: "Turbulence drops below 50", icon: "⚡", confidence: pt.turbulenceIndex < 35 ? "high" : "medium" });
         }
-        // Exit: turbulence rises above 65 from below
         if (prevTurb < 65 && pt.turbulenceIndex >= 65) {
-            events.push({
-                date: new Date(pt.date),
-                type: "exit",
-                reason: "Turbulence exceeds 65",
-                icon: "⚡",
-                confidence: pt.turbulenceIndex > 80 ? "high" : "medium",
-            });
+            events.push({ date: new Date(pt.date), type: "exit", reason: "Turbulence exceeds 65", icon: "⚡", confidence: pt.turbulenceIndex > 80 ? "high" : "medium" });
         }
         prevTurb = pt.turbulenceIndex;
     }
 
-    // 2. Lunar — next new moons = entry, next full moons = exit
-    const currentYear = now.getFullYear();
-    const newMoons = getNewMoonDates(currentYear, currentYear + 1);
-    for (const nm of newMoons) {
-        if (nm > now && nm < lookAhead) {
-            events.push({ date: nm, type: "entry", reason: "New Moon — favorable period begins", icon: "🌑", confidence: "medium" });
-        }
+    // 2. Lunar — new moons = entry
+    const y = now.getFullYear();
+    for (const nm of getNewMoonDates(y - 1, y + 1)) {
+        if (inWindow(nm)) events.push({ date: nm, type: "entry", reason: "New Moon — favorable period begins", icon: "🌑", confidence: "medium" });
     }
 
-    // 3. Mercury — retrograde start = exit, retrograde end = entry
+    // 3. Mercury — retrograde start = exit, end = entry
     for (const [startStr, endStr] of MERCURY_RETROGRADES) {
         const s = new Date(startStr);
         const e = new Date(endStr);
-        if (s > now && s < lookAhead) {
-            events.push({ date: s, type: "exit", reason: "Mercury Retrograde begins", icon: "☿", confidence: "medium" });
-        }
-        if (e > now && e < lookAhead) {
-            events.push({ date: e, type: "entry", reason: "Mercury Retrograde ends", icon: "☿", confidence: "medium" });
-        }
+        if (inWindow(s)) events.push({ date: s, type: "exit", reason: "Mercury Retrograde begins", icon: "☿", confidence: "medium" });
+        if (inWindow(e)) events.push({ date: e, type: "entry", reason: "Mercury Retrograde ends", icon: "☿", confidence: "medium" });
     }
 
-    // Sort by date
-    events.sort((a, b) => a.date.getTime() - b.date.getTime());
+    // Chronological (future ascending; past descending → most recent first)
+    events.sort((a, b) => mode === "future" ? a.date.getTime() - b.date.getTime() : b.date.getTime() - a.date.getTime());
 
-    // Deduplicate close events (within 3 days)
+    // Deduplicate close same-type events (within 3 days)
     const filtered: SignalEvent[] = [];
     for (const ev of events) {
         const last = filtered[filtered.length - 1];
         if (last && Math.abs(ev.date.getTime() - last.date.getTime()) < 3 * 86400000 && ev.type === last.type) {
-            // Merge — keep the higher confidence one
             if (ev.confidence === "high") filtered[filtered.length - 1] = ev;
             continue;
         }
@@ -266,11 +254,14 @@ export default function MacroOverview() {
     // Resolve label key through t()
     const turbulence = useMemo(() => ({
         ...turbulenceRaw,
-        label: t(turbulenceRaw.label as any),
+        label: t(turbulenceRaw.label as Parameters<typeof t>[0]),
     }), [turbulenceRaw, t]);
     const lunar = useMemo(() => computeLunarSignal(), []);
     const mercury = useMemo(() => computeMercurySignal(), []);
-    const upcomingSignals = useMemo(() => computeUpcomingSignals(), []);
+    const upcomingSignals = useMemo(() => computeSignals("future"), []);
+    const historicalSignals = useMemo(() => computeSignals("past"), []);
+    const [signalView, setSignalView] = useState<"future" | "past">("future");
+    const shownSignals = signalView === "future" ? upcomingSignals : historicalSignals;
 
     // Composite score
     const compositeScore = useMemo(() => {
@@ -302,10 +293,11 @@ export default function MacroOverview() {
     }, [compositeScore, t]);
 
     const formatDate = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    // eslint-disable-next-line react-hooks/purity -- countdown helper reads the clock for display
     const daysUntil = (d: Date) => Math.ceil((d.getTime() - Date.now()) / 86400000);
 
     const SignalCard = ({ title, score, weight, icon: Icon, color, detail, trend, children }: {
-        title: string; score: number; weight: string; icon: any; color: string; detail: string; trend?: "up" | "down" | "stable"; children?: React.ReactNode;
+        title: string; score: number; weight: string; icon: React.ElementType; color: string; detail: string; trend?: "up" | "down" | "stable"; children?: React.ReactNode;
     }) => {
         const TrendIcon = trend === "up" ? TrendingUp : trend === "down" ? TrendingDown : Minus;
         const trendColor = trend === "up" ? "#4ade80" : trend === "down" ? "#ef4444" : "#71717a";
@@ -508,15 +500,32 @@ export default function MacroOverview() {
                                     <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg, #7c3aed, #06b6d4)" }}>
                                         <Target size={16} className="text-white" />
                                     </div>
-                                    <div>
+                                    <div className="flex-1">
                                         <h3 className="text-sm font-bold text-zinc-200">{t("signalCalendarTitle")}</h3>
-                                        <p className="text-[10px] text-zinc-500">{t("signalCalendarSubtitle")}</p>
+                                        <p className="text-[10px] text-zinc-500">{signalView === "future" ? t("signalCalendarSubtitle") : t("signalHistorySubtitle")}</p>
+                                    </div>
+                                    {/* Future / History toggle */}
+                                    <div className="flex rounded-lg overflow-hidden border border-white/10 text-[10px] font-semibold">
+                                        <button
+                                            onClick={() => setSignalView("future")}
+                                            className="px-3 py-1.5 transition-colors cursor-pointer"
+                                            style={{ background: signalView === "future" ? "rgba(124,58,237,0.25)" : "transparent", color: signalView === "future" ? "#c4b5fd" : "#71717a" }}
+                                        >
+                                            {t("signalsUpcoming")}
+                                        </button>
+                                        <button
+                                            onClick={() => setSignalView("past")}
+                                            className="px-3 py-1.5 transition-colors cursor-pointer"
+                                            style={{ background: signalView === "past" ? "rgba(124,58,237,0.25)" : "transparent", color: signalView === "past" ? "#c4b5fd" : "#71717a" }}
+                                        >
+                                            {t("signalsHistory")}
+                                        </button>
                                     </div>
                                 </div>
 
                                 {/* Timeline */}
                                 <div className="space-y-2 mb-6">
-                                    {upcomingSignals.slice(0, 10).map((sig, i) => (
+                                    {shownSignals.slice(0, 10).map((sig, i) => (
                                         <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
                                             className="flex items-center gap-4 p-3 rounded-lg bg-white/[0.02] border border-white/5"
                                         >
@@ -535,14 +544,14 @@ export default function MacroOverview() {
                                                 <div className="text-[10px] text-zinc-500 mt-0.5">{sig.icon} {sig.reason}</div>
                                             </div>
                                             <div className="text-right">
-                                                <div className="text-[10px] text-zinc-600 font-mono">{daysUntil(sig.date)}d</div>
+                                                <div className="text-[10px] text-zinc-600 font-mono">{signalView === "future" ? `${daysUntil(sig.date)}d` : `${Math.abs(daysUntil(sig.date))}d ${t("ago")}`}</div>
                                                 <div className="text-[9px] uppercase font-bold" style={{ color: sig.type === "entry" ? "#4ade80" : "#ef4444" }}>
                                                     {sig.type}
                                                 </div>
                                             </div>
                                         </motion.div>
                                     ))}
-                                    {upcomingSignals.length === 0 && (
+                                    {shownSignals.length === 0 && (
                                         <div className="text-center py-8 text-zinc-500 text-xs">{t("noSignals")}</div>
                                     )}
                                 </div>
@@ -551,15 +560,15 @@ export default function MacroOverview() {
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div className="p-4 rounded-lg bg-emerald-500/[0.03] border border-emerald-500/10">
                                         <div className="text-[9px] uppercase tracking-widest text-emerald-600 font-semibold mb-2">{t("optimalEntry")}</div>
-                                        <div className="text-xs text-zinc-400 leading-relaxed" dangerouslySetInnerHTML={{ __html: t("optimalEntryText") }} />
+                                        <div className="text-xs text-zinc-400 leading-relaxed">{t.rich("optimalEntryText", { strong: (c) => <strong className="text-zinc-200">{c}</strong> })}</div>
                                     </div>
                                     <div className="p-4 rounded-lg bg-red-500/[0.03] border border-red-500/10">
                                         <div className="text-[9px] uppercase tracking-widest text-red-600 font-semibold mb-2">{t("optimalExit")}</div>
-                                        <div className="text-xs text-zinc-400 leading-relaxed" dangerouslySetInnerHTML={{ __html: t("optimalExitText") }} />
+                                        <div className="text-xs text-zinc-400 leading-relaxed">{t.rich("optimalExitText", { strong: (c) => <strong className="text-zinc-200">{c}</strong> })}</div>
                                     </div>
                                     <div className="p-4 rounded-lg bg-purple-500/[0.03] border border-purple-500/10">
                                         <div className="text-[9px] uppercase tracking-widest text-purple-600 font-semibold mb-2">{t("positionSizing")}</div>
-                                        <div className="text-xs text-zinc-400 leading-relaxed" dangerouslySetInnerHTML={{ __html: t("positionSizingText") }} />
+                                        <div className="text-xs text-zinc-400 leading-relaxed">{t.rich("positionSizingText", { strong: (c) => <strong className="text-zinc-200">{c}</strong> })}</div>
                                     </div>
                                 </div>
 
@@ -573,14 +582,14 @@ export default function MacroOverview() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <SignalCard
                         title={t("turbulenceTitle")}
-                        score={turbulence.score}
+                        score={turbulence.value}
                         weight={t("turbulenceWeight")}
                         icon={Activity}
-                        color={turbulence.score >= 60 ? "#4ade80" : turbulence.score >= 40 ? "#eab308" : "#ef4444"}
+                        color={turbulence.value <= 30 ? "#4ade80" : turbulence.value <= 60 ? "#eab308" : "#ef4444"}
                         detail={turbulence.detail}
                         trend={turbulence.trend}
                     >
-                        <div className="mt-2 text-[10px] text-zinc-400">{turbulence.label}</div>
+                        <div className="mt-2 text-[10px] text-zinc-400">{turbulence.label} · {t("contributesFluidity", { score: turbulence.score })}</div>
                     </SignalCard>
 
                     <SignalCard

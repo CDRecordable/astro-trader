@@ -3,7 +3,11 @@ import YahooFinance from "yahoo-finance2";
 
 export const dynamic = "force-dynamic";
 
-const yf = new (YahooFinance as any)();
+type ChartQuote = { date: Date | string; close: number | null };
+type ChartResult = { quotes: ChartQuote[] };
+type YF = { chart: (symbol: string, opts: { period1: Date; interval: string }) => Promise<ChartResult> };
+
+const yf = new (YahooFinance as unknown as new () => YF)();
 
 /**
  * /api/macro-daily — Daily price data for rigorous analysis.
@@ -24,15 +28,15 @@ export async function GET() {
             yf.chart("QQQ", { period1: qqqFrom, interval: "1d" }),
         ]);
 
-        const parse = (res: PromiseSettledResult<any>) => {
+        const parse = (res: PromiseSettledResult<ChartResult>) => {
             if (res.status !== "fulfilled") return [];
-            const quotes = (res.value as any)?.quotes;
+            const quotes = res.value?.quotes;
             if (!Array.isArray(quotes)) return [];
             return quotes
-                .filter((q: any) => q.close != null)
-                .map((q: any) => ({
+                .filter((q: ChartQuote) => q.close != null)
+                .map((q: ChartQuote) => ({
                     date: new Date(q.date).toISOString().split("T")[0],
-                    price: Number(q.close.toFixed(2)),
+                    price: Number(Number(q.close).toFixed(2)),
                 }));
         };
 

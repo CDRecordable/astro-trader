@@ -2,7 +2,7 @@
 
 import React from "react";
 import { usePathname } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -30,7 +30,6 @@ export default function MacroLayout({
     children: React.ReactNode;
 }) {
     const pathname = usePathname();
-    const locale = useLocale();
     const t = useTranslations("macroNav");
 
     // Determine active sub from pathname

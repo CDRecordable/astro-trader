@@ -6,10 +6,12 @@
 import React, { useMemo, useState, useEffect } from "react";
 import ReactECharts from "echarts-for-react";
 import { generateMacroTimeline, PLANETARY_TRANSITS, pearsonCorrelation } from "@/lib/macro-algorithm";
+import type { EChartParam, EChartObj } from "@/lib/echarts-types";
+import { permutationPValue, formatPValue } from "@/lib/stats";
 import { GEO_EVENTS, type EventCategory } from "@/lib/geo-events";
 import Header from "./Header";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Activity, Map, ArrowRight, ShieldAlert, Zap, Globe2, BarChart2, ChevronDown, TrendingUp, TrendingDown, Check } from "lucide-react";
+import { Sparkles, Activity, Map, ShieldAlert, Zap, Globe2, BarChart2, ChevronDown, Check } from "lucide-react";
 import { OVERLAY_INDICES } from "@/lib/overlay-indices";
 import { useTranslations } from "next-intl";
 
@@ -115,7 +117,7 @@ export default function MacroDashboard() {
             tech_boom: "#06b6d4",
             policy: "#8b5cf6"
         };
-        const eventMap: Record<string, any> = {};
+        const eventMap: Record<string, typeof visibleEvents[number]> = {};
 
         // Map events to ECharts markPoints on the Turbulence line
         const markPoints = visibleEvents.map(evt => {
@@ -134,7 +136,7 @@ export default function MacroDashboard() {
             };
         });
 
-        const series: any[] = [
+        const series: EChartObj[] = [
             {
                 name: "Macro Turbulence",
                 type: "line",
@@ -186,11 +188,11 @@ export default function MacroDashboard() {
                 borderRadius: 12,
                 textStyle: { color: "#fff" },
                 axisPointer: { type: "cross", crossStyle: { color: "#52525b" } },
-                formatter: (params: any) => {
-                    const dataParams = Array.isArray(params) ? params : [params];
+                formatter: (params: EChartParam[] | EChartParam) => {
+                    const dataParams: EChartParam[] = Array.isArray(params) ? params : [params];
                     if (!dataParams.length) return "";
 
-                    const dateStr = dataParams[0].name;
+                    const dateStr = dataParams[0].name ?? "";
                     let html = `<div style="font-family: inherit; font-size: 12px; margin-bottom: 12px; color: #a1a1aa"><strong>${dateStr}</strong></div>`;
 
                     dataParams.forEach(p => {
@@ -198,7 +200,7 @@ export default function MacroDashboard() {
                         if (p.componentType === 'markPoint') return;
 
                         // Safely extract the value (handles object wraps from Echarts if any)
-                        const rawVal = typeof p.value === 'object' && p.value !== null ? (p.value as any).value || p.value : p.value;
+                        const rawVal = typeof p.value === 'object' && p.value !== null ? (p.value as { value?: unknown }).value || p.value : p.value;
 
                         html += `<div style="display: flex; align-items: center; justify-content: space-between; gap: 32px; margin-bottom: 6px; font-size: 13px;">
                             <span style="display: flex; align-items: center; gap: 6px; color: #d4d4d8;">
@@ -210,13 +212,14 @@ export default function MacroDashboard() {
                     });
 
                     // Add underlying transits powering the Turbulence calculation!
-                    const macroData = dataParams.find((p: any) => p.seriesName === "Macro Turbulence");
-                    if (macroData && macroData.data && macroData.data.activeTransits) {
+                    const macroData = dataParams.find((p) => p.seriesName === "Macro Turbulence");
+                    const macroTransits = (macroData?.data as { activeTransits?: string[] } | undefined)?.activeTransits;
+                    if (macroTransits) {
                         html += `
                         <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.1);">
                             <div style="font-size: 10px; color: #a1a1aa; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em;">Driving Transits</div>
                             <div style="display: flex; flex-wrap: wrap; gap: 4px;">
-                                ${(macroData.data.activeTransits as string[]).map((t: string) =>
+                                ${macroTransits.map((t: string) =>
                             `<span style="font-size: 10px; padding: 3px 8px; border-radius: 4px; background: ${t.includes('Tension') ? 'rgba(239, 68, 68, 0.15)' : t.includes('Fluidity') ? 'rgba(34, 197, 94, 0.15)' : 'rgba(255,255,255,0.05)'}; color: ${t.includes('Tension') ? '#fca5a5' : t.includes('Fluidity') ? '#86efac' : '#a1a1aa'}; border: 1px solid ${t.includes('Tension') ? 'rgba(239, 68, 68, 0.2)' : t.includes('Fluidity') ? 'rgba(34, 197, 94, 0.2)' : 'transparent'};">
                                         ${t.replace("Tension: ", "").replace("Fluidity: ", "")}
                                     </span>`
@@ -417,6 +420,7 @@ export default function MacroDashboard() {
                             const transits = todayData?.activeTransits?.filter(t => t !== "Neutral Zone") || [];
 
                             // Find next upcoming transit
+                            // eslint-disable-next-line react-hooks/purity -- reading the clock to pick the next future transit for display
                             const now = Date.now();
                             const nextTransit = PLANETARY_TRANSITS.find(t => new Date(t.date).getTime() > now);
 
@@ -594,7 +598,11 @@ export default function MacroDashboard() {
                                 const posPct = (arr: typeof data) => arr.length > 0 ? (arr.filter(d => d.ret > 0).length / arr.length) * 100 : 0;
                                 const prsn = pearsonCorrelation(data.map(d => d.turb), data.map(d => d.ret));
                                 const diff = avg(fluid) - avg(crisis);
-                                return { avgCrisis: avg(crisis), avgFluid: avg(fluid), avgNeutral: avg(neutral), crisisNeg: negPct(crisis), fluidPos: posPct(fluid), crisisN: crisis.length, fluidN: fluid.length, neutralN: neutral.length, pearson: prsn, total: data.length, diff };
+                                // Honest significance: permutation test, low-turb vs high-turb monthly returns.
+                                const pValue = (fluid.length >= 5 && crisis.length >= 5)
+                                    ? permutationPValue(fluid.map(d => d.ret), crisis.map(d => d.ret), 2000, 99)
+                                    : 1;
+                                return { avgCrisis: avg(crisis), avgFluid: avg(fluid), avgNeutral: avg(neutral), crisisNeg: negPct(crisis), fluidPos: posPct(fluid), crisisN: crisis.length, fluidN: fluid.length, neutralN: neutral.length, pearson: prsn, total: data.length, diff, pValue };
                             };
 
                             const sp = analyze(spPairs);
@@ -647,7 +655,12 @@ export default function MacroDashboard() {
                                         <div className="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden mt-2">
                                             <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.abs(s.diff) * 12)}%`, background: `linear-gradient(90deg, ${accent}30, ${accent})` }} />
                                         </div>
-                                        <div className="text-[10px] text-zinc-600 mt-1.5 text-right">Pearson ρ = {s.pearson.toFixed(3)}</div>
+                                        <div className="flex items-center justify-between mt-1.5">
+                                            <span className="text-[10px] font-semibold text-amber-400/80">
+                                                permutación {formatPValue(s.pValue)}{s.pValue < 0.05 ? " · ⚠ ver aviso" : " · no supera el azar"}
+                                            </span>
+                                            <span className="text-[10px] text-zinc-600">Pearson ρ = {s.pearson.toFixed(3)}</span>
+                                        </div>
                                     </div>
                                 </div>
                             );
@@ -665,6 +678,7 @@ export default function MacroDashboard() {
                                                 <p>{t("interpretationP1")}</p>
                                                 <p>{t("interpretationP2")}</p>
                                                 <p className="text-zinc-500 italic">{t("interpretationP3")}</p>
+                                                <p className="text-amber-500/70 italic">{t("interpretationP4")}</p>
                                             </div>
                                         </div>
                                     )}

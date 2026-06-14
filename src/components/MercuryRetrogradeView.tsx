@@ -12,6 +12,8 @@ import { motion } from "framer-motion";
 import { RotateCcw, BookOpen, Info, Calendar, AlertTriangle, ChevronDown } from "lucide-react";
 import { isRetrograde, getNextRetrograde, getRetrogratesInRange, MERCURY_RETROGRADES } from "@/lib/mercury-data";
 import { OVERLAY_INDICES, type OverlayIndex } from "@/lib/overlay-indices";
+import { compareRegimes, formatPValue } from "@/lib/stats";
+import type { EChartParam } from "@/lib/echarts-types";
 import { useTranslations } from "next-intl";
 
 // ── Types ────────────────────────────────────────────────────
@@ -54,6 +56,7 @@ function computeStats(returns: number[]): RegimeStats {
 
 export default function MercuryRetrogradeView() {
     const t = useTranslations("mercuryRetrograde");
+    const tStats = useTranslations("stats");
     const [allData, setAllData] = useState<Record<string, DailyPrice[]>>({});
     const [loading, setLoading] = useState(true);
     const [selectedIndex, setSelectedIndex] = useState<OverlayIndex>(OVERLAY_INDICES[0]);
@@ -76,7 +79,6 @@ export default function MercuryRetrogradeView() {
 
     const selectedData = allData[selectedIndex.key] || [];
     const dailySp500 = allData["sp500"] || [];
-    const dailyBtc = allData["btc"] || [];
 
     const currentlyRetrograde = isRetrograde(new Date());
     const nextRx = getNextRetrograde(new Date());
@@ -107,15 +109,25 @@ export default function MercuryRetrogradeView() {
             const rxStats = computeStats(rxReturns);
             const directStats = computeStats(directReturns);
 
+            // Significance: permutation test, retrograde vs direct daily returns.
+            // Note: retrograde covers only ~18-20% of days, so nA ≪ nB (imbalanced).
+            const periodsPerYear = selectedIndex.key === "btc" ? 365 : 252;
+            const comparison = compareRegimes(
+                rxReturns.map(r => r / 100),
+                directReturns.map(r => r / 100),
+                { periodsPerYear, method: "permutation", iterations: 2000, seed: 13 },
+            );
+
             return {
                 rx: rxStats,
                 direct: directStats,
+                comparison,
                 yieldGap: directStats.annualizedReturn - rxStats.annualizedReturn,
             };
         };
 
         return analyze(selectedData);
-    }, [selectedData]);
+    }, [selectedData, selectedIndex]);
 
     // ── Chart with retrograde shading ────────────────────────
     const chartOptions = useMemo(() => {
@@ -153,10 +165,10 @@ export default function MercuryRetrogradeView() {
                 padding: 16,
                 borderRadius: 12,
                 textStyle: { color: "#fff", fontSize: 11 },
-                formatter: (params: any) => {
+                formatter: (params: EChartParam[]) => {
                     const p = params[0];
                     if (!p) return "";
-                    const date = new Date(p.axisValue);
+                    const date = new Date(p.axisValue ?? "");
                     const rx = isRetrograde(date);
                     return `<div style="font-size:11px;color:#a1a1aa;margin-bottom:4px">${p.axisValue}</div>
                         <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:6px">$${Number(p.value).toLocaleString()}</div>
@@ -403,9 +415,19 @@ export default function MercuryRetrogradeView() {
                                     </p>
                                     <p className="text-xs text-zinc-400">
                                         {mercuryAnalysis.yieldGap > 0
-                                            ? `This data aligns with traditional astrological interpretations suggesting that markets may experience more disruption or underperformance during Mercury Retrograde periods for this asset.`
-                                            : `Interestingly, this asset has historically seen better performance during Retrograde periods, contrary to traditional astrological expectations of disruption.`}
+                                            ? `Direct phases outperformed Retrograde phases for this asset in-sample.`
+                                            : `This asset outperformed during Retrograde phases in-sample.`}
                                     </p>
+                                    {/* Honest significance verdict */}
+                                    <div className={`mt-2 p-3 rounded-lg text-xs leading-relaxed ${mercuryAnalysis.comparison.significant ? "bg-emerald-500/5 border border-emerald-500/15 text-emerald-300/90" : "bg-amber-500/5 border border-amber-500/15 text-amber-300/90"}`}>
+                                        <div className="font-semibold mb-1">{tStats("title")} · {tStats("pLabel")} {formatPValue(mercuryAnalysis.comparison.pValue)}</div>
+                                        <p>{mercuryAnalysis.comparison.significant
+                                            ? tStats("significant", { p: formatPValue(mercuryAnalysis.comparison.pValue) })
+                                            : tStats("notSignificant", { p: formatPValue(mercuryAnalysis.comparison.pValue) })}</p>
+                                        <p className="text-[10px] text-zinc-500 mt-1">
+                                            {tStats("sampleSizes", { a: mercuryAnalysis.comparison.nA, b: mercuryAnalysis.comparison.nB })} · {tStats("permutationNote")}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </>
@@ -424,6 +446,7 @@ export default function MercuryRetrogradeView() {
                         </div>
                         <div className="space-y-2">
                             {upcomingRetrogrades.map((rx, i) => {
+                                // eslint-disable-next-line react-hooks/purity -- reading the clock for a live "is now" badge is intentional
                                 const isCurrent = rx.start.getTime() <= Date.now() && rx.end.getTime() >= Date.now();
                                 return (
                                     <div key={i} className={`flex items-center justify-between text-xs py-1.5 px-2 rounded ${isCurrent ? "bg-red-500/10 border border-red-500/20" : ""}`}>
@@ -458,7 +481,7 @@ export default function MercuryRetrogradeView() {
                         </div>
                         <div className="text-xs text-zinc-400 leading-relaxed space-y-2">
                             <p>We classify every trading day as <strong className="text-red-300">Retrograde</strong> or <strong className="text-emerald-300">Direct</strong> using astronomically precise retrograde windows (2000–2030).</p>
-                            <p>Daily returns are computed and aggregated by regime. The <strong className="text-zinc-200">annualized return</strong> shows what you'd earn per year holding only during that regime.</p>
+                            <p>Daily returns are computed and aggregated by regime. The <strong className="text-zinc-200">annualized return</strong> shows what you&apos;d earn per year holding only during that regime.</p>
                             <p>The <strong className="text-zinc-200">σ (volatility)</strong> measures return dispersion — higher σ = more unpredictable returns.</p>
                             <p className="text-zinc-500 italic">This is a statistical pattern analysis, not a trading recommendation.</p>
                         </div>

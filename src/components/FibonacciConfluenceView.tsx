@@ -1,16 +1,17 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 
 type EventCategory = "heavy" | "mercury" | "eclipse";
 import Header from "./Header";
 import { motion, AnimatePresence } from "framer-motion";
 import { Target, Activity, Clock, BookOpen, X } from "lucide-react";
 import ReactECharts from "echarts-for-react";
-import type { EChartsInstance } from "echarts-for-react";
 import { PLANETARY_TRANSITS } from "@/lib/macro-algorithm";
 import { MERCURY_RETROGRADES } from "@/lib/mercury-data";
 import { OVERLAY_INDICES } from "@/lib/overlay-indices";
+import { monteCarloBaseline, formatPValue } from "@/lib/stats";
+import type { EChartParam, EChartObj } from "@/lib/echarts-types";
 
 // ── Types ──────────────────────────────────────────────────────
 interface PricePoint { date: string; price: number; }
@@ -189,7 +190,6 @@ export default function FibonacciConfluenceView() {
     const [loading, setLoading] = useState(true);
     const [pinnedConfluence, setPinnedConfluence] = useState<Confluence | null>(null);
     const [enabledCategories, setEnabledCategories] = useState<Record<EventCategory, boolean>>({ heavy: true, mercury: true, eclipse: true });
-    const chartRef = useRef<any>(null);
 
     const toggleCategory = useCallback((cat: EventCategory) => {
         setEnabledCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
@@ -233,7 +233,7 @@ export default function FibonacciConfluenceView() {
         const prices = activeData.map(d => d.price);
 
         // FIBONACCI LEVELS: show from the displayRange (pinned or most recent)
-        const fibLines: any[] = [];
+        const fibLines: EChartObj[] = [];
         if (displayRangeIdx >= 0 && displayRangeIdx < fibRanges.length) {
             const r = fibRanges[displayRangeIdx];
             for (const lev of r.levels) {
@@ -259,8 +259,8 @@ export default function FibonacciConfluenceView() {
         }
 
         // Heavy transit verticals + Mercury Rx bands
-        const markAreas: any[] = [];
-        const eventLines: any[] = [];
+        const markAreas: unknown[] = [];
+        const eventLines: EChartObj[] = [];
         const startMs = new Date(dates[0]).getTime();
         const endMs = new Date(dates[dates.length - 1]).getTime();
 
@@ -352,15 +352,16 @@ export default function FibonacciConfluenceView() {
                         borderWidth: 1,
                         padding: [12, 16],
                         textStyle: { color: "#fff", fontSize: 11 },
-                        formatter: (params: any) => {
-                            const d = params.data._conf;
+                        formatter: (params: EChartParam) => {
+                            const d = (params.data as { _conf?: { cat: string; label: string; fib: number; fibPrice: number; dist: number; desc: string } })?._conf;
                             if (!d) return '';
+                            const val = params.value as (string | number)[];
                             const catLabel = d.cat === 'heavy' ? '🔴 Heavy Transit' : d.cat === 'mercury' ? '🟣 Mercury Rx' : '🟡 Eclipse';
                             return `<div style="max-width:320px">`
                                 + `<div style="font-size:13px;font-weight:700;margin-bottom:6px">${d.label}</div>`
-                                + `<div style="font-size:10px;color:#a1a1aa;margin-bottom:8px">${catLabel} · ${params.value[0]}</div>`
+                                + `<div style="font-size:10px;color:#a1a1aa;margin-bottom:8px">${catLabel} · ${val[0]}</div>`
                                 + `<div style="display:flex;gap:16px;margin-bottom:8px">`
-                                + `<div><div style="font-size:9px;color:#71717a;text-transform:uppercase">Price</div><div style="font-size:14px;font-weight:600">$${Number(params.value[1]).toFixed(2)}</div></div>`
+                                + `<div><div style="font-size:9px;color:#71717a;text-transform:uppercase">Price</div><div style="font-size:14px;font-weight:600">$${Number(val[1]).toFixed(2)}</div></div>`
                                 + `<div><div style="font-size:9px;color:#71717a;text-transform:uppercase">Fib Level</div><div style="font-size:14px;font-weight:600;color:#a855f7">${(d.fib * 100).toFixed(1)}%</div></div>`
                                 + `<div><div style="font-size:9px;color:#71717a;text-transform:uppercase">Fib Price</div><div style="font-size:14px;font-weight:600">$${d.fibPrice.toFixed(2)}</div></div>`
                                 + `<div><div style="font-size:9px;color:#71717a;text-transform:uppercase">Distance</div><div style="font-size:14px;font-weight:600;color:${d.dist < 0.01 ? '#22c55e' : '#eab308'}">${(d.dist * 100).toFixed(2)}%</div></div>`
@@ -414,11 +415,50 @@ export default function FibonacciConfluenceView() {
         return {
             total: totalCount,
             reversals: totalReversals,
+            measurable: totalMeasurable,
             rate: totalMeasurable > 0 ? Math.round((totalReversals / totalMeasurable) * 100) : 0,
         };
     }, [allConfluences, activeData, enabledCategories, categoryStats]);
 
+    // Baseline control: the SAME reversal test at random dates. Answers the
+    // question the raw rate cannot — does confluence beat chance?
+    const baseline = useMemo(() => {
+        if (!stats || stats.measurable < 5) return null;
+        const lo = 10, hi = activeData.length - 31;
+        if (hi - lo < 50) return null;
+
+        // 1 if the bar at idx "reverses" (>3% move against prior 10-bar direction within 30 bars)
+        const reversalAt = (idx: number): number => {
+            const priceAt = activeData[idx].price;
+            const after = activeData[idx + 30].price;
+            const before = activeData[idx - 10].price;
+            const wasFalling = before > priceAt;
+            const move = (after - priceAt) / priceAt;
+            return (wasFalling && move > 0.03) || (!wasFalling && move < -0.03) ? 1 : 0;
+        };
+
+        const nSample = stats.measurable;
+        const observedRate = stats.rate / 100;
+        const mc = monteCarloBaseline(
+            observedRate,
+            (rng) => {
+                let hits = 0;
+                for (let k = 0; k < nSample; k++) hits += reversalAt(lo + Math.floor(rng() * (hi - lo)));
+                return hits / nSample;
+            },
+            2000,
+            4242,
+        );
+        return {
+            baselinePct: Math.round(mc.baselineMean * 100),
+            liftPp: Math.round(mc.lift * 100),
+            pValue: mc.pValue,
+            beatsChance: mc.pValue < 0.05 && mc.lift > 0,
+        };
+    }, [stats, activeData]);
+
     const nextTransit = useMemo(() => {
+        // eslint-disable-next-line react-hooks/purity -- next future transit depends on current time
         const now = Date.now();
         return PLANETARY_TRANSITS.find(t => new Date(t.date).getTime() > now);
     }, []);
@@ -486,7 +526,7 @@ export default function FibonacciConfluenceView() {
                                     </div>
                                 </div>
                                 <div className="flex-1">
-                                    <ReactECharts ref={chartRef} option={chartOpts} style={{ height: "100%", minHeight: 480 }} theme="dark" />
+                                    <ReactECharts option={chartOpts} style={{ height: "100%", minHeight: 480 }} theme="dark" />
                                 </div>
                             </motion.div>
                         )}
@@ -540,6 +580,34 @@ export default function FibonacciConfluenceView() {
                                         <div className="text-2xl font-bold text-emerald-400">{stats.rate}%</div>
                                         <div className="text-[10px] text-zinc-500">{stats.reversals} preceded a &gt;3% reversal within 30 days</div>
                                     </div>
+
+                                    {/* Baseline control — is the rate better than random dates? */}
+                                    {baseline && (
+                                        <div className={`mt-3 rounded-xl p-4 border ${baseline.beatsChance ? "bg-emerald-500/5 border-emerald-500/15" : "bg-amber-500/5 border-amber-500/15"}`}>
+                                            <div className="text-[10px] uppercase tracking-widest font-bold mb-2" style={{ color: baseline.beatsChance ? "#34d399" : "#fbbf24" }}>
+                                                vs. Random Dates (control)
+                                            </div>
+                                            <div className="flex items-end gap-4 mb-2">
+                                                <div>
+                                                    <div className="text-[9px] text-zinc-500">Random baseline</div>
+                                                    <div className="text-lg font-bold text-zinc-300">{baseline.baselinePct}%</div>
+                                                </div>
+                                                <div>
+                                                    <div className="text-[9px] text-zinc-500">Lift</div>
+                                                    <div className={`text-lg font-bold ${baseline.liftPp > 0 ? "text-emerald-400" : "text-red-400"}`}>{baseline.liftPp > 0 ? "+" : ""}{baseline.liftPp}pp</div>
+                                                </div>
+                                                <div>
+                                                    <div className="text-[9px] text-zinc-500">Significance</div>
+                                                    <div className={`text-sm font-bold font-mono ${baseline.beatsChance ? "text-emerald-400" : "text-amber-400"}`}>{formatPValue(baseline.pValue)}</div>
+                                                </div>
+                                            </div>
+                                            <p className="text-[10px] text-zinc-500 leading-relaxed">
+                                                {baseline.beatsChance
+                                                    ? "Confluence reversals occur more often than at random dates — beats chance."
+                                                    : "The reversal rate is not distinguishable from picking random dates. The ±2.5% tolerance makes confluences easy to satisfy, so a high raw rate alone is not evidence."}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="text-xs text-zinc-500">Not enough data to analyze. Try &ldquo;All Time&rdquo;.</div>
