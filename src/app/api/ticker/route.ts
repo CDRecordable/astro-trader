@@ -3,7 +3,11 @@ import YahooFinance from "yahoo-finance2";
 
 export const dynamic = "force-dynamic";
 
-const yf = new (YahooFinance as any)();
+type ChartQuote = { date: Date | string; close: number | null };
+type ChartResult = { quotes: ChartQuote[] };
+type YF = { chart: (symbol: string, opts: { period1: Date; interval: string }) => Promise<ChartResult> };
+
+const yf = new (YahooFinance as unknown as new () => YF)();
 
 /**
  * /api/ticker?symbol=XLK
@@ -29,10 +33,10 @@ export async function GET(req: NextRequest) {
         }
 
         const data = quotes
-            .filter((q: any) => q.close != null)
-            .map((q: any) => ({
+            .filter((q: ChartQuote) => q.close != null)
+            .map((q: ChartQuote) => ({
                 date: new Date(q.date).toISOString().split("T")[0],
-                price: Number(q.close.toFixed(2)),
+                price: Number(Number(q.close).toFixed(2)),
             }));
 
         console.log(`[API /ticker] ${symbol}: ${data.length} daily points`);

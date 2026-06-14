@@ -55,6 +55,12 @@ export const companies = pgTable("companies", {
     // ── Historical chart data (JSON array) ─────────────────────
     historicalData: jsonb("historical_data").default([]),
 
+    // ── Data availability flags ({ deltas, roc, growth, … }) ───
+    dataQuality: jsonb("data_quality"),
+
+    // ── Solvency / dilution / accruals extras (jsonb bundle) ───
+    extendedMetrics: jsonb("extended_metrics"),
+
     // ── Meta ───────────────────────────────────────────────────
     enrichedByFmp: boolean("enriched_by_fmp").default(false),
     lastScannedAt: timestamp("last_scanned_at").defaultNow(),

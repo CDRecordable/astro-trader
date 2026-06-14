@@ -36,9 +36,61 @@ export interface FinancialMetrics {
     currentPrice: number;
     fiftyTwoWeekLow: number;
     fiftyTwoWeekHigh: number;
-    oneMonthReturn: number;     // decimal
-    threeMonthReturn: number;   // decimal
-    sixMonthReturn: number;     // decimal
+    oneMonthReturn: number;     // decimal — price vs 50-day moving average (trend position proxy)
+    threeMonthReturn: number;   // decimal — midpoint of the two proxies
+    sixMonthReturn: number;     // decimal — price vs 200-day moving average (trend position proxy)
+
+    // --- Solvency & balance quality (optional: absent on legacy/mock data) ---
+    /** Net debt / EBITDA. Negative = net cash. The anti-leverage-mirage metric. */
+    netDebtToEbitda?: number;
+    /** EBIT / interest expense. <2 is fragile, <1 means interest isn't covered. */
+    interestCoverage?: number;
+    /** FCF / enterprise value (mcap + net debt) — leverage-proof valuation yield. */
+    evFcfYield?: number;
+    /** Tangible book / market cap. Negative = equity is all goodwill/intangibles. */
+    tangibleBookToMarket?: number;
+    /** Annualized share-count growth over available years. Positive = dilution. */
+    sharesDilution?: number;
+    /** (Net income − operating cash flow) / total assets. High = aggressive accounting. */
+    accrualRatio?: number;
+    /** Insider ownership fraction (0-1), informational. */
+    insiderOwnership?: number;
+    /** Short interest as % of float (0-1), US tickers mostly. Informational. */
+    shortPctFloat?: number;
+
+    // --- Catalysts & sentiment (optional) ---
+    /** Next earnings report date (ISO). The #1 automatable catalyst. */
+    nextEarningsDate?: string;
+    /** Ex-dividend date (ISO). */
+    exDividendDate?: string;
+    /** Insider open-market BUY transactions, last 6 months (US Form 4 data). */
+    insiderBuyCount6m?: number;
+    /** Insider SELL transactions, last 6 months. (Sells are noise; buys are signal.) */
+    insiderSellCount6m?: number;
+    /** Net insider share change as % of insider holdings, 6 months. */
+    insiderNetPct6m?: number;
+    /** Analyst EPS estimate revisions UP, last 30 days (current fiscal year). */
+    epsRevisionsUp30d?: number;
+    /** Analyst EPS estimate revisions DOWN, last 30 days. */
+    epsRevisionsDown30d?: number;
+    /** % change of consensus current-year EPS estimate vs 30 days ago. */
+    epsTrend30d?: number;
+
+    /**
+     * Which metric groups were actually retrievable from the data source.
+     * Missing groups must be treated as NEUTRAL by the scoring algorithm
+     * (renormalized out), never as a failed check.
+     */
+    dataQuality?: {
+        deltas: boolean;    // YoY margin/ROE/ROC deltas (needs 2 annual statements)
+        roc: boolean;       // real return on capital (EBIT / invested capital)
+        growth: boolean;    // asset growth + EBITDA growth (reinvestment efficiency)
+        solvency?: boolean; // net debt / EBITDA + interest coverage + EV yield
+        dilution?: boolean; // share count history
+        accruals?: boolean; // net income vs operating cash flow
+        insiders?: boolean; // insider transaction data (US Form 4; absent for most EU)
+        revisions?: boolean; // analyst EPS estimate revisions
+    };
 }
 
 /** Historical data point for charting */
@@ -79,7 +131,8 @@ export interface AlgorithmScore {
     valuationScore: number;
     trendScore: number;
     timingScore: number;
-    macroAdjustment: number;     // multiplier (0.8 - 1.0)
+    cosmicFluidityScore: number; // cosmic weather (0-100)
+    macroAdjustment: number;     // multiplier (0.9 - 1.0)
 
     // --- Final ---
     totalScore: number;          // weighted composite (0-100)
