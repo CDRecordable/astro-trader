@@ -4,13 +4,13 @@
 
 "use client";
 
-import React from "react";
+import React, { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import type { Company, AlgorithmScore } from "@/lib/types";
 import { formatMarketCap, formatPercent } from "@/lib/utils";
 import { tierLabel } from "@/lib/algorithm";
 import ScoreRing from "./ScoreRing";
-import { ChevronRight, TrendingUp, TrendingDown } from "lucide-react";
+import { ChevronRight, TrendingUp, TrendingDown, Star, Loader2 } from "lucide-react";
 
 interface CompanyCardProps {
     company: Company;
@@ -42,6 +42,36 @@ function getRecLabel(rec: AlgorithmScore["recommendation"]): string {
 export default function CompanyCard({ company, score, isSelected, onSelect }: CompanyCardProps) {
     const m = company.metrics;
     const isPositiveReturn = m.oneMonthReturn >= 0;
+
+    // ── Watchlist state ────────────────────────────────────────
+    const [starred, setStarred] = useState(false);
+    const [starLoading, setStarLoading] = useState(false);
+
+    const handleStar = useCallback(async (e: React.MouseEvent) => {
+        e.stopPropagation(); // don't open detail panel
+        if (starLoading) return;
+        setStarLoading(true);
+        try {
+            const isCrypto = company.exchange === "Crypto";
+            // Lookup key: CoinGecko ID for crypto (from company.id "cg_<id>"), symbol for stocks
+            const lookupKey = isCrypto ? company.id.replace(/^cg_/, "") : company.ticker;
+            const res = await fetch("/api/watchlist", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    ticker: lookupKey,
+                    symbol: company.ticker,
+                    name: company.name,
+                    assetType: isCrypto ? "c" : "s",
+                }),
+            });
+            if (res.ok || res.status === 409) setStarred(true); // 409 = already exists → still show filled
+        } catch {
+            // silent fail
+        } finally {
+            setStarLoading(false);
+        }
+    }, [company, starLoading]);
 
     return (
         <motion.div
@@ -126,11 +156,25 @@ export default function CompanyCard({ company, score, isSelected, onSelect }: Co
                     <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>
                         1M Return
                     </span>
-                    <ChevronRight
-                        size={16}
-                        style={{ color: "var(--text-muted)" }}
-                        className="group-hover:translate-x-0.5 transition-transform"
-                    />
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                        {/* Watchlist star button */}
+                        <button
+                            onClick={handleStar}
+                            title={starred ? "En watchlist" : "Añadir a watchlist"}
+                            className="p-1 rounded-lg transition-all cursor-pointer"
+                            style={{ color: starred ? "var(--accent-amber)" : "var(--text-muted)" }}
+                        >
+                            {starLoading
+                                ? <Loader2 size={13} className="animate-spin" />
+                                : <Star size={13} fill={starred ? "var(--accent-amber)" : "none"} />
+                            }
+                        </button>
+                        <ChevronRight
+                            size={16}
+                            style={{ color: "var(--text-muted)" }}
+                            className="group-hover:translate-x-0.5 transition-transform"
+                        />
+                    </div>
                 </div>
             </div>
 

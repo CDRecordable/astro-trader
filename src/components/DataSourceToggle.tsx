@@ -6,7 +6,6 @@
 
 import React from "react";
 import { useAppStore } from "@/lib/store";
-import type { DataSource } from "@/lib/store";
 import { Database, Wifi } from "lucide-react";
 
 export default function DataSourceToggle() {
