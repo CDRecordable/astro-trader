@@ -43,3 +43,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# user local data (watchlist, LLM keys — never commit)
+/user-data/
+
+# windows shortcuts (personal/local)
+*.lnk
