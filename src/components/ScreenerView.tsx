@@ -1,300 +1,305 @@
 // ============================================================
-// ScreenerView - On-demand single ticker analysis
+// ScreenerView — universe screener
 // ============================================================
+// Pick a universe (market group), scan it with the fundamental algorithm,
+// then rank/filter the whole list by score and criteria. Turns "analyze what
+// I already know" into "let the algorithm surface candidates".
 
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslations } from "next-intl";
 import { useAppStore } from "@/lib/store";
 import CompanyDetail from "./CompanyDetail";
-import { evaluateCompany } from "@/lib/algorithm";
+import { MARKET_GROUPS, type MarketGroupId } from "@/lib/market-groups";
 import type { Company, AlgorithmScore } from "@/lib/types";
-import { getDefaultMacroContext } from "@/lib/mock-data";
 import {
-    Telescope,
-    Search,
-    Loader2,
-    TrendingUp,
-    AlertTriangle,
-    Clock,
-    Trash2,
+    Telescope, Loader2, ArrowLeft, ArrowUp, ArrowDown, Filter,
+    ShieldCheck, Sparkles, AlertTriangle,
 } from "lucide-react";
 
-interface ScreenerResult {
-    company: Company;
-    score: AlgorithmScore;
-    analyzedAt: Date;
+// ── Helpers ───────────────────────────────────────────────────
+function recLabel(rec: AlgorithmScore["recommendation"]) {
+    return ({ STRONG_BUY: "Strong Buy", BUY: "Buy", HOLD: "Hold", AVOID: "Avoid" } as const)[rec] ?? rec;
+}
+function recColor(rec: AlgorithmScore["recommendation"]) {
+    return ({
+        STRONG_BUY: "var(--signal-strong-buy)", BUY: "var(--signal-buy)",
+        HOLD: "var(--signal-hold)", AVOID: "var(--signal-avoid)",
+    } as const)[rec] ?? "var(--text-muted)";
+}
+function scoreColor(s: number) {
+    if (s >= 70) return "var(--signal-strong-buy)";
+    if (s >= 55) return "var(--signal-buy)";
+    if (s >= 40) return "var(--signal-hold)";
+    return "var(--signal-avoid)";
+}
+
+type SortKey = "total" | "valuation" | "trend" | "timing";
+type RecFilter = "all" | "buy" | "strongbuy";
+
+interface Row { company: Company; score: AlgorithmScore }
+
+function SortHeader({ label, k, right, sortKey, sortDir, onSort }: {
+    label: string; k: SortKey; right?: boolean;
+    sortKey: SortKey; sortDir: "asc" | "desc"; onSort: (k: SortKey) => void;
+}) {
+    return (
+        <button
+            onClick={() => onSort(k)}
+            className={`flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold cursor-pointer hover:text-zinc-200 transition-colors ${right ? "justify-end w-full" : ""}`}
+            style={{ color: sortKey === k ? "var(--accent-cyan)" : "var(--text-muted)" }}
+        >
+            {label}
+            {sortKey === k && (sortDir === "desc" ? <ArrowDown size={11} /> : <ArrowUp size={11} />)}
+        </button>
+    );
 }
 
 export default function ScreenerView() {
-    const { apiCallCount, error: globalError } = useAppStore();
-    const [ticker, setTicker] = useState("");
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [results, setResults] = useState<ScreenerResult[]>([]);
-    const [selectedResult, setSelectedResult] = useState<ScreenerResult | null>(null);
+    const t = useTranslations("screener");
+    const { companies, scores, fetchLiveData, isLoading, error, assetClass, setAssetClass } = useAppStore();
 
-    const handleAnalyze = useCallback(async () => {
-        const clean = ticker.toUpperCase().trim();
-        if (!clean) return;
+    const [universe, setUniverse] = useState<MarketGroupId | null>(null);
+    const [minScore, setMinScore] = useState(0);
+    const [recFilter, setRecFilter] = useState<RecFilter>("all");
+    const [onlyPassing, setOnlyPassing] = useState(false);
+    const [sortKey, setSortKey] = useState<SortKey>("total");
+    const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+    const [detailId, setDetailId] = useState<string | null>(null);
 
-        // Check if already analyzed
-        const existing = results.find((r) => r.company.ticker === clean);
-        if (existing) {
-            setSelectedResult(existing);
-            setTicker("");
-            return;
-        }
+    // ── Scan a universe ──
+    const scan = useCallback(async (id: MarketGroupId) => {
+        setUniverse(id);
+        setDetailId(null);
+        if (assetClass !== "stocks") setAssetClass("stocks");
+        await fetchLiveData(id);
+    }, [assetClass, setAssetClass, fetchLiveData]);
 
-        setIsAnalyzing(true);
-        setError(null);
+    // ── Join companies + scores ──
+    const rows: Row[] = useMemo(() => {
+        return companies
+            .map((c) => {
+                const score = scores.find((s) => s.companyId === c.id);
+                return score ? { company: c, score } : null;
+            })
+            .filter((r): r is Row => r !== null);
+    }, [companies, scores]);
 
-        try {
-            const res = await fetch(`/api/company/${clean}`);
-            if (!res.ok) {
-                const errData = await res.json();
-                throw new Error(errData.error || `Ticker "${clean}" not found`);
-            }
+    // ── Filter + sort ──
+    const filtered = useMemo(() => {
+        const f = rows.filter((r) => {
+            if (r.score.totalScore < minScore) return false;
+            if (onlyPassing && !r.score.passesHardFilters) return false;
+            if (recFilter === "buy" && !["BUY", "STRONG_BUY"].includes(r.score.recommendation)) return false;
+            if (recFilter === "strongbuy" && r.score.recommendation !== "STRONG_BUY") return false;
+            return true;
+        });
+        const key = sortKey === "valuation" ? "valuationScore"
+            : sortKey === "trend" ? "trendScore"
+                : sortKey === "timing" ? "timingScore" : "totalScore";
+        f.sort((a, b) => {
+            const d = (b.score[key] as number) - (a.score[key] as number);
+            return sortDir === "desc" ? d : -d;
+        });
+        return f;
+    }, [rows, minScore, onlyPassing, recFilter, sortKey, sortDir]);
 
-            const data = await res.json();
-            const company: Company = data.company;
-            const macro = getDefaultMacroContext();
-            const score = evaluateCompany(company, macro, 5_000_000);
+    // ── Summary stats ──
+    const stats = useMemo(() => {
+        if (rows.length === 0) return null;
+        const avg = Math.round(rows.reduce((s, r) => s + r.score.totalScore, 0) / rows.length);
+        const opps = rows.filter((r) => ["BUY", "STRONG_BUY"].includes(r.score.recommendation)).length;
+        return { avg, opps };
+    }, [rows]);
 
-            const result: ScreenerResult = {
-                company,
-                score,
-                analyzedAt: new Date(),
-            };
-
-            setResults((prev) => [result, ...prev]);
-            setSelectedResult(result);
-            setTicker("");
-        } catch (err) {
-            setError(err instanceof Error ? err.message : "Analysis failed");
-        } finally {
-            setIsAnalyzing(false);
-        }
-    }, [ticker, results]);
-
-    const removeResult = (tickerToRemove: string) => {
-        setResults((prev) => prev.filter((r) => r.company.ticker !== tickerToRemove));
-        if (selectedResult?.company.ticker === tickerToRemove) {
-            setSelectedResult(null);
-        }
+    const toggleSort = (key: SortKey) => {
+        if (sortKey === key) setSortDir((d) => (d === "desc" ? "asc" : "desc"));
+        else { setSortKey(key); setSortDir("desc"); }
     };
 
-    const getRecommendationColor = (rec: string) => {
-        switch (rec) {
-            case "STRONG_BUY": return "var(--signal-strong-buy)";
-            case "BUY": return "var(--signal-buy)";
-            case "HOLD": return "var(--signal-hold)";
-            default: return "var(--signal-avoid)";
-        }
-    };
+    // ── Detail view ──
+    const detail = detailId ? rows.find((r) => r.company.id === detailId) : null;
+    if (detail) {
+        return (
+            <div className="min-h-screen">
+                <div className="px-6 pt-4">
+                    <button
+                        onClick={() => setDetailId(null)}
+                        className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer transition-colors hover:bg-white/5"
+                        style={{ color: "var(--accent-cyan)" }}
+                    >
+                        <ArrowLeft size={14} /> {t("back")}
+                    </button>
+                </div>
+                <CompanyDetail company={detail.company} score={detail.score} onClose={() => setDetailId(null)} />
+            </div>
+        );
+    }
 
     return (
-        <div className="min-h-screen p-6" style={{ marginLeft: 72 }}>
+        <div className="min-h-screen p-6">
             {/* Header */}
-            <div className="flex items-center gap-3 mb-6">
-                <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center"
-                    style={{
-                        background: "linear-gradient(135deg, var(--accent-violet), var(--accent-cyan))",
-                        boxShadow: "var(--shadow-glow-violet)",
-                    }}
-                >
+            <div className="flex items-center gap-3 mb-5">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    style={{ background: "linear-gradient(135deg, var(--accent-violet), var(--accent-cyan))" }}>
                     <Telescope size={20} className="text-white" />
                 </div>
                 <div>
-                    <h1 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>
-                        Ticker Screener
-                    </h1>
-                    <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                        Enter any ticker to run the full algorithmic analysis
-                    </p>
+                    <h1 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{t("title")}</h1>
+                    <p className="text-xs" style={{ color: "var(--text-muted)" }}>{t("subtitle")}</p>
                 </div>
             </div>
 
-            {/* Search Bar */}
-            <div className="max-w-2xl mb-8">
-                <div
-                    className="flex items-center gap-3 px-5 py-4 rounded-2xl"
-                    style={{
-                        background: "var(--bg-card)",
-                        border: "1px solid var(--border-subtle)",
-                    }}
-                >
-                    <Search size={20} style={{ color: "var(--text-muted)" }} />
-                    <input
-                        type="text"
-                        placeholder="Enter ticker (e.g. AAPL, TSLA, GOOGL)..."
-                        value={ticker}
-                        onChange={(e) => setTicker(e.target.value.toUpperCase())}
-                        onKeyDown={(e) => e.key === "Enter" && !isAnalyzing && handleAnalyze()}
-                        className="bg-transparent outline-none text-base flex-1 font-mono"
-                        style={{ color: "var(--text-primary)" }}
-                        disabled={isAnalyzing}
-                    />
-                    <button
-                        onClick={handleAnalyze}
-                        disabled={isAnalyzing || !ticker.trim()}
-                        className="px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
-                        style={{
-                            background: "linear-gradient(135deg, var(--accent-cyan), var(--accent-violet))",
-                            color: "white",
-                            boxShadow: !isAnalyzing && ticker.trim() ? "var(--shadow-glow-cyan)" : "none",
-                        }}
-                    >
-                        {isAnalyzing ? (
-                            <Loader2 size={16} className="animate-spin" />
-                        ) : (
-                            "Analyze"
-                        )}
-                    </button>
-                </div>
-
-                {/* Error */}
-                {(error || globalError) && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="flex items-center gap-2 mt-3 px-4 py-2 rounded-lg"
-                        style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)" }}
-                    >
-                        <AlertTriangle size={14} style={{ color: "var(--signal-avoid)" }} />
-                        <span className="text-xs" style={{ color: "var(--signal-avoid)" }}>
-                            {error || globalError}
-                        </span>
-                    </motion.div>
-                )}
-
-                {/* Usage */}
-                <div className="flex items-center gap-4 mt-3 text-[11px]" style={{ color: "var(--text-muted)" }}>
-                    <span>Each analysis uses ~2 Yahoo Finance calls (free)</span>
-                    <span>•</span>
-                    <span>API calls this session: {apiCallCount}</span>
+            {/* Universe picker */}
+            <div className="mb-5">
+                <p className="text-[10px] uppercase tracking-widest mb-2 font-semibold" style={{ color: "var(--text-muted)" }}>{t("universe")}</p>
+                <div className="flex flex-wrap gap-2">
+                    {Object.values(MARKET_GROUPS).map((g) => {
+                        const active = universe === g.id;
+                        return (
+                            <button
+                                key={g.id}
+                                onClick={() => scan(g.id as MarketGroupId)}
+                                disabled={isLoading}
+                                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer disabled:opacity-50"
+                                style={{
+                                    background: active ? "var(--accent-cyan-dim)" : "var(--bg-tertiary)",
+                                    color: active ? "white" : "var(--text-secondary)",
+                                    border: `1px solid ${active ? "var(--accent-cyan)" : "var(--border-subtle)"}`,
+                                }}
+                                title={g.description}
+                            >
+                                <span>{g.flag}</span>{g.label}
+                                <span className="opacity-60">· {g.tickers.length}</span>
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
 
-            {/* Results Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-5xl">
-                <AnimatePresence mode="popLayout">
-                    {results.map((result) => (
-                        <motion.div
-                            key={result.company.ticker}
-                            layout
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="glass-card p-4 cursor-pointer transition-all duration-200 hover:scale-[1.01]"
-                            style={{
-                                border: selectedResult?.company.ticker === result.company.ticker
-                                    ? "1px solid var(--accent-cyan)"
-                                    : "1px solid var(--border-subtle)",
-                            }}
-                            onClick={() => setSelectedResult(result)}
-                        >
-                            <div className="flex items-start justify-between mb-3">
-                                <div className="flex items-center gap-3">
-                                    {/* Score Circle */}
-                                    <div
-                                        className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold font-mono shrink-0"
-                                        style={{
-                                            background: `conic-gradient(${getRecommendationColor(result.score.recommendation)} ${result.score.totalScore}%, transparent ${result.score.totalScore}%)`,
-                                            boxShadow: `0 0 12px ${getRecommendationColor(result.score.recommendation)}33`,
-                                        }}
-                                    >
-                                        <div
-                                            className="w-9 h-9 rounded-full flex items-center justify-center"
-                                            style={{ background: "var(--bg-primary)" }}
-                                        >
-                                            <span style={{ color: getRecommendationColor(result.score.recommendation) }}>
-                                                {result.score.totalScore}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-mono font-bold text-sm" style={{ color: "var(--accent-cyan)" }}>
-                                                {result.company.ticker}
-                                            </span>
-                                            <span
-                                                className="text-[10px] font-bold px-1.5 py-0.5 rounded"
-                                                style={{
-                                                    color: "white",
-                                                    background: getRecommendationColor(result.score.recommendation),
-                                                }}
-                                            >
-                                                {result.score.recommendation.replace("_", " ")}
-                                            </span>
-                                        </div>
-                                        <div className="text-xs truncate max-w-[200px]" style={{ color: "var(--text-secondary)" }}>
-                                            {result.company.name}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); removeResult(result.company.ticker); }}
-                                    className="p-1 rounded hover:bg-white/5 transition-colors"
-                                >
-                                    <Trash2 size={12} style={{ color: "var(--text-muted)" }} />
-                                </button>
-                            </div>
-
-                            {/* Mini Metrics */}
-                            <div className="grid grid-cols-3 gap-2">
-                                {[
-                                    { label: "MCap", value: result.company.metrics.marketCap >= 1000 ? `$${(result.company.metrics.marketCap / 1000).toFixed(0)}B` : `$${result.company.metrics.marketCap.toFixed(0)}M` },
-                                    { label: "FCF Yield", value: `${(result.company.metrics.fcfYield * 100).toFixed(1)}%` },
-                                    { label: "B/M", value: result.company.metrics.bookToMarket.toFixed(2) },
-                                ].map((m) => (
-                                    <div key={m.label} className="text-center py-1 rounded" style={{ background: "var(--bg-tertiary)" }}>
-                                        <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>{m.label}</div>
-                                        <div className="text-xs font-mono font-bold" style={{ color: "var(--text-primary)" }}>{m.value}</div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Analyzed time */}
-                            <div className="flex items-center gap-1 mt-2">
-                                <Clock size={10} style={{ color: "var(--text-muted)" }} />
-                                <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-                                    {result.analyzedAt.toLocaleTimeString()}
-                                </span>
-                            </div>
-                        </motion.div>
-                    ))}
-                </AnimatePresence>
-            </div>
-
-            {/* Empty State */}
-            {results.length === 0 && (
-                <div className="text-center py-20 max-w-md mx-auto">
-                    <TrendingUp size={48} style={{ color: "var(--border-subtle)" }} className="mx-auto mb-4" />
-                    <h3 className="text-sm font-medium mb-2" style={{ color: "var(--text-secondary)" }}>
-                        No tickers analyzed yet
-                    </h3>
-                    <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                        Type a ticker symbol above and press Analyze to run the full algorithmic scoring.
-                        Try AAPL, TSLA, NVDA, or any US stock.
-                    </p>
+            {/* Loading */}
+            {isLoading && (
+                <div className="flex flex-col items-center justify-center py-20 gap-3">
+                    <Loader2 size={28} className="animate-spin" style={{ color: "var(--accent-cyan)" }} />
+                    <p className="text-xs" style={{ color: "var(--text-muted)" }}>{t("scanning")}</p>
+                    <p className="text-[10px] max-w-sm text-center" style={{ color: "var(--text-muted)" }}>{t("firstScanNote")}</p>
                 </div>
             )}
 
-            {/* Detail Panel */}
-            <AnimatePresence>
-                {selectedResult && (
-                    <CompanyDetail
-                        company={selectedResult.company}
-                        score={selectedResult.score}
-                        onClose={() => setSelectedResult(null)}
-                    />
-                )}
-            </AnimatePresence>
+            {error && !isLoading && (
+                <div className="px-4 py-3 rounded-xl text-sm flex items-center gap-2 mb-4"
+                    style={{ background: "rgba(251,113,133,0.06)", border: "1px solid rgba(251,113,133,0.2)", color: "var(--signal-avoid)" }}>
+                    <AlertTriangle size={14} /> {error}
+                </div>
+            )}
+
+            {/* Empty state */}
+            {!isLoading && rows.length === 0 && !error && (
+                <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                    <Telescope size={32} style={{ color: "var(--text-muted)" }} />
+                    <p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>{t("emptyTitle")}</p>
+                    <p className="text-xs max-w-sm" style={{ color: "var(--text-muted)" }}>{t("emptyDesc")}</p>
+                </div>
+            )}
+
+            {/* Results */}
+            {!isLoading && rows.length > 0 && (
+                <>
+                    {/* Stats + filters */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                        <div className="flex items-center gap-4 text-xs" style={{ color: "var(--text-muted)" }}>
+                            <span>{t("count", { shown: filtered.length, total: rows.length })}</span>
+                            {stats && <span>· {t("avgScore")} <strong style={{ color: scoreColor(stats.avg) }}>{stats.avg}</strong></span>}
+                            {stats && <span>· {t("opportunities")} <strong style={{ color: "var(--signal-buy)" }}>{stats.opps}</strong></span>}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Filter size={13} style={{ color: "var(--text-muted)" }} />
+                            {/* Recommendation filter */}
+                            {(["all", "buy", "strongbuy"] as RecFilter[]).map((r) => (
+                                <button key={r} onClick={() => setRecFilter(r)}
+                                    className="px-2.5 py-1 rounded-lg text-[11px] font-medium cursor-pointer transition-all"
+                                    style={{
+                                        background: recFilter === r ? "var(--accent-cyan-dim)" : "var(--bg-tertiary)",
+                                        color: recFilter === r ? "white" : "var(--text-muted)",
+                                        border: "1px solid var(--border-subtle)",
+                                    }}>
+                                    {r === "all" ? t("recAll") : r === "buy" ? t("recBuyPlus") : t("recStrong")}
+                                </button>
+                            ))}
+                            {/* Only passing hard filters */}
+                            <button onClick={() => setOnlyPassing((v) => !v)}
+                                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium cursor-pointer transition-all"
+                                style={{
+                                    background: onlyPassing ? "var(--accent-cyan-dim)" : "var(--bg-tertiary)",
+                                    color: onlyPassing ? "white" : "var(--text-muted)",
+                                    border: "1px solid var(--border-subtle)",
+                                }}>
+                                <ShieldCheck size={12} /> {t("onlyPassing")}
+                            </button>
+                            {/* Min score */}
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{t("minScore")}</span>
+                                <input type="range" min={0} max={80} step={5} value={minScore}
+                                    onChange={(e) => setMinScore(Number(e.target.value))}
+                                    className="w-24 accent-cyan-400" style={{ accentColor: "var(--accent-cyan)" }} />
+                                <span className="text-[11px] font-mono font-bold w-5" style={{ color: "var(--accent-cyan)" }}>{minScore}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Table */}
+                    <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid var(--border-subtle)" }}>
+                        {/* Head */}
+                        <div className="grid items-center gap-2 px-4 py-2.5"
+                            style={{ gridTemplateColumns: "minmax(160px,2fr) 80px 70px 70px 70px 90px", background: "var(--bg-secondary)", borderBottom: "1px solid var(--border-subtle)" }}>
+                            <SortHeader label={t("colCompany")} k="total" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                            <div className="flex justify-end"><SortHeader label={t("colScore")} k="total" right sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} /></div>
+                            <div className="flex justify-end"><SortHeader label={t("colVal")} k="valuation" right sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} /></div>
+                            <div className="flex justify-end"><SortHeader label={t("colQual")} k="trend" right sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} /></div>
+                            <div className="flex justify-end"><SortHeader label={t("colTiming")} k="timing" right sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} /></div>
+                            <span className="text-[10px] uppercase tracking-wider font-semibold text-right" style={{ color: "var(--text-muted)" }}>{t("colRec")}</span>
+                        </div>
+                        {/* Rows */}
+                        <AnimatePresence>
+                            {filtered.map((r, i) => (
+                                <motion.button
+                                    key={r.company.id}
+                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                                    transition={{ delay: Math.min(i * 0.01, 0.3) }}
+                                    onClick={() => setDetailId(r.company.id)}
+                                    className="grid items-center gap-2 px-4 py-3 w-full text-left cursor-pointer transition-colors hover:bg-white/[0.03]"
+                                    style={{ gridTemplateColumns: "minmax(160px,2fr) 80px 70px 70px 70px 90px", borderBottom: "1px solid var(--border-subtle)" }}
+                                >
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-bold font-mono text-sm" style={{ color: "var(--accent-cyan)" }}>{r.company.ticker}</span>
+                                            <span className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>{r.company.name}</span>
+                                        </div>
+                                        <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{r.company.sector}</span>
+                                    </div>
+                                    <span className="text-right text-lg font-bold font-mono" style={{ color: scoreColor(r.score.totalScore) }}>{r.score.totalScore}</span>
+                                    <span className="text-right text-xs font-mono" style={{ color: "var(--text-secondary)" }}>{r.score.valuationScore}</span>
+                                    <span className="text-right text-xs font-mono" style={{ color: "var(--text-secondary)" }}>{r.score.trendScore}</span>
+                                    <span className="text-right text-xs font-mono" style={{ color: "var(--text-secondary)" }}>{r.score.timingScore}</span>
+                                    <span className="text-right">
+                                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                                            style={{ background: `${recColor(r.score.recommendation)}18`, color: recColor(r.score.recommendation) }}>
+                                            {recLabel(r.score.recommendation)}
+                                        </span>
+                                    </span>
+                                </motion.button>
+                            ))}
+                        </AnimatePresence>
+                        {filtered.length === 0 && (
+                            <div className="flex items-center justify-center gap-2 py-10 text-xs" style={{ color: "var(--text-muted)" }}>
+                                <Sparkles size={14} /> {t("noResults")}
+                            </div>
+                        )}
+                    </div>
+                </>
+            )}
         </div>
     );
 }
