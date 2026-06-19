@@ -36,6 +36,7 @@ interface AppState {
     selectedCompanyId: string | null;
     isDetailOpen: boolean;
     isLoading: boolean;
+    loadingTicker: string | null;   // ticker currently being fetched (for the loading screen)
     apiCallCount: number;
     error: string | null;
 
@@ -77,6 +78,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     selectedCompanyId: null,
     isDetailOpen: false,
     isLoading: false,
+    loadingTicker: null,
     apiCallCount: 0,
     error: null,
 
@@ -216,7 +218,7 @@ export const useAppStore = create<AppState>((set, get) => ({
             return;
         }
 
-        set({ isLoading: true, error: null });
+        set({ isLoading: true, loadingTicker: lookupTicker, error: null });
 
         try {
             const queryParam = isCrypto ? "?type=c" : "";
@@ -239,6 +241,7 @@ export const useAppStore = create<AppState>((set, get) => ({
                     companies: updatedCompanies,
                     scores,
                     isLoading: false,
+                    loadingTicker: null,
                     apiCallCount: state.apiCallCount + apiCalls,
                     selectedCompanyId: company.id,
                     isDetailOpen: true,
@@ -248,6 +251,7 @@ export const useAppStore = create<AppState>((set, get) => ({
             console.error("[addCompanyByTicker]", error);
             set({
                 isLoading: false,
+                loadingTicker: null,
                 error: error instanceof Error ? error.message : "Failed to add company",
             });
         }

@@ -380,6 +380,15 @@
         "regimeB": "Regime B"
     },
     "explorerLanding": {
+        "loadAnalyzing": "Analyzing…",
+        "loadStepMarket": "Fetching market data…",
+        "loadStepFundamentals": "Downloading fundamentals…",
+        "loadStepValuation": "Computing valuation and solvency…",
+        "loadStepScoring": "Scoring quality and timing…",
+        "loadStepReady": "Preparing the report…",
+        "loadStepCryptoFind": "Locating the asset…",
+        "loadStepCryptoOnchain": "Tokenomics and on-chain data…",
+        "loadStepCryptoPillars": "Computing score pillars…",
         "cryptoTitle": "Crypto Explorer",
         "stocksTitle": "Financial Explorer",
         "cryptoSubtitle": "Search any cryptocurrency from the Top 500 by market cap. Get instant on-demand analysis.",

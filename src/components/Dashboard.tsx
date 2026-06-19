@@ -9,6 +9,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useAppStore } from "@/lib/store";
 import CompanyDetail from "./CompanyDetail";
 import CryptoDetail from "./CryptoDetail";
+import CompanyLoadingScreen from "./CompanyLoadingScreen";
 import Header from "./Header";
 import TickerSearch from "./TickerSearch";
 import { Search, Sparkles, TrendingUp, Zap, Globe2 } from "lucide-react";
@@ -178,6 +179,8 @@ export default function Dashboard() {
         scores,
         selectedCompanyId,
         isDetailOpen,
+        isLoading,
+        loadingTicker,
         assetClass,
         selectCompany,
     } = useAppStore();
@@ -197,14 +200,19 @@ export default function Dashboard() {
             {/* Header is ALWAYS visible */}
             <Header />
 
-            {/* Explorer Landing (only when no detail is open) */}
-            {!isDetailOpen && (
+            {/* Intermediate loading screen (between search and the detail) */}
+            {isLoading && (
+                <CompanyLoadingScreen ticker={loadingTicker} assetClass={assetClass} />
+            )}
+
+            {/* Explorer Landing (only when idle and no detail open) */}
+            {!isLoading && !isDetailOpen && (
                 <ExplorerLanding assetClass={assetClass} />
             )}
 
             {/* Full-width Detail View (below header, no overlay) */}
             <AnimatePresence>
-                {isDetailOpen && selectedCompany && selectedScore && (
+                {!isLoading && isDetailOpen && selectedCompany && selectedScore && (
                     <motion.div
                         key="detail-view"
                         initial={{ opacity: 0, y: 10 }}

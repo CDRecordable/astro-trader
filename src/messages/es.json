@@ -380,6 +380,15 @@
         "regimeB": "Régimen B"
     },
     "explorerLanding": {
+        "loadAnalyzing": "Analizando…",
+        "loadStepMarket": "Buscando datos de mercado…",
+        "loadStepFundamentals": "Descargando fundamentales…",
+        "loadStepValuation": "Calculando valoración y solvencia…",
+        "loadStepScoring": "Puntuando calidad y timing…",
+        "loadStepReady": "Preparando la ficha…",
+        "loadStepCryptoFind": "Localizando el activo…",
+        "loadStepCryptoOnchain": "Tokenomics y datos on-chain…",
+        "loadStepCryptoPillars": "Calculando pilares del score…",
         "cryptoTitle": "Explorador Cripto",
         "stocksTitle": "Explorador Financiero",
         "cryptoSubtitle": "Busca cualquier criptomoneda del Top 500 por capitalización. Análisis instantáneo bajo demanda.",
