@@ -105,6 +105,12 @@ export interface QualitativeAnalysis {
     moat: "amplio" | "estrecho" | "ninguno";
     qualitativeScore: number;   // 0-100
     verdict: string;
+
+    // Narrative layer — grounded on recent news headlines
+    narrativeScore: number;                               // 0-100 (higher = more positive momentum in the story)
+    narrativeShift: { from: string; to: string } | null; // e.g. { from: "Neutral", to: "Strongly Positive" }
+    baselineNarrative: string[];                          // what the story WAS
+    recentNarrative: string[];                            // what it's BECOMING
 }
 
 /**
@@ -203,6 +209,13 @@ export function parseAnalysisJson(raw: string): QualitativeAnalysis {
     obj.pharmaPipeline = Array.isArray(obj.pharmaPipeline) ? obj.pharmaPipeline : null;
     obj.moat = ["amplio", "estrecho", "ninguno"].includes(obj.moat) ? obj.moat : "ninguno";
     if (typeof obj.verdict !== "string") obj.verdict = "";
+    // Narrative layer
+    obj.narrativeScore = Math.max(0, Math.min(100, Number(obj.narrativeScore) || 0));
+    obj.narrativeShift = obj.narrativeShift && typeof obj.narrativeShift.from === "string" && typeof obj.narrativeShift.to === "string"
+        ? { from: obj.narrativeShift.from, to: obj.narrativeShift.to }
+        : null;
+    obj.baselineNarrative = Array.isArray(obj.baselineNarrative) ? obj.baselineNarrative : [];
+    obj.recentNarrative = Array.isArray(obj.recentNarrative) ? obj.recentNarrative : [];
     return obj;
 }
 
@@ -218,6 +231,12 @@ export interface CryptoQualitative {
     competitors: string[];
     qualitativeScore: number;
     verdict: string;
+
+    // Narrative layer — grounded on recent news headlines
+    narrativeScore: number;
+    narrativeShift: { from: string; to: string } | null;
+    baselineNarrative: string[];
+    recentNarrative: string[];
 }
 
 /** Parse the model's crypto JSON answer (tolerant, like the stock one). */
@@ -239,6 +258,12 @@ export function parseCryptoAnalysisJson(raw: string): CryptoQualitative {
     obj.moat = ["amplio", "estrecho", "ninguno"].includes(obj.moat) ? obj.moat : "ninguno";
     obj.qualitativeScore = Math.max(0, Math.min(100, Number(obj.qualitativeScore) || 0));
     if (typeof obj.verdict !== "string") obj.verdict = "";
+    obj.narrativeScore = Math.max(0, Math.min(100, Number(obj.narrativeScore) || 0));
+    obj.narrativeShift = obj.narrativeShift && typeof obj.narrativeShift.from === "string" && typeof obj.narrativeShift.to === "string"
+        ? { from: obj.narrativeShift.from, to: obj.narrativeShift.to }
+        : null;
+    obj.baselineNarrative = Array.isArray(obj.baselineNarrative) ? obj.baselineNarrative : [];
+    obj.recentNarrative = Array.isArray(obj.recentNarrative) ? obj.recentNarrative : [];
     return obj;
 }
 
@@ -249,7 +274,12 @@ export function buildCryptoAnalysisPrompt(input: {
     categories: string;
     description: string;
     quantSummary: string;
+    news?: string;
 }): string {
+    const newsBlock = input.news && input.news.trim()
+        ? `\nTITULARES RECIENTES (úsalos para la NARRATIVA; no inventes otros):\n${input.news}\n`
+        : `\n(No hay titulares recientes disponibles — basa la narrativa en tu conocimiento y márcala como menos fiable.)\n`;
+
     return `Eres un analista cripto fundamental, técnico y escéptico. Analizas tecnología y tokenomics, NO precio.
 
 ACTIVO: ${input.name} (${input.symbol}) · Categorías: ${input.categories}
@@ -258,13 +288,13 @@ ${input.description.slice(0, 1200)}
 
 DATOS CUANTITATIVOS YA CALCULADOS (no los repitas, úsalos de contexto):
 ${input.quantSummary}
-
+${newsBlock}
 Tu trabajo es la capa CUALITATIVA que los datos no capturan. El usuario es un inversor que busca señales fundamentales en un mercado muy especulativo. NO quiere opiniones de trader.
 
 REGLAS DE HONESTIDAD (críticas):
 - PROHIBIDO predecir precio, dar precios objetivo, o decir "subirá/bajará". Si lo haces, fallas.
 - Tu conocimiento tiene fecha de corte: si un hito/fecha puede haber cambiado, marca "verify": true.
-- NO inventes fechas ni partnerships. Mejor "fecha desconocida" que inventar.
+- NO inventes fechas, partnerships ni titulares. La narrativa debe apoyarse en los titulares dados.
 - Si no conoces el proyecto con detalle, dilo en summary y devuelve listas cortas con qualitativeScore ~50.
 
 Cubre:
@@ -273,6 +303,7 @@ Cubre:
 - Roadmap/catalizadores prácticos próximos (mainnet, upgrades, integraciones).
 - Riesgos: desbloqueos/vesting de VCs, centralización, gobernanza, dependencia de un equipo, competencia.
 - Foso (moat) y competidores directos.
+- NARRATIVA dominante: a partir de los titulares y tu conocimiento, resume cuál ERA la narrativa de base y en qué se está convirtiendo AHORA, el giro ("Neutral → Positiva", etc.) y un narrativeScore 0-100 (100 = narrativa fuertemente positiva y con momentum).
 
 Devuelve EXCLUSIVAMENTE un JSON válido (sin texto fuera del JSON) con este esquema:
 {
@@ -284,6 +315,10 @@ Devuelve EXCLUSIVAMENTE un JSON válido (sin texto fuera del JSON) con este esqu
   "competitors": ["..."],
   "moat": "amplio|estrecho|ninguno",
   "qualitativeScore": 0-100,
+  "narrativeScore": 0-100,
+  "narrativeShift": {"from": "Neutral", "to": "Positiva"},
+  "baselineNarrative": ["qué se decía antes, 2-3 viñetas"],
+  "recentNarrative": ["qué se dice ahora, 2-3 viñetas"],
   "verdict": "conclusión cualitativa, escéptica y accionable, SIN hablar de precio"
 }`;
 }
@@ -295,8 +330,13 @@ export function buildAnalysisPrompt(input: {
     sector: string;
     description: string;
     quantSummary: string;
+    news?: string;        // recent headlines, one per line (may be empty)
 }): string {
     const today = new Date().toISOString().split("T")[0];
+    const newsBlock = input.news && input.news.trim()
+        ? `\nTITULARES RECIENTES (úsalos para la NARRATIVA; no inventes otros):\n${input.news}\n`
+        : `\n(No hay titulares recientes disponibles — basa la narrativa en tu conocimiento y márcala como menos fiable.)\n`;
+
     return `Eres un analista fundamental escéptico y conciso. Hoy es ${today}.
 
 EMPRESA: ${input.name} (${input.ticker}) · Sector: ${input.sector}
@@ -304,16 +344,18 @@ DESCRIPCIÓN: ${input.description.slice(0, 600)}
 
 DATOS CUANTITATIVOS YA CALCULADOS (no los repitas, úsalos como contexto):
 ${input.quantSummary}
-
-Tu trabajo es SOLO la capa CUALITATIVA que las APIs financieras no capturan:
+${newsBlock}
+Tu trabajo es la capa CUALITATIVA que las APIs financieras no capturan:
 - Catalizadores próximos (~12 meses): decisiones regulatorias (FDA/EMA/CE si es farma/biotech), juicios o arbitrajes, posibles ventas de divisiones o M&A, refinanciaciones, cambios de guidance, lanzamientos de producto, juntas relevantes.
 - Riesgos cualitativos: gobernanza (estructura accionarial, operaciones vinculadas), ataques de bajistas (p.ej. informes tipo Gotham/Hindenburg), dependencia de clientes/proveedores, riesgo regulatorio o político.
 - Si es farmacéutica/biotech: pipeline con fases y próximos hitos regulatorios conocidos.
 - Foso competitivo (moat).
+- NARRATIVA dominante: a partir de los titulares y tu conocimiento, resume cuál ERA la narrativa de base (baselineNarrative) y en qué se está convirtiendo AHORA (recentNarrative), el giro ("Neutral → Positiva", etc.) y un narrativeScore 0-100 donde 100 = narrativa fuertemente positiva y con momentum.
 
 REGLAS DE HONESTIDAD (críticas):
 - Tu conocimiento tiene fecha de corte: si una fecha o estado puede haber cambiado, marca el ítem con "verify": true y usa expresiones como "verificar".
-- NO inventes fechas exactas ni hitos. Mejor "fecha desconocida" que una fecha inventada.
+- NO inventes fechas, titulares ni hitos. Mejor "fecha desconocida" que una fecha inventada.
+- La narrativa debe apoyarse en los titulares dados; no inventes noticias.
 - Si no conoces la empresa con suficiente detalle, dilo en summary y devuelve listas cortas o vacías con qualitativeScore cercano a 50.
 
 Devuelve EXCLUSIVAMENTE un JSON válido (sin texto fuera del JSON) con este esquema:
@@ -325,6 +367,10 @@ Devuelve EXCLUSIVAMENTE un JSON válido (sin texto fuera del JSON) con este esqu
   "governanceFlags": ["..."],
   "moat": "amplio|estrecho|ninguno",
   "qualitativeScore": 0-100,
+  "narrativeScore": 0-100,
+  "narrativeShift": {"from": "Neutral", "to": "Positiva"},
+  "baselineNarrative": ["qué se decía antes, 2-3 viñetas"],
+  "recentNarrative": ["qué se dice ahora, 2-3 viñetas"],
   "verdict": "conclusión cualitativa en 2-3 frases, escéptica y accionable"
 }`;
 }

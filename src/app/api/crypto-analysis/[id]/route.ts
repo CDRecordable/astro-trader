@@ -12,6 +12,7 @@ import {
     callLLM, buildCryptoAnalysisPrompt, parseCryptoAnalysisJson,
     type LLMProvider, type CryptoQualitative,
 } from "@/lib/api/llm-client";
+import { fetchTickerNews, type NewsItem } from "@/lib/api/news-client";
 
 const CACHE_DIR = path.join(process.cwd(), "user-data", "crypto-analysis");
 const SETTINGS_PATH = path.join(process.cwd(), "user-data", "settings.json");
@@ -22,6 +23,7 @@ interface CachedCryptoAnalysis {
     provider: string;
     model: string;
     analysis: CryptoQualitative;
+    news: NewsItem[];
 }
 
 function cachePath(id: string): string {
@@ -85,19 +87,25 @@ export async function POST(
             description?: string; quantSummary?: string;
         };
 
+        // Recent news to ground the narrative — query by project name (cleaner
+        // than the ticker symbol for crypto), e.g. "Hedera" rather than "HBAR".
+        const news = await fetchTickerNews(body.name || body.symbol || id, 8);
+        const newsBlock = news.map((n) => `- ${n.date} · ${n.publisher}: ${n.title}`).join("\n");
+
         const prompt = buildCryptoAnalysisPrompt({
             name: body.name ?? id,
             symbol: body.symbol ?? "",
             categories: body.categories ?? "",
             description: body.description ?? "",
             quantSummary: body.quantSummary ?? "",
+            news: newsBlock,
         });
 
         const { text, model } = await callLLM(provider, apiKey, prompt);
         const analysis = parseCryptoAnalysisJson(text);
 
         const cached: CachedCryptoAnalysis = {
-            id, generatedAt: new Date().toISOString(), provider, model, analysis,
+            id, generatedAt: new Date().toISOString(), provider, model, analysis, news,
         };
         fs.mkdirSync(CACHE_DIR, { recursive: true });
         fs.writeFileSync(cachePath(id), JSON.stringify(cached, null, 2), "utf-8");

@@ -10,9 +10,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { Sparkles, RefreshCw, AlertTriangle, Loader2, Cpu, Target, Calendar, Swords } from "lucide-react";
+import { Sparkles, RefreshCw, AlertTriangle, Loader2, Cpu, Target, Calendar, Swords, Activity, Newspaper } from "lucide-react";
 import type { CryptoQualitative } from "@/lib/api/llm-client";
 import type { CryptoFundamentals } from "@/lib/crypto-fundamentals";
+import type { NewsItem } from "@/lib/api/news-client";
 
 interface CachedCryptoAnalysis {
     id: string;
@@ -20,6 +21,7 @@ interface CachedCryptoAnalysis {
     provider: string;
     model: string;
     analysis: CryptoQualitative;
+    news?: NewsItem[];
 }
 
 const IMPACT_COLOR: Record<string, string> = { alto: "var(--signal-strong-buy)", medio: "var(--signal-hold)", bajo: "var(--text-muted)" };
@@ -108,6 +110,9 @@ export default function CryptoAiSection({ fundamentals, description }: {
     const scoreColor = a
         ? a.qualitativeScore >= 65 ? "var(--signal-strong-buy)" : a.qualitativeScore >= 45 ? "var(--signal-hold)" : "var(--signal-avoid)"
         : "var(--text-muted)";
+    const narrColor = a
+        ? a.narrativeScore >= 65 ? "var(--signal-strong-buy)" : a.narrativeScore >= 45 ? "var(--signal-hold)" : "var(--signal-avoid)"
+        : "var(--text-muted)";
 
     return (
         <section className="glass-card p-4 flex-1 min-w-0">
@@ -158,6 +163,49 @@ export default function CryptoAiSection({ fundamentals, description }: {
                         </div>
                         <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>{a.summary}</p>
                     </div>
+
+                    {/* Narrative (baseline → recent), grounded on news */}
+                    {(a.narrativeShift || a.baselineNarrative?.length || a.recentNarrative?.length) && (
+                        <div className="rounded-lg p-3" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid var(--border-subtle)" }}>
+                            <div className="flex items-center justify-between mb-2">
+                                <p className="text-[10px] uppercase tracking-wider font-semibold flex items-center gap-1.5" style={{ color: "var(--accent-violet)" }}>
+                                    <Activity size={11} /> {t("narrativeTitle")}
+                                </p>
+                                {a.narrativeShift && (
+                                    <span className="text-[10px] font-mono font-bold" style={{ color: narrColor }}>
+                                        {a.narrativeShift.from} → {a.narrativeShift.to}
+                                        <span className="ml-1.5" style={{ color: "var(--text-muted)" }}>· {a.narrativeScore}/100</span>
+                                    </span>
+                                )}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {a.baselineNarrative?.length > 0 && (
+                                    <div>
+                                        <p className="text-[9px] uppercase tracking-wider mb-1" style={{ color: "var(--text-muted)" }}>{t("baselineNarrative")}</p>
+                                        <ul className="space-y-1">
+                                            {a.baselineNarrative.map((b, i) => (
+                                                <li key={i} className="text-[11px] flex gap-1.5" style={{ color: "var(--text-secondary)" }}>
+                                                    <span style={{ color: "var(--text-muted)" }}>›</span>{b}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                                {a.recentNarrative?.length > 0 && (
+                                    <div>
+                                        <p className="text-[9px] uppercase tracking-wider mb-1" style={{ color: "var(--accent-cyan)" }}>{t("recentNarrative")}</p>
+                                        <ul className="space-y-1">
+                                            {a.recentNarrative.map((r, i) => (
+                                                <li key={i} className="text-[11px] flex gap-1.5" style={{ color: "var(--text-secondary)" }}>
+                                                    <span style={{ color: "var(--accent-cyan)" }}>›</span>{r}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Tech explanation */}
                     {a.techExplanation && (
@@ -240,6 +288,29 @@ export default function CryptoAiSection({ fundamentals, description }: {
                     }}>
                         <strong style={{ color: scoreColor }}>{t("verdict")}:</strong> {a.verdict}
                     </div>
+
+                    {/* Source news headlines */}
+                    {data?.news && data.news.length > 0 && (
+                        <div>
+                            <p className="text-[10px] uppercase tracking-wider mb-2 font-semibold flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
+                                <Newspaper size={11} /> {t("newsTitle")}
+                            </p>
+                            <ul className="space-y-1">
+                                {data.news.slice(0, 6).map((n, i) => (
+                                    <li key={i} className="text-[11px] flex items-start gap-1.5">
+                                        <span className="text-[9px] font-mono shrink-0 mt-0.5" style={{ color: "var(--text-muted)" }}>{n.date}</span>
+                                        {n.link ? (
+                                            <a href={n.link} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: "var(--text-secondary)" }}>
+                                                {n.title}{n.publisher && <span style={{ color: "var(--text-muted)" }}> · {n.publisher}</span>}
+                                            </a>
+                                        ) : (
+                                            <span style={{ color: "var(--text-secondary)" }}>{n.title}</span>
+                                        )}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
 
                     <p className="text-[9px] italic leading-relaxed" style={{ color: "var(--text-muted)" }}>
                         {t("generatedWith", { model: data!.model, date: new Date(data!.generatedAt).toLocaleDateString("es-ES") })} · {t("disclaimerCrypto")}

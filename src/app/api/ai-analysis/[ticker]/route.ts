@@ -17,6 +17,7 @@ import {
     callLLM, buildAnalysisPrompt, parseAnalysisJson,
     type LLMProvider, type QualitativeAnalysis,
 } from "@/lib/api/llm-client";
+import { fetchTickerNews, type NewsItem } from "@/lib/api/news-client";
 
 const CACHE_DIR = path.join(process.cwd(), "user-data", "ai-analysis");
 const SETTINGS_PATH = path.join(process.cwd(), "user-data", "settings.json");
@@ -27,6 +28,7 @@ interface CachedAnalysis {
     provider: string;
     model: string;
     analysis: QualitativeAnalysis;
+    news: NewsItem[];
 }
 
 function cachePath(ticker: string): string {
@@ -87,8 +89,11 @@ export async function POST(
     }
 
     try {
-        // Ground the model with our real quantitative picture
-        const { company } = await getCompanyDetail(ticker);
+        // Ground the model with our real quantitative picture + recent news
+        const [{ company }, news] = await Promise.all([
+            getCompanyDetail(ticker),
+            fetchTickerNews(ticker, 8),
+        ]);
         const m = company.metrics;
         const score = evaluateCompany(company, getDefaultMacroContext());
 
@@ -105,12 +110,15 @@ export async function POST(
             score.hardFilterReasons.length ? `FILTROS DUROS FALLIDOS: ${score.hardFilterReasons.join("; ")}` : "Pasa los filtros duros.",
         ].join("\n");
 
+        const newsBlock = news.map((n) => `- ${n.date} · ${n.publisher}: ${n.title}`).join("\n");
+
         const prompt = buildAnalysisPrompt({
             ticker,
             name: company.name,
             sector: company.sector,
             description: company.description,
             quantSummary,
+            news: newsBlock,
         });
 
         const { text, model } = await callLLM(provider, apiKey, prompt);
@@ -122,6 +130,7 @@ export async function POST(
             provider,
             model,
             analysis,
+            news,
         };
         fs.mkdirSync(CACHE_DIR, { recursive: true });
         fs.writeFileSync(cachePath(ticker), JSON.stringify(cached, null, 2), "utf-8");
