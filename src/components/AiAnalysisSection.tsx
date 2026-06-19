@@ -12,6 +12,7 @@ import { Link } from "@/i18n/navigation";
 import { Sparkles, RefreshCw, AlertTriangle, Loader2, Shield, FlaskConical, Landmark, Calendar, Newspaper, Activity } from "lucide-react";
 import type { QualitativeAnalysis } from "@/lib/api/llm-client";
 import type { NewsItem } from "@/lib/api/news-client";
+import AiLoadingBar from "./AiLoadingBar";
 
 interface CachedAnalysis {
     ticker: string;
@@ -103,13 +104,18 @@ export default function AiAnalysisSection({ ticker }: { ticker: string }) {
                 </div>
             )}
 
+            {/* Loading: progress bar + rotating steps */}
+            {loading && (
+                <AiLoadingBar steps={[t("aiLoadNews"), t("aiLoadMetrics"), t("aiLoadModel"), t("aiLoadSynth"), t("aiLoadVerify")]} />
+            )}
+
             {/* Empty state */}
             {!data && !err && !loading && (
                 <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>{t("emptyHint")}</p>
             )}
 
             {/* Rendered analysis */}
-            {a && (
+            {a && !loading && (
                 <div className="space-y-4">
                     {/* Summary + qualitative score */}
                     <div className="flex items-start gap-4">

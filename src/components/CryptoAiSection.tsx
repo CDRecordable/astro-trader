@@ -14,6 +14,7 @@ import { Sparkles, RefreshCw, AlertTriangle, Loader2, Cpu, Target, Calendar, Swo
 import type { CryptoQualitative } from "@/lib/api/llm-client";
 import type { CryptoFundamentals } from "@/lib/crypto-fundamentals";
 import type { NewsItem } from "@/lib/api/news-client";
+import AiLoadingBar from "./AiLoadingBar";
 
 interface CachedCryptoAnalysis {
     id: string;
@@ -146,11 +147,15 @@ export default function CryptoAiSection({ fundamentals, description }: {
                 </div>
             )}
 
+            {loading && (
+                <AiLoadingBar steps={[t("aiLoadNews"), t("aiLoadCryptoMetrics"), t("aiLoadModel"), t("aiLoadCryptoSynth"), t("aiLoadVerify")]} />
+            )}
+
             {!data && !err && !loading && (
                 <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>{t("emptyHintCrypto")}</p>
             )}
 
-            {a && (
+            {a && !loading && (
                 <div className="space-y-4">
                     {/* Summary + score */}
                     <div className="flex items-start gap-4">
