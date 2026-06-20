@@ -60,6 +60,15 @@ function MetricRow({ label, value, color, tooltip }: { label: string; value: str
     );
 }
 
+/* ── Money formatter (millions → $X.XB / $XM, signed) ──────── */
+function fmtMoneyM(m: number | null | undefined): string {
+    if (m === null || m === undefined || !isFinite(m)) return "N/D";
+    const sign = m < 0 ? "-" : "";
+    const a = Math.abs(m);
+    if (a >= 1000) return `${sign}$${(a / 1000).toFixed(1)}B`;
+    return `${sign}$${a.toFixed(0)}M`;
+}
+
 /* ── SectionHeader ─────────────────────────────────────────── */
 function SectionHeader({ icon: Icon, title }: { icon: React.ElementType; title: string }) {
     return (
@@ -290,6 +299,14 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                     <div className="flex flex-col lg:flex-row gap-5 items-stretch">
                         <section className="glass-card p-4 flex-1 min-w-0">
                             <SectionHeader icon={BarChart3} title={t("valuationTitle")} />
+                            <MetricRow
+                                label={t("peRatio")}
+                                value={m.peRatio !== undefined ? `${m.peRatio.toFixed(1)}×` : "N/D"}
+                                color={m.peRatio === undefined ? "var(--text-muted)"
+                                    : m.peRatio > 0 && m.peRatio < 25 ? "var(--signal-strong-buy)"
+                                        : m.peRatio < 40 ? "var(--signal-hold)" : "var(--signal-avoid)"}
+                                tooltip={t("peRatioTip")}
+                            />
                             {dq.solvency && m.evFcfYield !== undefined && (
                                 <MetricRow
                                     label={t("evFcfYield")}
@@ -458,6 +475,32 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                                     </div>
                                 )}
                             </div>
+
+                            {/* Annual revenue & net income history */}
+                            {m.annualFinancials && m.annualFinancials.length > 0 && (
+                                <div>
+                                    <p className="text-[10px] uppercase tracking-wider text-emerald-400 mb-2 font-semibold">{t("annualTitle")}</p>
+                                    <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--border-subtle)" }}>
+                                        <div className="grid grid-cols-4 gap-2 px-3 py-1.5 text-[10px] uppercase tracking-wider" style={{ background: "var(--bg-secondary)", color: "var(--text-muted)" }}>
+                                            <span>{t("annualYear")}</span>
+                                            <span className="text-right">{t("annualRevenue")}</span>
+                                            <span className="text-right">{t("annualNetIncome")}</span>
+                                            <span className="text-right">{t("annualNetMargin")}</span>
+                                        </div>
+                                        {[...m.annualFinancials].reverse().map((r) => {
+                                            const margin = r.revenue && r.netIncome != null && r.revenue !== 0 ? r.netIncome / r.revenue : null;
+                                            return (
+                                                <div key={r.year} className="grid grid-cols-4 gap-2 px-3 py-1.5 text-xs font-mono" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+                                                    <span style={{ color: "var(--text-secondary)" }}>{r.year}</span>
+                                                    <span className="text-right" style={{ color: "var(--text-primary)" }}>{fmtMoneyM(r.revenue)}</span>
+                                                    <span className="text-right" style={{ color: r.netIncome == null ? "var(--text-muted)" : r.netIncome >= 0 ? "var(--signal-strong-buy)" : "var(--signal-avoid)" }}>{fmtMoneyM(r.netIncome)}</span>
+                                                    <span className="text-right" style={{ color: "var(--text-muted)" }}>{margin != null ? formatPercent(margin) : "N/D"}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
                         </section>
                         <div className="w-full lg:w-[340px] shrink-0">
                             <InsightCard title={t("insightTrend")} icon={TrendingUp}>

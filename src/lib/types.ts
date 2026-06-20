@@ -76,6 +76,12 @@ export interface FinancialMetrics {
     /** % change of consensus current-year EPS estimate vs 30 days ago. */
     epsTrend30d?: number;
 
+    /** Trailing price-to-earnings ratio (from Yahoo quote). Informational. */
+    peRatio?: number;
+
+    /** Annual revenue & net income history (millions USD), oldest → newest. */
+    annualFinancials?: AnnualFinancials[];
+
     /**
      * Which metric groups were actually retrievable from the data source.
      * Missing groups must be treated as NEUTRAL by the scoring algorithm
@@ -91,6 +97,13 @@ export interface FinancialMetrics {
         insiders?: boolean; // insider transaction data (US Form 4; absent for most EU)
         revisions?: boolean; // analyst EPS estimate revisions
     };
+}
+
+/** One fiscal year of top/bottom line (millions USD). */
+export interface AnnualFinancials {
+    year: string;
+    revenue: number | null;
+    netIncome: number | null;
 }
 
 /** Historical data point for charting */

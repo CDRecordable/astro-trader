@@ -4,23 +4,69 @@
 
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import ReactECharts from "echarts-for-react";
+import { Loader2 } from "lucide-react";
 import type { Company } from "@/lib/types";
 
 interface PriceChartProps {
     company: Company;
 }
 
+interface PricePoint { date: string; price: number }
+
+// Timeframe options (months; 0 = all history)
+const RANGES: { key: string; label: string; months: number }[] = [
+    { key: "1M", label: "1M", months: 1 },
+    { key: "6M", label: "6M", months: 6 },
+    { key: "1Y", label: "1A", months: 12 },
+    { key: "3Y", label: "3A", months: 36 },
+    { key: "5Y", label: "5A", months: 60 },
+    { key: "MAX", label: "Máx", months: 0 },
+];
+
 export function PriceChart({ company }: PriceChartProps) {
+    const [full, setFull] = useState<PricePoint[]>([]);
+    const [range, setRange] = useState("1Y");
+    const [loading, setLoading] = useState(true);
+
+    // Fetch the full daily price history (since 2000) once per ticker.
+    useEffect(() => {
+        let active = true;
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- reset to loading when the ticker changes
+        setLoading(true);
+        fetch(`/api/ticker?symbol=${encodeURIComponent(company.ticker)}`)
+            .then((r) => (r.ok ? r.json() : { data: [] }))
+            .then((d: { data?: PricePoint[] }) => {
+                if (!active) return;
+                const data = d.data && d.data.length > 0
+                    ? d.data
+                    : company.historicalData.map((h) => ({ date: h.date, price: h.price }));
+                setFull(data);
+            })
+            .catch(() => {
+                if (active) setFull(company.historicalData.map((h) => ({ date: h.date, price: h.price })));
+            })
+            .finally(() => { if (active) setLoading(false); });
+        return () => { active = false; };
+    }, [company.ticker, company.historicalData]);
+
+    // Filter to the selected range, using the latest data point as "now"
+    // (deterministic — avoids reading the clock during render).
+    const filtered = useMemo(() => {
+        if (full.length === 0) return [];
+        const months = RANGES.find((r) => r.key === range)?.months ?? 12;
+        if (months === 0) return full;
+        const last = new Date(full[full.length - 1].date);
+        const cutoff = new Date(last);
+        cutoff.setMonth(cutoff.getMonth() - months);
+        const cut = cutoff.toISOString().split("T")[0];
+        return full.filter((p) => p.date >= cut);
+    }, [full, range]);
+
     const option = useMemo(() => ({
         backgroundColor: "transparent",
-        grid: {
-            top: 20,
-            right: 16,
-            bottom: 30,
-            left: 50,
-        },
+        grid: { top: 20, right: 16, bottom: 30, left: 55 },
         tooltip: {
             trigger: "axis" as const,
             backgroundColor: "rgba(24, 24, 27, 0.95)",
@@ -28,18 +74,19 @@ export function PriceChart({ company }: PriceChartProps) {
             textStyle: { color: "#fafafa", fontSize: 12 },
             formatter: (params: Array<{ name: string; value: number }>) => {
                 const p = params[0];
-                return `<strong>${p.name}</strong><br/>Price: $${p.value.toFixed(2)}`;
+                return `<strong>${p.name}</strong><br/>Precio: $${Number(p.value).toFixed(2)}`;
             },
         },
         xAxis: {
             type: "category" as const,
-            data: company.historicalData.map((d) => d.date),
+            data: filtered.map((d) => d.date),
             axisLine: { lineStyle: { color: "rgba(255,255,255,0.06)" } },
-            axisLabel: { color: "#71717a", fontSize: 10, rotate: 45 },
+            axisLabel: { color: "#71717a", fontSize: 10, hideOverlap: true },
             splitLine: { show: false },
         },
         yAxis: {
             type: "value" as const,
+            scale: true,
             axisLine: { show: false },
             axisLabel: { color: "#71717a", fontSize: 10, formatter: "${value}" },
             splitLine: { lineStyle: { color: "rgba(255,255,255,0.04)" } },
@@ -47,13 +94,11 @@ export function PriceChart({ company }: PriceChartProps) {
         series: [
             {
                 type: "line",
-                data: company.historicalData.map((d) => d.price),
-                smooth: true,
+                data: filtered.map((d) => d.price),
+                smooth: false,
                 showSymbol: false,
-                lineStyle: {
-                    color: "#22d3ee",
-                    width: 2,
-                },
+                sampling: "lttb" as const,
+                lineStyle: { color: "#22d3ee", width: 1.8 },
                 areaStyle: {
                     color: {
                         type: "linear" as const,
@@ -66,14 +111,40 @@ export function PriceChart({ company }: PriceChartProps) {
                 },
             },
         ],
-    }), [company.historicalData]);
+    }), [filtered]);
 
     return (
-        <ReactECharts
-            option={option}
-            style={{ height: 220 }}
-            opts={{ renderer: "canvas" }}
-        />
+        <div>
+            {/* Timeframe selector */}
+            <div className="flex items-center gap-1 mb-2">
+                {RANGES.map((r) => (
+                    <button
+                        key={r.key}
+                        onClick={() => setRange(r.key)}
+                        className="px-2 py-0.5 rounded text-[10px] font-semibold cursor-pointer transition-all"
+                        style={{
+                            background: range === r.key ? "var(--accent-cyan-dim)" : "transparent",
+                            color: range === r.key ? "white" : "var(--text-muted)",
+                            border: `1px solid ${range === r.key ? "var(--accent-cyan)" : "var(--border-subtle)"}`,
+                        }}
+                    >
+                        {r.label}
+                    </button>
+                ))}
+            </div>
+
+            {loading && full.length === 0 ? (
+                <div className="flex items-center justify-center" style={{ height: 220 }}>
+                    <Loader2 size={22} className="animate-spin" style={{ color: "var(--accent-cyan)" }} />
+                </div>
+            ) : filtered.length === 0 ? (
+                <div className="flex items-center justify-center text-xs" style={{ height: 220, color: "var(--text-muted)" }}>
+                    Sin datos de precio
+                </div>
+            ) : (
+                <ReactECharts option={option} style={{ height: 220 }} opts={{ renderer: "canvas" }} />
+            )}
+        </div>
     );
 }
 
