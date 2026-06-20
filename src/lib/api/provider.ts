@@ -22,7 +22,9 @@ function isCacheFresh(lastScanned: Date | null): boolean {
 
 function dbRowToCompany(row: typeof companies.$inferSelect): Company {
     return {
-        id: `db_${row.ticker}`,
+        // Same prefix as a freshly-fetched company so id-derived lookup keys
+        // (watchlist/discards) are consistent whether the data is cached or live.
+        id: `yf_${row.ticker}`,
         ticker: row.ticker,
         name: row.name,
         sector: row.sector || "",
@@ -170,7 +172,7 @@ export async function getScreenerCompanies(tickers?: string[]): Promise<{
 
 // ── Layer 2: Detail enrichment (Yahoo only) ─────────────────
 
-export async function getCompanyDetail(ticker: string): Promise<{
+export async function getCompanyDetail(ticker: string, force = false): Promise<{
     company: Company;
     enriched: boolean;
     apiCalls: number;
@@ -185,7 +187,7 @@ export async function getCompanyDetail(ticker: string): Promise<{
         .limit(1);
 
     const cached = cachedRows[0];
-    if (cached?.lastScannedAt && isCacheFresh(cached.lastScannedAt)) {
+    if (!force && cached?.lastScannedAt && isCacheFresh(cached.lastScannedAt)) {
         const company = dbRowToCompany(cached);
         // Backfill historicalData with metric interpolation if needed
         backfillHistoricalMetrics(company);

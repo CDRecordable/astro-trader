@@ -257,7 +257,8 @@ export default function WatchlistView() {
                 company = data.company;
                 score = data.score;
             } else {
-                const res = await fetch(`/api/company/${encodeURIComponent(ticker)}`);
+                // Manual refresh → force a fresh Yahoo fetch (bypass the 24h cache).
+                const res = await fetch(`/api/company/${encodeURIComponent(ticker)}?refresh=1`);
                 if (!res.ok) { const err = await res.json(); throw new Error(err.error ?? "Failed to fetch"); }
                 const data = await res.json() as { company: Company };
                 company = data.company;

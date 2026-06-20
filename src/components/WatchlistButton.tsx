@@ -25,7 +25,7 @@ export default function WatchlistButton({
 
     // Watchlist lookup key: CoinGecko id for crypto, symbol for stocks.
     // Company.id is prefixed by the provider (cg_… / yf_…) — strip it.
-    const lookupKey = company.id.replace(/^(cg_|yf_)/, "");
+    const lookupKey = company.id.replace(/^(cg_|yf_|db_)/i, "");
 
     const [state, setState] = useState<State>("checking");
 

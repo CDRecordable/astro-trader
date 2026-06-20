@@ -41,8 +41,11 @@ export async function GET(
         }
 
         // ── Stock path: use Yahoo + Neon ────────────────────────
-        const upperTicker = ticker.toUpperCase();
-        const { company, enriched, apiCalls } = await getCompanyDetail(upperTicker);
+        // Strip any accidental provider prefix (db_/yf_) that may have been
+        // stored in older watchlist/discard entries, so they still resolve.
+        const upperTicker = ticker.toUpperCase().replace(/^(DB_|YF_)/, "");
+        const force = searchParams.get("refresh") === "1";
+        const { company, enriched, apiCalls } = await getCompanyDetail(upperTicker, force);
 
         return NextResponse.json({
             company,

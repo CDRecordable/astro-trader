@@ -23,7 +23,7 @@ export default function DiscardButton({
     assetType: "s" | "c";
 }) {
     const t = useTranslations("companyDetail");
-    const lookupKey = company.id.replace(/^(cg_|yf_)/, "");
+    const lookupKey = company.id.replace(/^(cg_|yf_|db_)/i, "");
 
     const [state, setState] = useState<State>("checking");
     const [discardedAt, setDiscardedAt] = useState<string | null>(null);
