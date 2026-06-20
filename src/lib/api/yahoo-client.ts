@@ -288,11 +288,14 @@ export async function fetchCompanyFromYahoo(
         let evFcfYield: number | undefined;
         let hasSolvency = false;
         if (!isFinancialSector) {
-            if (netDebt !== null && ebitdaTtm > 0) {
-                netDebtToEbitda = netDebt / ebitdaTtm;
+            if (netDebt !== null) {
+                // FCF/EV needs only FCF + market cap + net debt (no EBITDA),
+                // so it works for pre-profit growth names too (may be negative).
                 const ev = mcapRaw + Math.max(netDebt, 0); // net cash doesn't shrink EV below mcap for yield purposes
                 evFcfYield = ev > 0 ? fcf / ev : 0;
                 hasSolvency = true;
+                // Net debt / EBITDA is only meaningful with positive EBITDA.
+                if (ebitdaTtm > 0) netDebtToEbitda = netDebt / ebitdaTtm;
             }
             if (latest?.EBIT && latest?.interestExpense && Number(latest.interestExpense) > 0) {
                 interestCoverage = Number(latest.EBIT) / Number(latest.interestExpense);

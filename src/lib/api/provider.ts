@@ -172,7 +172,7 @@ export async function getScreenerCompanies(tickers?: string[]): Promise<{
 
 // ── Layer 2: Detail enrichment (Yahoo only) ─────────────────
 
-export async function getCompanyDetail(ticker: string): Promise<{
+export async function getCompanyDetail(ticker: string, force = false): Promise<{
     company: Company;
     enriched: boolean;
     apiCalls: number;
@@ -187,7 +187,7 @@ export async function getCompanyDetail(ticker: string): Promise<{
         .limit(1);
 
     const cached = cachedRows[0];
-    if (cached?.lastScannedAt && isCacheFresh(cached.lastScannedAt)) {
+    if (!force && cached?.lastScannedAt && isCacheFresh(cached.lastScannedAt)) {
         const company = dbRowToCompany(cached);
         // Backfill historicalData with metric interpolation if needed
         backfillHistoricalMetrics(company);
