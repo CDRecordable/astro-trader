@@ -22,7 +22,9 @@ function isCacheFresh(lastScanned: Date | null): boolean {
 
 function dbRowToCompany(row: typeof companies.$inferSelect): Company {
     return {
-        id: `db_${row.ticker}`,
+        // Same prefix as a freshly-fetched company so id-derived lookup keys
+        // (watchlist/discards) are consistent whether the data is cached or live.
+        id: `yf_${row.ticker}`,
         ticker: row.ticker,
         name: row.name,
         sector: row.sector || "",
