@@ -24,6 +24,7 @@ const SETTINGS_PATH = path.join(process.cwd(), "user-data", "settings.json");
 
 interface CachedAnalysis {
     ticker: string;
+    name?: string;
     generatedAt: string;
     provider: string;
     model: string;
@@ -126,6 +127,7 @@ export async function POST(
 
         const cached: CachedAnalysis = {
             ticker,
+            name: company.name,
             generatedAt: new Date().toISOString(),
             provider,
             model,

@@ -42,6 +42,18 @@ export default function TickerSearch({ assetType, compact = false }: TickerSearc
     const inputRef = useRef<HTMLInputElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const { isLoading, addCompanyByTicker, error } = useAppStore();
+    const [discardSet, setDiscardSet] = useState<Set<string>>(new Set());
+
+    // Load the discard pile once → flag discarded tickers in the dropdown.
+    useEffect(() => {
+        let active = true;
+        fetch("/api/discards").then((r) => r.json())
+            .then((d: { items?: Array<{ ticker: string }> }) => {
+                if (active) setDiscardSet(new Set((d.items ?? []).map((i) => i.ticker.toLowerCase())));
+            })
+            .catch(() => { });
+        return () => { active = false; };
+    }, []);
 
     // Search on query change — instant registry results, then merge live Yahoo
     // results (any small-cap) for stock searches.
@@ -256,6 +268,12 @@ export default function TickerSearch({ assetType, compact = false }: TickerSearc
                                         >
                                             {entry.n}
                                         </span>
+                                        {discardSet.has(entry.t.toLowerCase()) && (
+                                            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 uppercase tracking-wider"
+                                                style={{ background: "rgba(251,113,133,0.14)", color: "var(--signal-avoid)" }}>
+                                                {t("discarded")}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
 

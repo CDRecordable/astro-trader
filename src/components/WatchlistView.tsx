@@ -7,12 +7,16 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import {
     Star, Trash2, RefreshCw, Search, TrendingUp, TrendingDown,
     Building2, Bitcoin, AlertCircle, Loader2, Sparkles, BookmarkX, X,
+    Ban, RotateCcw, Activity,
 } from "lucide-react";
 import type { WatchlistItem } from "@/app/api/watchlist/route";
+import type { DiscardItem } from "@/app/api/discards/route";
 import type { Company, AlgorithmScore } from "@/lib/types";
+import { useAppStore } from "@/lib/store";
 import { evaluateAll } from "@/lib/algorithm";
 import { getDefaultMacroContext } from "@/lib/mock-data";
 import { formatMarketCap } from "@/lib/utils";
@@ -25,6 +29,58 @@ interface WatchlistRow extends WatchlistItem {
     score?: AlgorithmScore;
     loading: boolean;
     error?: string;
+}
+
+/** A saved AI analysis, flattened for the badge map + aggregate view. */
+interface AiAgg {
+    key: string;            // lowercased ticker/id (matches watchlist lookup)
+    assetType: "s" | "c";
+    ticker: string;
+    name: string;
+    generatedAt: string;
+    qualitativeScore: number;
+    narrativeScore?: number;
+    narrativeShift?: { from: string; to: string } | null;
+    summary: string;
+    signalCount: number;    // catalysts (stock) or roadmap items (crypto)
+}
+
+type Tab = "watchlist" | "discards" | "ai";
+
+/** Open an asset's full detail in the Explorer (serious mode). */
+function useOpenDetail() {
+    const router = useRouter();
+    const setAppMode = useAppStore((s) => s.setAppMode);
+    const setAssetClass = useAppStore((s) => s.setAssetClass);
+    const addCompanyByTicker = useAppStore((s) => s.addCompanyByTicker);
+    return useCallback((assetType: "s" | "c", ticker: string) => {
+        setAppMode("serious");
+        setAssetClass(assetType === "c" ? "crypto" : "stocks");
+        addCompanyByTicker(ticker, assetType);
+        router.push("/explorer");
+    }, [router, setAppMode, setAssetClass, addCompanyByTicker]);
+}
+
+/** Map a raw cached analysis (stock or crypto) into the flat aggregate shape. */
+function toAgg(raw: Record<string, unknown>): AiAgg | null {
+    const analysis = raw.analysis as Record<string, unknown> | undefined;
+    if (!analysis) return null;
+    const isCrypto = typeof raw.id === "string" && raw.ticker === undefined;
+    const id = (raw.ticker ?? raw.id) as string | undefined;
+    if (!id) return null;
+    const cats = (analysis.catalysts ?? analysis.roadmap) as unknown[] | undefined;
+    return {
+        key: id.toLowerCase(),
+        assetType: isCrypto ? "c" : "s",
+        ticker: (raw.symbol as string) ?? id,
+        name: (raw.name as string) ?? id,
+        generatedAt: (raw.generatedAt as string) ?? "",
+        qualitativeScore: Number(analysis.qualitativeScore) || 0,
+        narrativeScore: analysis.narrativeScore !== undefined ? Number(analysis.narrativeScore) : undefined,
+        narrativeShift: (analysis.narrativeShift as { from: string; to: string } | null) ?? null,
+        summary: (analysis.summary as string) ?? "",
+        signalCount: Array.isArray(cats) ? cats.length : 0,
+    };
 }
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -85,6 +141,44 @@ export default function WatchlistView() {
     // Filters
     const [typeFilter, setTypeFilter] = useState<"all" | "s" | "c">("all");
     const [sectorFilter, setSectorFilter] = useState<string>("all");
+
+    // Tabs + cross-tab data
+    const [tab, setTab] = useState<Tab>("watchlist");
+    const [discards, setDiscards] = useState<DiscardItem[]>([]);
+    const [aiItems, setAiItems] = useState<AiAgg[]>([]);
+    const openDetail = useOpenDetail();
+
+    // Saved AI analyses → badge map keyed by lowercased ticker/id
+    const aiByKey = useMemo(() => {
+        const map = new Map<string, AiAgg>();
+        for (const a of aiItems) map.set(a.key, a);
+        return map;
+    }, [aiItems]);
+
+    const discardSet = useMemo(() => new Set(discards.map((d) => d.ticker.toLowerCase())), [discards]);
+
+    // Load discards + saved analyses once
+    useEffect(() => {
+        let active = true;
+        fetch("/api/discards").then((r) => r.json())
+            .then((d: { items?: DiscardItem[] }) => { if (active) setDiscards(d.items ?? []); })
+            .catch(() => { });
+        Promise.all([
+            fetch("/api/ai-analysis").then((r) => r.json()).catch(() => ({ items: [] })),
+            fetch("/api/crypto-analysis").then((r) => r.json()).catch(() => ({ items: [] })),
+        ]).then(([s, c]: [{ items?: Record<string, unknown>[] }, { items?: Record<string, unknown>[] }]) => {
+            if (!active) return;
+            const all = [...(s.items ?? []), ...(c.items ?? [])].map(toAgg).filter((x): x is AiAgg => x !== null);
+            all.sort((a, b) => (b.generatedAt > a.generatedAt ? 1 : -1));
+            setAiItems(all);
+        }).catch(() => { });
+        return () => { active = false; };
+    }, []);
+
+    const restoreDiscard = useCallback(async (ticker: string) => {
+        await fetch(`/api/discards?ticker=${encodeURIComponent(ticker)}`, { method: "DELETE" });
+        setDiscards((prev) => prev.filter((d) => d.ticker !== ticker));
+    }, []);
     const inputRef = useRef<HTMLInputElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const autoAnalyzedRef = useRef(false);
@@ -333,7 +427,7 @@ export default function WatchlistView() {
                         </div>
                     </div>
 
-                    {rows.length > 0 && (
+                    {tab === "watchlist" && rows.length > 0 && (
                         <button
                             onClick={refreshAll}
                             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer"
@@ -348,6 +442,42 @@ export default function WatchlistView() {
                         </button>
                     )}
                 </div>
+
+                {/* Tab bar */}
+                <div className="flex items-center gap-2 mb-6">
+                    {([
+                        ["watchlist", Star, t("tabWatchlist"), rows.length],
+                        ["discards", Ban, t("tabDiscards"), discards.length],
+                        ["ai", Sparkles, t("tabAi"), aiItems.length],
+                    ] as const).map(([id, Icon, label, count]) => (
+                        <button
+                            key={id}
+                            onClick={() => setTab(id)}
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium cursor-pointer transition-all"
+                            style={{
+                                background: tab === id ? "var(--accent-cyan-dim)" : "var(--bg-tertiary)",
+                                color: tab === id ? "white" : "var(--text-muted)",
+                                border: "1px solid var(--border-subtle)",
+                            }}
+                        >
+                            <Icon size={14} /> {label}
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: "rgba(255,255,255,0.08)" }}>{count}</span>
+                        </button>
+                    ))}
+                </div>
+
+                {/* Discards tab */}
+                {tab === "discards" && (
+                    <DiscardsTab discards={discards} onOpen={openDetail} onRestore={restoreDiscard} />
+                )}
+
+                {/* AI analyses tab */}
+                {tab === "ai" && (
+                    <AiAnalysesTab items={aiItems} onOpen={openDetail} />
+                )}
+
+                {/* ── Watchlist tab ── */}
+                {tab === "watchlist" && (<>
 
                 {/* Add ticker — autocomplete search */}
                 <div className="relative mb-8 z-30">
@@ -436,6 +566,12 @@ export default function WatchlistView() {
                                                     <span className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>
                                                         {entry.y === "c" ? entry.t : entry.n}
                                                     </span>
+                                                    {discardSet.has(entry.t.toLowerCase()) && (
+                                                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 uppercase tracking-wider"
+                                                            style={{ background: "rgba(251,113,133,0.14)", color: "var(--signal-avoid)" }}>
+                                                            {t("discardedTag")}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                             {isAdding ? (
@@ -551,11 +687,15 @@ export default function WatchlistView() {
                         <WatchlistRowItem
                             key={row.ticker}
                             row={row}
+                            aiDate={aiByKey.get(row.ticker.toLowerCase())?.generatedAt ?? null}
+                            onOpen={() => openDetail(row.assetType, row.ticker)}
                             onRefresh={() => refreshRow(row.ticker, row.assetType)}
                             onRemove={() => removeItem(row.ticker)}
                         />
                     ))}
                 </AnimatePresence>
+
+                </>)}
             </div>
         </div>
     );
@@ -565,10 +705,14 @@ export default function WatchlistView() {
 
 function WatchlistRowItem({
     row,
+    aiDate,
+    onOpen,
     onRefresh,
     onRemove,
 }: {
     row: WatchlistRow;
+    aiDate: string | null;
+    onOpen: () => void;
     onRefresh: () => void;
     onRemove: () => void;
 }) {
@@ -576,6 +720,7 @@ function WatchlistRowItem({
     const isCrypto = row.assetType === "c";
     const score = row.score;
     const company = row.company;
+    const stop = (fn: () => void) => (e: React.MouseEvent) => { e.stopPropagation(); fn(); };
 
     return (
         <motion.div
@@ -584,7 +729,9 @@ function WatchlistRowItem({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, x: -24, scale: 0.96 }}
             transition={{ type: "spring", stiffness: 380, damping: 30 }}
-            className="mb-3 p-4 rounded-2xl flex items-center gap-4 group"
+            onClick={onOpen}
+            title={t("openDetail")}
+            className="mb-3 p-4 rounded-2xl flex items-center gap-4 group cursor-pointer transition-colors hover:brightness-110"
             style={{
                 background: "var(--bg-card)",
                 border: "1px solid var(--border-subtle)",
@@ -615,6 +762,13 @@ function WatchlistRowItem({
                     <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
                         {company.sector} · {formatMarketCap(company.metrics.marketCap)}
                     </p>
+                )}
+                {aiDate && (
+                    <span className="inline-flex items-center gap-1 mt-1 text-[10px] px-1.5 py-0.5 rounded"
+                        style={{ background: "rgba(167,139,250,0.12)", color: "var(--accent-violet)" }}
+                        title={t("aiSavedOn", { date: new Date(aiDate).toLocaleDateString("es-ES") })}>
+                        <Sparkles size={9} /> {t("aiSaved")} · {new Date(aiDate).toLocaleDateString("es-ES")}
+                    </span>
                 )}
             </div>
 
@@ -693,7 +847,7 @@ function WatchlistRowItem({
 
             {!row.loading && !score && !row.error && (
                 <button
-                    onClick={onRefresh}
+                    onClick={stop(onRefresh)}
                     className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg transition-all cursor-pointer"
                     style={{
                         background: "var(--bg-tertiary)",
@@ -709,7 +863,7 @@ function WatchlistRowItem({
             {/* Actions */}
             <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
-                    onClick={onRefresh}
+                    onClick={stop(onRefresh)}
                     title={t("refresh")}
                     className="p-1.5 rounded-lg transition-all cursor-pointer"
                     style={{ color: "var(--text-muted)" }}
@@ -717,7 +871,7 @@ function WatchlistRowItem({
                     <RefreshCw size={13} />
                 </button>
                 <button
-                    onClick={onRemove}
+                    onClick={stop(onRemove)}
                     title={t("remove")}
                     className="p-1.5 rounded-lg transition-all cursor-pointer"
                     style={{ color: "var(--signal-avoid)" }}
@@ -726,5 +880,116 @@ function WatchlistRowItem({
                 </button>
             </div>
         </motion.div>
+    );
+}
+
+// ── Discards tab ──────────────────────────────────────────────
+
+function DiscardsTab({ discards, onOpen, onRestore }: {
+    discards: DiscardItem[];
+    onOpen: (assetType: "s" | "c", ticker: string) => void;
+    onRestore: (ticker: string) => void;
+}) {
+    const t = useTranslations("watchlist");
+    if (discards.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <Ban size={28} style={{ color: "var(--text-muted)" }} />
+                <p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>{t("discardsEmpty")}</p>
+                <p className="text-xs" style={{ color: "var(--text-muted)" }}>{t("discardsEmptySub")}</p>
+            </div>
+        );
+    }
+    return (
+        <div>
+            {discards.map((d) => {
+                const isCrypto = d.assetType === "c";
+                const date = new Date(d.discardedAt);
+                // eslint-disable-next-line react-hooks/purity -- staleness countdown for display only
+                const days = Math.max(0, Math.floor((Date.now() - date.getTime()) / 86_400_000));
+                return (
+                    <motion.div
+                        key={d.ticker}
+                        layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                        onClick={() => onOpen(d.assetType, d.ticker)}
+                        title={t("openDetail")}
+                        className="mb-3 p-4 rounded-2xl flex items-center gap-4 group cursor-pointer transition-colors hover:brightness-110"
+                        style={{ background: "var(--bg-card)", border: "1px solid rgba(251,113,133,0.18)" }}
+                    >
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: isCrypto ? "rgba(251,191,36,0.1)" : "rgba(34,211,238,0.1)" }}>
+                            {isCrypto ? <Bitcoin size={16} style={{ color: "var(--accent-amber)" }} /> : <Building2 size={16} style={{ color: "var(--accent-cyan)" }} />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-baseline gap-2">
+                                <span className="font-bold font-mono text-sm" style={{ color: "var(--text-primary)" }}>{d.symbol}</span>
+                                <span className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{d.name}</span>
+                            </div>
+                            <p className="text-[11px] mt-0.5" style={{ color: "var(--signal-avoid)" }}>
+                                {t("discardedLabel", { date: date.toLocaleDateString("es-ES"), days })}
+                            </p>
+                        </div>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onRestore(d.ticker); }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all flex-shrink-0"
+                            style={{ background: "var(--bg-tertiary)", border: "1px solid var(--border-subtle)", color: "var(--text-secondary)" }}
+                        >
+                            <RotateCcw size={12} /> {t("restore")}
+                        </button>
+                    </motion.div>
+                );
+            })}
+        </div>
+    );
+}
+
+// ── AI analyses tab ───────────────────────────────────────────
+
+function AiAnalysesTab({ items, onOpen }: {
+    items: AiAgg[];
+    onOpen: (assetType: "s" | "c", ticker: string) => void;
+}) {
+    const t = useTranslations("watchlist");
+    if (items.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <Sparkles size={28} style={{ color: "var(--text-muted)" }} />
+                <p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>{t("aiEmpty")}</p>
+                <p className="text-xs max-w-sm" style={{ color: "var(--text-muted)" }}>{t("aiEmptySub")}</p>
+            </div>
+        );
+    }
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {items.map((a) => (
+                <motion.div
+                    key={a.key}
+                    layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                    onClick={() => onOpen(a.assetType, a.key)}
+                    title={t("openDetail")}
+                    className="p-4 rounded-2xl cursor-pointer transition-colors hover:brightness-110"
+                    style={{ background: "var(--bg-card)", border: "1px solid var(--border-subtle)" }}
+                >
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                            {a.assetType === "c" ? <Bitcoin size={14} style={{ color: "var(--accent-amber)" }} /> : <Building2 size={14} style={{ color: "var(--accent-cyan)" }} />}
+                            <span className="font-bold font-mono text-sm" style={{ color: "var(--text-primary)" }}>{a.ticker.toUpperCase()}</span>
+                            <span className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{a.name}</span>
+                        </div>
+                        <span className="text-lg font-bold font-mono shrink-0" style={{ color: scoreRingColor(a.qualitativeScore) }}>{a.qualitativeScore}</span>
+                    </div>
+                    {a.narrativeShift && (
+                        <div className="flex items-center gap-1.5 mb-2 text-[10px]" style={{ color: "var(--accent-violet)" }}>
+                            <Activity size={11} /> {a.narrativeShift.from} → {a.narrativeShift.to}
+                            {a.narrativeScore !== undefined && <span style={{ color: "var(--text-muted)" }}>· {a.narrativeScore}/100</span>}
+                        </div>
+                    )}
+                    <p className="text-[11px] leading-relaxed line-clamp-3" style={{ color: "var(--text-secondary)" }}>{a.summary}</p>
+                    <div className="flex items-center justify-between mt-2 text-[10px]" style={{ color: "var(--text-muted)" }}>
+                        <span>{t("aiSignals", { n: a.signalCount })}</span>
+                        {a.generatedAt && <span>{t("aiGeneratedOn", { date: new Date(a.generatedAt).toLocaleDateString("es-ES") })}</span>}
+                    </div>
+                </motion.div>
+            ))}
+        </div>
     );
 }

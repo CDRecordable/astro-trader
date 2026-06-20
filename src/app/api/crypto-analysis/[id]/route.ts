@@ -19,6 +19,8 @@ const SETTINGS_PATH = path.join(process.cwd(), "user-data", "settings.json");
 
 interface CachedCryptoAnalysis {
     id: string;
+    name?: string;
+    symbol?: string;
     generatedAt: string;
     provider: string;
     model: string;
@@ -105,7 +107,8 @@ export async function POST(
         const analysis = parseCryptoAnalysisJson(text);
 
         const cached: CachedCryptoAnalysis = {
-            id, generatedAt: new Date().toISOString(), provider, model, analysis, news,
+            id, name: body.name, symbol: body.symbol,
+            generatedAt: new Date().toISOString(), provider, model, analysis, news,
         };
         fs.mkdirSync(CACHE_DIR, { recursive: true });
         fs.writeFileSync(cachePath(id), JSON.stringify(cached, null, 2), "utf-8");
