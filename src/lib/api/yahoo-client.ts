@@ -337,6 +337,17 @@ export async function fetchCompanyFromYahoo(
         const sixMonthReturn = avg200 > 0 ? (price - avg200) / avg200 : 0;
         const threeMonthReturn = (oneMonthReturn + sixMonthReturn) / 2;
 
+        // ── P/E + annual revenue/earnings history ──────────────
+        const peRatio = quote.trailingPE && Number(quote.trailingPE) > 0
+            ? Number(quote.trailingPE) : undefined;
+        const annualFinancials = annual
+            .filter((r) => r.date && (r.totalRevenue != null || r.netIncome != null))
+            .map((r) => ({
+                year: String(new Date(r.date as string | Date).getFullYear()),
+                revenue: r.totalRevenue != null ? Number(r.totalRevenue) / 1_000_000 : null,
+                netIncome: r.netIncome != null ? Number(r.netIncome) / 1_000_000 : null,
+            }));
+
         return {
             id: `yf_${ticker}`,
             ticker,
@@ -383,6 +394,8 @@ export async function fetchCompanyFromYahoo(
                 epsRevisionsUp30d,
                 epsRevisionsDown30d,
                 epsTrend30d,
+                peRatio,
+                annualFinancials,
                 dataQuality: {
                     deltas: hasDeltas, roc: hasRoc, growth: hasGrowth,
                     solvency: hasSolvency, dilution: hasDilution, accruals: hasAccruals,

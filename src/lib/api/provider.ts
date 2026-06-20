@@ -103,6 +103,8 @@ function companyToDbValues(c: Company) {
             epsRevisionsUp30d: c.metrics.epsRevisionsUp30d,
             epsRevisionsDown30d: c.metrics.epsRevisionsDown30d,
             epsTrend30d: c.metrics.epsTrend30d,
+            peRatio: c.metrics.peRatio,
+            annualFinancials: c.metrics.annualFinancials,
         },
         historicalData: c.historicalData,
         lastScannedAt: new Date(),
