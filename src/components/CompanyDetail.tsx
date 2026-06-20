@@ -1,16 +1,24 @@
 // ============================================================
-// Company Detail - Expanded 8-section study view
+// Company Detail - Expanded study view with interpretation sidebar
 // ============================================================
 
 "use client";
 
 import React from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import type { Company, AlgorithmScore } from "@/lib/types";
 import { formatMarketCap, formatPercent, formatCurrency } from "@/lib/utils";
 import { PriceChart, MarginChart, ReturnChart, ScoreBreakdownChart } from "./FinancialCharts";
 import ScoreRing from "./ScoreRing";
-import { X, ArrowUpRight, ArrowDownRight, Shield, Target, Activity, BarChart3, Gauge, Globe, HelpCircle } from "lucide-react";
+import AiAnalysisSection from "./AiAnalysisSection";
+import WatchlistButton from "./WatchlistButton";
+import DiscardButton from "./DiscardButton";
+import { useTranslations } from "next-intl";
+import {
+    X, ArrowUpRight, ArrowDownRight,
+    Shield, Target, Activity, BarChart3, Globe,
+    HelpCircle, CheckCircle2, XCircle, MinusCircle, Info, TrendingUp
+} from "lucide-react";
 
 interface CompanyDetailProps {
     company: Company;
@@ -18,6 +26,7 @@ interface CompanyDetailProps {
     onClose: () => void;
 }
 
+/* ── Tooltip ───────────────────────────────────────────────── */
 function Tooltip({ children, content }: { children: React.ReactNode; content: string }) {
     return (
         <div className="group relative flex items-center">
@@ -30,6 +39,7 @@ function Tooltip({ children, content }: { children: React.ReactNode; content: st
     );
 }
 
+/* ── MetricRow ─────────────────────────────────────────────── */
 function MetricRow({ label, value, color, tooltip }: { label: string; value: string | React.ReactNode; color?: string; tooltip?: string }) {
     const labelNode = tooltip ? (
         <Tooltip content={tooltip}>
@@ -50,6 +60,7 @@ function MetricRow({ label, value, color, tooltip }: { label: string; value: str
     );
 }
 
+/* ── SectionHeader ─────────────────────────────────────────── */
 function SectionHeader({ icon: Icon, title }: { icon: React.ElementType; title: string }) {
     return (
         <div className="flex items-center gap-2 mb-3 mt-2">
@@ -61,8 +72,65 @@ function SectionHeader({ icon: Icon, title }: { icon: React.ElementType; title: 
     );
 }
 
+/* ── CheckItem — used in the sidebar cards ─────────────────── */
+/** Three states: pass (green ✓), fail (red ✗), or `na` = data not available,
+ *  rendered NEUTRAL in amber with an "N/D" tag — never as a failure.
+ *  `tip` adds a dashed-underline hover tooltip explaining the concept. */
+function CheckItem({ pass, label, na, tip }: { pass: boolean; label: string; na?: boolean; tip?: string }) {
+    const Icon = na ? MinusCircle : pass ? CheckCircle2 : XCircle;
+    const iconColor = na ? "var(--signal-hold)" : pass ? "var(--signal-strong-buy)" : "var(--signal-avoid)";
+    const textColor = na ? "var(--signal-hold)" : pass ? "var(--text-secondary)" : "var(--signal-avoid)";
+
+    const labelNode = (
+        <span
+            className="text-[11px] leading-snug"
+            style={{
+                color: textColor,
+                ...(tip ? { textDecoration: "underline dashed", textUnderlineOffset: "3px", textDecorationColor: "rgba(255,255,255,0.22)", cursor: "help" } : {}),
+            }}
+        >
+            {label}{na && <span className="italic"> · N/D</span>}
+        </span>
+    );
+
+    return (
+        <div className="flex items-start gap-2 py-1" style={{ opacity: na ? 0.92 : 1 }}>
+            <Icon size={14} className="mt-0.5 shrink-0" style={{ color: iconColor }} />
+            {tip ? <Tooltip content={tip}>{labelNode}</Tooltip> : labelNode}
+        </div>
+    );
+}
+
+/* ── InsightCard — sidebar interpretation panel ────────────── */
+function InsightCard({ title, icon: Icon, children }: { title: string; icon: React.ElementType; children: React.ReactNode }) {
+    return (
+        <div
+            className="rounded-xl p-4 space-y-2"
+            style={{
+                background: "rgba(255,255,255,0.02)",
+                border: "1px solid var(--border-subtle)",
+            }}
+        >
+            <div className="flex items-center gap-2 mb-2">
+                <Icon size={13} style={{ color: "var(--accent-cyan)" }} />
+                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--accent-cyan)" }}>
+                    {title}
+                </span>
+            </div>
+            {children}
+        </div>
+    );
+}
+
+/* ══════════════════════════════════════════════════════════════ */
+/* ═  MAIN COMPONENT                                          ═ */
+/* ══════════════════════════════════════════════════════════════ */
 export default function CompanyDetail({ company, score, onClose }: CompanyDetailProps) {
     const m = company.metrics;
+    const t = useTranslations("companyDetail");
+
+    // Data availability — legacy rows without flags are assumed complete.
+    const dq = m.dataQuality ?? { deltas: true, roc: true, growth: true };
 
     const deltaColor = (val: number) =>
         val >= 0 ? "var(--signal-strong-buy)" : "var(--signal-avoid)";
@@ -70,23 +138,36 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
     const deltaArrow = (val: number) =>
         val >= 0 ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />;
 
+    /* ── Computed booleans for sidebar checks ── */
+    const passEquity = m.totalEquity > 0;
+    const passOperating = m.operatingProfit > 0;
+    const passFcfYield = m.fcfYield >= 0.05;
+    const passBookToMarket = m.bookToMarket > 0.40;
+    const passEbitMargin = m.ebitMargin > 0.10;
+    const passGrossMargin = m.grossMargin > 0.30;
+    const passRoe = m.roe > 0.10;
+    const passRoc = m.roc > 0.10;
+    // Aligned with the algorithm: needs real growth data AND positive EBITDA growth
+    const passEbitdaEfficiency = dq.growth && m.ebitdaGrowth > 0 && m.ebitdaGrowth >= m.assetGrowth;
+    const passEbitDelta = m.ebitMarginDelta > 0;
+    const passGrossDelta = m.grossMarginDelta > 0;
+    const passRoeDelta = m.roeDelta > 0;
+    const passRocDelta = m.rocDelta > 0;
+    const pass1M = m.oneMonthReturn > 0;
+    const pass3M = m.threeMonthReturn > 0;
+    const passNoEuphoria = m.sixMonthReturn <= 0.40;
+    const priceNear52Low = m.currentPrice <= m.fiftyTwoWeekLow * 1.15;
+
     return (
         <AnimatePresence>
-            <motion.div
-                key="company-detail"
-                initial={{ opacity: 0, x: 100 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 100 }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                className="fixed top-0 right-0 h-full overflow-y-auto z-40"
+            <div
+                className="w-full mx-auto"
                 style={{
-                    width: "min(600px, 100vw - 72px)",
+                    maxWidth: "1440px",
                     background: "var(--bg-secondary)",
-                    borderLeft: "1px solid var(--border-subtle)",
-                    boxShadow: "-8px 0 32px rgba(0, 0, 0, 0.5)",
                 }}
             >
-                {/* Header */}
+                {/* ── Header ── */}
                 <div
                     className="sticky top-0 z-10 px-6 py-4 flex items-center justify-between"
                     style={{
@@ -109,165 +190,464 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                             </p>
                         </div>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="p-2 rounded-lg transition-colors hover:bg-white/5"
-                    >
-                        <X size={18} style={{ color: "var(--text-muted)" }} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <DiscardButton company={company} assetType="s" />
+                        <WatchlistButton company={company} assetType="s" />
+                        <button
+                            onClick={onClose}
+                            className="p-2 rounded-lg transition-colors hover:bg-white/5"
+                        >
+                            <X size={18} style={{ color: "var(--text-muted)" }} />
+                        </button>
+                    </div>
                 </div>
 
-                <div className="px-6 py-4 space-y-6">
-                    {/* Section 1: Score Breakdown */}
-                    <section className="glass-card p-4">
-                        <SectionHeader icon={Target} title="1 · Score Breakdown" />
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <ScoreBreakdownChart
-                                    valuationScore={score.valuationScore}
-                                    trendScore={score.trendScore}
-                                    timingScore={score.timingScore}
+                {/* ── Paired Rows: Section + Insight Card aligned ── */}
+                <div className="px-6 py-5 space-y-6">
+
+                    {/* ── Row 1: Score Breakdown + Score Interpretation ── */}
+                    <div className="flex flex-col lg:flex-row gap-5 items-stretch">
+                        <section className="glass-card p-4 flex-1 min-w-0">
+                            <SectionHeader icon={Target} title={t("scoreTitle")} />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <ScoreBreakdownChart
+                                        valuationScore={score.valuationScore}
+                                        trendScore={score.trendScore}
+                                        timingScore={score.timingScore}
+                                    />
+                                </div>
+                                <div className="flex flex-col justify-center space-y-2">
+                                    <MetricRow label={t("valuation35")} value={`${score.valuationScore}/100`} color="var(--accent-cyan)" />
+                                    <MetricRow label={t("trend25")} value={`${score.trendScore}/100`} color="var(--accent-violet)" />
+                                    <MetricRow label={t("timing20")} value={`${score.timingScore}/100`} color="var(--accent-amber)" />
+                                    <MetricRow label={t("macroAdj")} value={`×${score.macroAdjustment.toFixed(2)}`} color="var(--text-secondary)" />
+                                    <MetricRow label={t("totalScore")} value={`${score.totalScore}/100`} color="var(--accent-emerald)" />
+                                </div>
+                            </div>
+                        </section>
+                        <div className="w-full lg:w-[340px] shrink-0">
+                            <InsightCard title={t("insightScore")} icon={Target}>
+                                <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                                    {t("insightScoreDesc")}
+                                </p>
+                                <CheckItem pass={score.totalScore >= 70} label={t("checkScoreHigh")} tip={t("checkScoreHighTip")} />
+                                <CheckItem pass={score.totalScore >= 40} label={t("checkScoreMid")} tip={t("checkScoreMidTip")} />
+                                <CheckItem pass={score.passesHardFilters} label={t("checkPassesFilters")} tip={t("checkPassesFiltersTip")} />
+                                <CheckItem pass={score.valuationScore >= 50} label={t("checkValuationAbove50")} tip={t("checkValuationAbove50Tip")} />
+                                <CheckItem pass={score.trendScore >= 50} label={t("checkTrendAbove50")} tip={t("checkTrendAbove50Tip")} />
+                                <CheckItem pass={score.timingScore >= 50} label={t("checkTimingAbove50")} tip={t("checkTimingAbove50Tip")} />
+                            </InsightCard>
+                        </div>
+                    </div>
+
+                    {/* ── Row 2: Hard Filters + Filters Check ── */}
+                    <div className="flex flex-col lg:flex-row gap-5 items-stretch">
+                        <section className="glass-card p-4 flex-1 min-w-0">
+                            <SectionHeader icon={Shield} title={t("filtersTitle")} />
+                            <div className="space-y-1">
+                                <MetricRow
+                                    label={t("totalEquity")}
+                                    value={formatCurrency(m.totalEquity * 1_000_000, true)}
+                                    color={passEquity ? "var(--signal-strong-buy)" : "var(--signal-avoid)"}
+                                    tooltip={t("totalEquityTip")}
+                                />
+                                <MetricRow
+                                    label={t("marketCap")}
+                                    value={formatMarketCap(m.marketCap)}
+                                    color="var(--text-primary)"
+                                    tooltip={t("marketCapTip")}
+                                />
+                                <MetricRow
+                                    label={t("operatingProfit")}
+                                    value={formatCurrency(m.operatingProfit * 1_000_000, true)}
+                                    color={passOperating ? "var(--signal-strong-buy)" : "var(--signal-avoid)"}
+                                    tooltip={t("operatingProfitTip")}
                                 />
                             </div>
-                            <div className="flex flex-col justify-center space-y-2">
-                                <MetricRow label="Valuation (40%)" value={`${score.valuationScore}/100`} color="var(--accent-cyan)" />
-                                <MetricRow label="Trend (30%)" value={`${score.trendScore}/100`} color="var(--accent-violet)" />
-                                <MetricRow label="Timing (20%)" value={`${score.timingScore}/100`} color="var(--accent-amber)" />
-                                <MetricRow label="Macro Adj." value={`×${score.macroAdjustment.toFixed(2)}`} color="var(--text-secondary)" />
-                                <MetricRow label="Total Score" value={`${score.totalScore}/100`} color="var(--accent-emerald)" />
-                            </div>
+                        </section>
+                        <div className="w-full lg:w-[340px] shrink-0">
+                            <InsightCard title={t("insightFilters")} icon={Shield}>
+                                <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                                    {t("insightFiltersDesc")}
+                                </p>
+                                <CheckItem pass={passEquity} label={t("checkEquityPositive")} tip={t("checkEquityPositiveTip")} />
+                                <CheckItem pass={passOperating} label={t("checkOperatingPositive")} tip={t("checkOperatingPositiveTip")} />
+                                {score.hardFilterReasons.length > 0 && (
+                                    <div className="mt-1 px-2 py-1.5 rounded-md text-[10px]" style={{
+                                        background: "rgba(251, 113, 133, 0.06)",
+                                        border: "1px solid rgba(251, 113, 133, 0.10)",
+                                        color: "var(--signal-avoid)",
+                                    }}>
+                                        {score.hardFilterReasons.join(". ")}
+                                    </div>
+                                )}
+                            </InsightCard>
                         </div>
-                    </section>
+                    </div>
 
-                    {/* Section 2: Hard Filters */}
-                    <section className="glass-card p-4">
-                        <SectionHeader icon={Shield} title="2 · Hard Filters (Mandatory Passes)" />
-                        <div className="space-y-1">
+                    {/* ── Row 3: Valuation & Solvency + Check ── */}
+                    <div className="flex flex-col lg:flex-row gap-5 items-stretch">
+                        <section className="glass-card p-4 flex-1 min-w-0">
+                            <SectionHeader icon={BarChart3} title={t("valuationTitle")} />
+                            {dq.solvency && m.evFcfYield !== undefined && (
+                                <MetricRow
+                                    label={t("evFcfYield")}
+                                    value={formatPercent(m.evFcfYield)}
+                                    color={m.evFcfYield >= 0.04 ? "var(--signal-strong-buy)" : "var(--signal-hold)"}
+                                    tooltip={t("evFcfYieldTip")}
+                                />
+                            )}
                             <MetricRow
-                                label="Total Equity"
-                                value={formatCurrency(m.totalEquity * 1_000_000, true)}
-                                color={m.totalEquity > 0 ? "var(--signal-strong-buy)" : "var(--signal-avoid)"}
-                                tooltip="Total Equity = Total Assets minus Total Liabilities. A negative value can be a red flag, though acceptable for large-caps undergoing massive buybacks."
+                                label={t("fcfYield")}
+                                value={formatPercent(m.fcfYield)}
+                                color={passFcfYield ? "var(--signal-strong-buy)" : "var(--signal-hold)"}
+                                tooltip={t("fcfYieldTip")}
                             />
                             <MetricRow
-                                label="Market Cap"
-                                value={formatMarketCap(m.marketCap)}
-                                color="var(--text-primary)"
-                                tooltip="Total market value of the company's outstanding shares. Used to determine the algorithm's Tier (Large, Mid, Small)."
+                                label={t("bookToMarket")}
+                                value={m.bookToMarket.toFixed(2)}
+                                color={passBookToMarket ? "var(--signal-strong-buy)" : "var(--signal-hold)"}
+                                tooltip={t("bookToMarketTip")}
                             />
-                            <MetricRow
-                                label="Operating Profit"
-                                value={formatCurrency(m.operatingProfit * 1_000_000, true)}
-                                color={m.operatingProfit > 0 ? "var(--signal-strong-buy)" : "var(--signal-avoid)"}
-                                tooltip="Profit from core business operations. Must be positive as a baseline health indicator."
-                            />
-                        </div>
-                    </section>
+                            {m.tangibleBookToMarket !== undefined && (
+                                <MetricRow
+                                    label={t("tangibleBtm")}
+                                    value={m.tangibleBookToMarket.toFixed(2)}
+                                    color={m.tangibleBookToMarket > 0.2 ? "var(--signal-strong-buy)" : m.tangibleBookToMarket > 0 ? "var(--signal-hold)" : "var(--signal-avoid)"}
+                                    tooltip={t("tangibleBtmTip")}
+                                />
+                            )}
 
-                    {/* Section 3: Valuation */}
-                    <section className="glass-card p-4">
-                        <SectionHeader icon={BarChart3} title="3 · Valuation Breakdown (40%)" />
-                        <MetricRow
-                            label="FCF Yield"
-                            value={formatPercent(m.fcfYield)}
-                            color={m.fcfYield >= 0.05 ? "var(--signal-strong-buy)" : "var(--signal-hold)"}
-                            tooltip="Free Cash Flow Yield: How much free cash the company generates relative to its market value. Higher is better."
-                        />
-                        <MetricRow
-                            label="Book-to-Market"
-                            value={m.bookToMarket.toFixed(2)}
-                            color={m.bookToMarket > 0.40 ? "var(--signal-strong-buy)" : "var(--signal-hold)"}
-                            tooltip="Equity divided by Market Cap. Value > 1.0 means it trades below liquidation value. Higher indicates a potential 'classic value' bargain."
-                        />
-                    </section>
-
-                    {/* Section 4: Trend & Quality */}
-                    <section className="glass-card p-4 space-y-6">
-                        <SectionHeader icon={Activity} title="4 · Trend & Quality Breakdown (30%)" />
-
-                        <div>
-                            <p className="text-[10px] uppercase tracking-wider text-emerald-400 mb-2 font-semibold">Margin Evolution</p>
-                            <MarginChart company={company} />
-                            <div className="grid grid-cols-2 gap-4 mt-3">
-                                <div className="flex items-center gap-1" style={{ color: deltaColor(m.ebitMarginDelta) }}>
-                                    {deltaArrow(m.ebitMarginDelta)}
-                                    <span className="text-xs font-mono">EBIT Δ {formatPercent(m.ebitMarginDelta)}</span>
-                                </div>
-                                <div className="flex items-center gap-1" style={{ color: deltaColor(m.grossMarginDelta) }}>
-                                    {deltaArrow(m.grossMarginDelta)}
-                                    <span className="text-xs font-mono">Gross Δ {formatPercent(m.grossMarginDelta)}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <p className="text-[10px] uppercase tracking-wider text-emerald-400 mb-2 font-semibold">Capital Efficiency (ROC & ROE)</p>
-                            <ReturnChart company={company} />
-                            <div className="grid grid-cols-2 gap-4 mt-3">
-                                <div className="flex items-center gap-1" style={{ color: deltaColor(m.roeDelta) }}>
-                                    {deltaArrow(m.roeDelta)}
-                                    <span className="text-xs font-mono">ROE Δ {formatPercent(m.roeDelta)}</span>
-                                </div>
-                                <div className="flex items-center gap-1" style={{ color: deltaColor(m.rocDelta) }}>
-                                    {deltaArrow(m.rocDelta)}
-                                    <span className="text-xs font-mono">ROC Δ {formatPercent(m.rocDelta)}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <p className="text-[10px] uppercase tracking-wider text-emerald-400 mb-2 font-semibold">Reinvestment Efficiency</p>
-                            <MetricRow label="Asset Growth" value={formatPercent(m.assetGrowth)} tooltip="How fast the company is expanding its asset base (investing)." />
-                            <MetricRow label="EBITDA Growth" value={formatPercent(m.ebitdaGrowth)} color={m.ebitdaGrowth >= m.assetGrowth ? "var(--signal-strong-buy)" : "var(--signal-avoid)"} tooltip="How fast core independent earnings are growing." />
-                            <div className="mt-2 px-3 py-2 rounded-lg text-[11px]" style={{
-                                background: m.ebitdaGrowth >= m.assetGrowth ? "rgba(52, 211, 153, 0.06)" : "rgba(251, 113, 133, 0.06)",
-                                border: m.ebitdaGrowth >= m.assetGrowth ? "1px solid rgba(52, 211, 153, 0.12)" : "1px solid rgba(251, 113, 133, 0.12)",
-                                color: m.ebitdaGrowth >= m.assetGrowth ? "var(--signal-strong-buy)" : "var(--signal-avoid)",
-                            }}>
-                                {m.ebitdaGrowth >= m.assetGrowth
-                                    ? "✓ EBITDA growth outpaces asset growth — efficient capital allocation"
-                                    : "⚠ Asset growth exceeds EBITDA growth — potential inefficiency"}
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* Section 5: Timing & Momentum */}
-                    <section className="glass-card p-4 space-y-6">
-                        <SectionHeader icon={Globe} title="5 · Timing & Momentum Breakdown (20%)" />
-
-                        <div>
-                            <p className="text-[10px] uppercase tracking-wider text-amber-500 mb-2 font-semibold">Price History (12M)</p>
-                            <PriceChart company={company} />
-                        </div>
-
-                        <div>
-                            <p className="text-[10px] uppercase tracking-wider text-amber-500 mb-2 font-semibold">Momentum Indicators</p>
-                            <MetricRow label="Current Price" value={`$${m.currentPrice.toFixed(2)}`} />
-                            <MetricRow label="52-Week Low" value={`$${m.fiftyTwoWeekLow.toFixed(2)}`} tooltip="The lowest price in the last year. The algorithm rewards trading closer to the bottom." />
-                            <MetricRow label="52-Week High" value={`$${m.fiftyTwoWeekHigh.toFixed(2)}`} />
-                            <MetricRow label="1-Month Return" value={formatPercent(m.oneMonthReturn)} color={deltaColor(m.oneMonthReturn)} tooltip="Short-term momentum. Slightly positive returns are rewarded." />
-                            <MetricRow label="3-Month Return" value={formatPercent(m.threeMonthReturn)} color={deltaColor(m.threeMonthReturn)} />
-                            <MetricRow label="6-Month Return" value={formatPercent(m.sixMonthReturn)} color={m.sixMonthReturn > 0.40 ? "var(--signal-avoid)" : deltaColor(m.sixMonthReturn)} tooltip="Medium-term momentum. Very high returns are penalized as 'euphoria'." />
-                            {m.sixMonthReturn > 0.30 && (
-                                <div className="mt-2 px-3 py-2 rounded-lg text-[11px]" style={{
-                                    background: "rgba(251, 191, 36, 0.06)",
-                                    border: "1px solid rgba(251, 191, 36, 0.12)",
-                                    color: "var(--signal-hold)",
+                            {/financial/i.test(company.sector) && !dq.solvency && (
+                                <div className="mt-3 px-3 py-2 rounded-lg text-[11px]" style={{
+                                    background: "rgba(34, 211, 238, 0.05)",
+                                    border: "1px solid rgba(34, 211, 238, 0.12)",
+                                    color: "var(--text-muted)",
                                 }}>
-                                    ⚠ High 6M returns suggest possible euphoria — mean reversion risk
+                                    ℹ {t("financialSectorNote")}
                                 </div>
                             )}
+                            {dq.solvency && (
+                                <>
+                                    <p className="text-[10px] uppercase tracking-wider text-rose-300 mt-4 mb-2 font-semibold">{t("solvencySection")}</p>
+                                    {m.netDebtToEbitda !== undefined && (
+                                        <MetricRow
+                                            label={t("netDebtEbitda")}
+                                            value={`${m.netDebtToEbitda.toFixed(1)}×`}
+                                            color={m.netDebtToEbitda < 1.5 ? "var(--signal-strong-buy)" : m.netDebtToEbitda < 3 ? "var(--signal-hold)" : "var(--signal-avoid)"}
+                                            tooltip={t("netDebtEbitdaTip")}
+                                        />
+                                    )}
+                                    {m.interestCoverage !== undefined && (
+                                        <MetricRow
+                                            label={t("interestCoverage")}
+                                            value={`${m.interestCoverage.toFixed(1)}×`}
+                                            color={m.interestCoverage > 4 ? "var(--signal-strong-buy)" : m.interestCoverage > 2 ? "var(--signal-hold)" : "var(--signal-avoid)"}
+                                            tooltip={t("interestCoverageTip")}
+                                        />
+                                    )}
+                                </>
+                            )}
+                        </section>
+                        <div className="w-full lg:w-[340px] shrink-0">
+                            <InsightCard title={t("insightValuation")} icon={BarChart3}>
+                                <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                                    {t("insightValuationDesc")}
+                                </p>
+                                <CheckItem pass={(m.evFcfYield ?? 0) >= 0.04} label={t("checkEvFcf")} na={!dq.solvency || m.evFcfYield === undefined} tip={t("checkEvFcfTip")} />
+                                <CheckItem pass={passFcfYield} label={t("checkFcfAbove5")} tip={t("checkFcfAbove5Tip")} />
+                                <CheckItem pass={(m.tangibleBookToMarket ?? -1) > 0} label={t("checkTangibleBook")} na={m.tangibleBookToMarket === undefined} tip={t("checkTangibleBookTip")} />
+                                <CheckItem pass={(m.netDebtToEbitda ?? 99) < 3} label={t("checkLeverageOk")} na={!dq.solvency || m.netDebtToEbitda === undefined} tip={t("checkLeverageOkTip")} />
+                                <CheckItem pass={(m.interestCoverage ?? 0) > 2} label={t("checkCoverageOk")} na={!dq.solvency || m.interestCoverage === undefined} tip={t("checkCoverageOkTip")} />
+                                <CheckItem pass={m.fcfYield > 0} label={t("checkFcfPositive")} tip={t("checkFcfPositiveTip")} />
+                            </InsightCard>
                         </div>
-                    </section>
+                    </div>
 
-                    {/* Description */}
-                    <section className="glass-card p-4">
-                        <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                            {company.description}
-                        </p>
-                    </section>
+                    {/* ── Row 4: Trend & Quality + Quality & Trend Check ── */}
+                    <div className="flex flex-col lg:flex-row gap-5 items-start">
+                        <section className="glass-card p-4 space-y-6 flex-1 min-w-0">
+                            <SectionHeader icon={Activity} title={t("trendTitle")} />
+
+                            <div>
+                                <p className="text-[10px] uppercase tracking-wider text-emerald-400 mb-2 font-semibold">{t("marginEvolution")}</p>
+                                {dq.deltas ? (
+                                    <>
+                                        <MarginChart company={company} />
+                                        <div className="grid grid-cols-2 gap-4 mt-3">
+                                            <div className="flex items-center gap-1" style={{ color: deltaColor(m.ebitMarginDelta) }}>
+                                                {deltaArrow(m.ebitMarginDelta)}
+                                                <span className="text-xs font-mono">EBIT Δ {formatPercent(m.ebitMarginDelta)}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1" style={{ color: deltaColor(m.grossMarginDelta) }}>
+                                                {deltaArrow(m.grossMarginDelta)}
+                                                <span className="text-xs font-mono">Gross Δ {formatPercent(m.grossMarginDelta)}</span>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="space-y-2">
+                                        <MetricRow label={t("ebitCurrent")} value={formatPercent(m.ebitMargin)} color={m.ebitMargin > 0 ? "var(--signal-strong-buy)" : "var(--signal-avoid)"} />
+                                        <MetricRow label={t("grossCurrent")} value={formatPercent(m.grossMargin)} color={m.grossMargin > 0 ? "var(--signal-strong-buy)" : "var(--signal-avoid)"} />
+                                        <div className="mt-2 px-3 py-2 rounded-lg text-[11px]" style={{
+                                            background: "rgba(251, 191, 36, 0.06)",
+                                            border: "1px solid rgba(251, 191, 36, 0.12)",
+                                            color: "var(--signal-hold)",
+                                        }}>
+                                            ⚠ {t("yoyNotAvailable")}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div>
+                                <p className="text-[10px] uppercase tracking-wider text-emerald-400 mb-2 font-semibold">{t("capitalEfficiency")}</p>
+                                {dq.deltas ? (
+                                    <>
+                                        <ReturnChart company={company} />
+                                        <div className="grid grid-cols-2 gap-4 mt-3">
+                                            <div className="flex items-center gap-1" style={{ color: deltaColor(m.roeDelta) }}>
+                                                {deltaArrow(m.roeDelta)}
+                                                <span className="text-xs font-mono">ROE Δ {formatPercent(m.roeDelta)}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1" style={{ color: deltaColor(m.rocDelta) }}>
+                                                {deltaArrow(m.rocDelta)}
+                                                <span className="text-xs font-mono">ROC Δ {formatPercent(m.rocDelta)}</span>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="space-y-2">
+                                        <MetricRow label={t("roeCurrent")} value={formatPercent(m.roe)} color={m.roe > 0.10 ? "var(--signal-strong-buy)" : "var(--signal-hold)"} />
+                                        <MetricRow label={t("rocCurrent")} value={formatPercent(m.roc)} color={m.roc > 0.10 ? "var(--signal-strong-buy)" : "var(--signal-hold)"} />
+                                        <div className="mt-2 px-3 py-2 rounded-lg text-[11px]" style={{
+                                            background: "rgba(251, 191, 36, 0.06)",
+                                            border: "1px solid rgba(251, 191, 36, 0.12)",
+                                            color: "var(--signal-hold)",
+                                        }}>
+                                            ⚠ {t("yoyNotAvailable")}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div>
+                                <p className="text-[10px] uppercase tracking-wider text-emerald-400 mb-2 font-semibold">{t("reinvestmentEfficiency")}</p>
+                                {dq.growth ? (
+                                    <>
+                                        <MetricRow label={t("assetGrowth")} value={formatPercent(m.assetGrowth)} tooltip={t("assetGrowthTip")} />
+                                        <MetricRow label={t("ebitdaGrowth")} value={formatPercent(m.ebitdaGrowth)} color={passEbitdaEfficiency ? "var(--signal-strong-buy)" : "var(--signal-avoid)"} tooltip={t("ebitdaGrowthTip")} />
+                                        <div className="mt-2 px-3 py-2 rounded-lg text-[11px]" style={{
+                                            background: passEbitdaEfficiency ? "rgba(52, 211, 153, 0.06)" : "rgba(251, 113, 133, 0.06)",
+                                            border: passEbitdaEfficiency ? "1px solid rgba(52, 211, 153, 0.12)" : "1px solid rgba(251, 113, 133, 0.12)",
+                                            color: passEbitdaEfficiency ? "var(--signal-strong-buy)" : "var(--signal-avoid)",
+                                        }}>
+                                            {passEbitdaEfficiency
+                                                ? `✓ ${t("ebitdaPassMsg")}`
+                                                : `⚠ ${t("ebitdaFailMsg")}`}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="px-3 py-2 rounded-lg text-[11px]" style={{
+                                        background: "rgba(251, 191, 36, 0.06)",
+                                        border: "1px solid rgba(251, 191, 36, 0.12)",
+                                        color: "var(--signal-hold)",
+                                    }}>
+                                        ⚠ {t("yoyNotAvailable")}
+                                    </div>
+                                )}
+                            </div>
+                        </section>
+                        <div className="w-full lg:w-[340px] shrink-0">
+                            <InsightCard title={t("insightTrend")} icon={TrendingUp}>
+                                <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                                    {t("insightTrendDesc")}
+                                </p>
+                                <CheckItem pass={passEbitMargin} label={t("checkEbitAbove10")} tip={t("checkEbitAbove10Tip")} />
+                                <CheckItem pass={passGrossMargin} label={t("checkGrossAbove30")} tip={t("checkGrossAbove30Tip")} />
+                                <CheckItem pass={passRoe} label={t("checkRoeAbove10")} tip={t("checkRoeAbove10Tip")} />
+                                <CheckItem pass={passRoc} label={t("checkRocAbove10")} na={!dq.roc} tip={t("checkRocAbove10Tip")} />
+                                <CheckItem pass={passEbitDelta} label={t("checkEbitImproving")} na={!dq.deltas} tip={t("checkEbitImprovingTip")} />
+                                <CheckItem pass={passGrossDelta} label={t("checkGrossImproving")} na={!dq.deltas} tip={t("checkGrossImprovingTip")} />
+                                <CheckItem pass={passRoeDelta} label={t("checkRoeImproving")} na={!dq.deltas} tip={t("checkRoeImprovingTip")} />
+                                <CheckItem pass={passRocDelta} label={t("checkRocImproving")} na={!dq.deltas} tip={t("checkRocImprovingTip")} />
+                                <CheckItem pass={passEbitdaEfficiency} label={t("checkEbitdaEfficiency")} na={!dq.growth} tip={t("checkEbitdaEfficiencyTip")} />
+                                <CheckItem pass={(m.sharesDilution ?? 1) <= 0.005} label={t("checkNoDilution")} na={!dq.dilution || m.sharesDilution === undefined} tip={t("checkNoDilutionTip")} />
+                                <CheckItem pass={(m.accrualRatio ?? 1) <= 0.03} label={t("checkCleanAccruals")} na={!dq.accruals || m.accrualRatio === undefined} tip={t("checkCleanAccrualsTip")} />
+                            </InsightCard>
+                        </div>
+                    </div>
+
+                    {/* ── Row 5: Timing & Momentum + Timing Check ── */}
+                    <div className="flex flex-col lg:flex-row gap-5 items-start">
+                        <section className="glass-card p-4 space-y-6 flex-1 min-w-0">
+                            <SectionHeader icon={Globe} title={t("timingTitle")} />
+
+                            <div>
+                                <p className="text-[10px] uppercase tracking-wider text-amber-500 mb-2 font-semibold">{t("priceHistory")}</p>
+                                <PriceChart company={company} />
+                            </div>
+
+                            <div>
+                                <p className="text-[10px] uppercase tracking-wider text-amber-500 mb-2 font-semibold">{t("momentumIndicators")}</p>
+                                <MetricRow label={t("currentPrice")} value={`$${m.currentPrice.toFixed(2)}`} />
+                                <MetricRow label={t("week52Low")} value={`$${m.fiftyTwoWeekLow.toFixed(2)}`} tooltip={t("week52LowTip")} />
+                                <MetricRow label={t("week52High")} value={`$${m.fiftyTwoWeekHigh.toFixed(2)}`} />
+                                <MetricRow label={t("return1M")} value={formatPercent(m.oneMonthReturn)} color={deltaColor(m.oneMonthReturn)} tooltip={t("return1MTip")} />
+                                <MetricRow label={t("return3M")} value={formatPercent(m.threeMonthReturn)} color={deltaColor(m.threeMonthReturn)} />
+                                <MetricRow label={t("return6M")} value={formatPercent(m.sixMonthReturn)} color={m.sixMonthReturn > 0.40 ? "var(--signal-avoid)" : deltaColor(m.sixMonthReturn)} tooltip={t("return6MTip")} />
+                                {m.sixMonthReturn > 0.30 && (
+                                    <div className="mt-2 px-3 py-2 rounded-lg text-[11px]" style={{
+                                        background: "rgba(251, 191, 36, 0.06)",
+                                        border: "1px solid rgba(251, 191, 36, 0.12)",
+                                        color: "var(--signal-hold)",
+                                    }}>
+                                        ⚠ {t("euphoriaWarning")}
+                                    </div>
+                                )}
+                            </div>
+                        </section>
+                        <div className="w-full lg:w-[340px] shrink-0">
+                            <InsightCard title={t("insightTiming")} icon={Activity}>
+                                <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                                    {t("insightTimingDesc")}
+                                </p>
+                                <CheckItem pass={pass1M} label={t("check1MPositive")} tip={t("check1MPositiveTip")} />
+                                <CheckItem pass={pass3M} label={t("check3MPositive")} tip={t("check3MPositiveTip")} />
+                                <CheckItem pass={passNoEuphoria} label={t("checkNoEuphoria")} tip={t("checkNoEuphoriaTip")} />
+                                <CheckItem pass={priceNear52Low} label={t("checkNear52Low")} tip={t("checkNear52LowTip")} />
+                            </InsightCard>
+                        </div>
+                    </div>
+
+                    {/* ── Row 5.5: Catalysts & Sentiment Signals ── */}
+                    <div className="flex flex-col lg:flex-row gap-5 items-stretch">
+                        <section className="glass-card p-4 flex-1 min-w-0">
+                            <SectionHeader icon={Info} title={t("catalystsTitle")} />
+                            {m.nextEarningsDate && (
+                                <MetricRow
+                                    label={t("nextEarnings")}
+                                    // eslint-disable-next-line react-hooks/purity -- "days until" countdown reads the clock for display
+                                    value={`${new Date(m.nextEarningsDate).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })} (${Math.max(0, Math.ceil((new Date(m.nextEarningsDate).getTime() - Date.now()) / 86400000))}d)`}
+                                    color="var(--accent-cyan)"
+                                    tooltip={t("nextEarningsTip")}
+                                />
+                            )}
+                            {m.exDividendDate && (
+                                <MetricRow
+                                    label={t("exDividend")}
+                                    value={new Date(m.exDividendDate).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })}
+                                    color="var(--text-secondary)"
+                                />
+                            )}
+                            {dq.revisions && (
+                                <MetricRow
+                                    label={t("epsRevisions")}
+                                    value={`↑${m.epsRevisionsUp30d ?? 0} / ↓${m.epsRevisionsDown30d ?? 0}${m.epsTrend30d !== undefined ? ` (${m.epsTrend30d >= 0 ? "+" : ""}${(m.epsTrend30d * 100).toFixed(1)}%)` : ""}`}
+                                    color={((m.epsRevisionsUp30d ?? 0) - (m.epsRevisionsDown30d ?? 0)) > 0 ? "var(--signal-strong-buy)" : ((m.epsRevisionsUp30d ?? 0) - (m.epsRevisionsDown30d ?? 0)) < 0 ? "var(--signal-avoid)" : "var(--signal-hold)"}
+                                    tooltip={t("epsRevisionsTip")}
+                                />
+                            )}
+                            {dq.insiders && (
+                                <MetricRow
+                                    label={t("insiderActivity")}
+                                    value={`${m.insiderBuyCount6m ?? 0} ${t("buys")} / ${m.insiderSellCount6m ?? 0} ${t("sells")}`}
+                                    color={(m.insiderBuyCount6m ?? 0) > (m.insiderSellCount6m ?? 0) ? "var(--signal-strong-buy)" : "var(--text-secondary)"}
+                                    tooltip={t("insiderActivityTip")}
+                                />
+                            )}
+                            {m.insiderOwnership !== undefined && (
+                                <MetricRow label={t("insiderOwn")} value={formatPercent(m.insiderOwnership)} color={m.insiderOwnership > 0.02 ? "var(--signal-strong-buy)" : "var(--text-secondary)"} tooltip={t("insiderOwnTip")} />
+                            )}
+                            {m.shortPctFloat !== undefined && (
+                                <MetricRow label={t("shortFloat")} value={formatPercent(m.shortPctFloat)} color={m.shortPctFloat > 0.10 ? "var(--signal-avoid)" : "var(--text-secondary)"} tooltip={t("shortFloatTip")} />
+                            )}
+                        </section>
+                        <div className="w-full lg:w-[340px] shrink-0">
+                            <InsightCard title={t("insightCatalysts")} icon={Info}>
+                                <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                                    {t("insightCatalystsDesc")}
+                                </p>
+                                <CheckItem
+                                    pass={((m.epsRevisionsUp30d ?? 0) - (m.epsRevisionsDown30d ?? 0)) > 0}
+                                    label={t("checkRevisionsUp")}
+                                    na={!dq.revisions}
+                                    tip={t("checkRevisionsUpTip")}
+                                />
+                                <CheckItem
+                                    pass={(m.epsTrend30d ?? 0) >= -0.01}
+                                    label={t("checkEstimateStable")}
+                                    na={!dq.revisions || m.epsTrend30d === undefined}
+                                    tip={t("checkEstimateStableTip")}
+                                />
+                                <CheckItem
+                                    pass={(m.insiderBuyCount6m ?? 0) >= 3 && (m.insiderBuyCount6m ?? 0) > (m.insiderSellCount6m ?? 0)}
+                                    label={t("checkClusterBuying")}
+                                    na={!dq.insiders}
+                                    tip={t("checkClusterBuyingTip")}
+                                />
+                                <CheckItem
+                                    pass={(m.shortPctFloat ?? 0) <= 0.10}
+                                    label={t("checkLowShort")}
+                                    na={m.shortPctFloat === undefined}
+                                    tip={t("checkLowShortTip")}
+                                />
+                            </InsightCard>
+                        </div>
+                    </div>
+
+                    {/* ── Row 5.7: AI Qualitative Analysis (user's LLM) ── */}
+                    <div className="flex">
+                        <AiAnalysisSection ticker={company.ticker} />
+                    </div>
+
+                    {/* ── Row 6: Description + Verdict ── */}
+                    <div className="flex flex-col lg:flex-row gap-5 items-stretch">
+                        <section className="glass-card p-4 flex-1 min-w-0">
+                            <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                                {company.description}
+                            </p>
+                        </section>
+                        <div className="w-full lg:w-[340px] shrink-0">
+                            <div
+                                className="rounded-xl p-4 h-full"
+                                style={{
+                                    background: score.totalScore >= 70
+                                        ? "rgba(52, 211, 153, 0.06)"
+                                        : score.totalScore >= 40
+                                            ? "rgba(251, 191, 36, 0.06)"
+                                            : "rgba(251, 113, 133, 0.06)",
+                                    border: score.totalScore >= 70
+                                        ? "1px solid rgba(52, 211, 153, 0.15)"
+                                        : score.totalScore >= 40
+                                            ? "1px solid rgba(251, 191, 36, 0.15)"
+                                            : "1px solid rgba(251, 113, 133, 0.15)",
+                                }}
+                            >
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Info size={13} style={{
+                                        color: score.totalScore >= 70 ? "var(--signal-strong-buy)" : score.totalScore >= 40 ? "var(--signal-hold)" : "var(--signal-avoid)"
+                                    }} />
+                                    <span className="text-[11px] font-semibold uppercase tracking-wider" style={{
+                                        color: score.totalScore >= 70 ? "var(--signal-strong-buy)" : score.totalScore >= 40 ? "var(--signal-hold)" : "var(--signal-avoid)"
+                                    }}>
+                                        {t("verdictTitle")}
+                                    </span>
+                                </div>
+                                <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                                    {score.totalScore >= 70
+                                        ? t("verdictStrong")
+                                        : score.totalScore >= 40
+                                            ? t("verdictNeutral")
+                                            : t("verdictWeak")}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
-            </motion.div>
+            </div>
         </AnimatePresence>
     );
 }

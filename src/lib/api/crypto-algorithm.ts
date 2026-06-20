@@ -121,6 +121,7 @@ export function calculateCryptoScore(asset: CoinGeckoMarketData): AlgorithmScore
         valuationScore: tokenomicsScore, // Mapped to Valuation slot to reuse UI components
         trendScore: momentumScore,       // Mapped to Trend & Quality slot
         timingScore: 0,                  // Unused in crypto for now, folded into Momentum
+        cosmicFluidityScore: 0,          // Not used in crypto scoring
         macroAdjustment,
         totalScore: finalScore,
         recommendation,

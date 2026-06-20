@@ -147,14 +147,14 @@ const MACRO_SECTIONS: WikiSection[] = [
         items: [
             {
                 term: "The Lunar Effect Hypothesis",
-                definition: "Academic research (Dichev & Janes, 2001; Yuan, Zheng & Zhu, 2006) found that stock returns in the 15 days around new moons are statistically higher than around full moons across 25+ years and 48 countries.",
-                interpretation: "The annualized difference is 3-5%. The hypothesis is NOT gravitational — it's behavioral: collective mood shifts may affect aggregate risk appetite.",
+                definition: "Academic research (Dichev & Janes, 2003; Yuan, Zheng & Zhu, 2006) reported that stock returns in the ~15 days around new moons were higher than around full moons across 25+ years and 48 countries. Robustness has since been questioned once multiple-testing is accounted for.",
+                interpretation: "The reported annualized difference is 3-5% (literature). The hypothesis is NOT gravitational — it's behavioral: collective mood shifts may affect aggregate risk appetite. Treat it as a weak prior, not a proven edge.",
             },
             {
                 term: "Daily Regime Classification",
                 definition: "Each trading day is classified as 'New Moon Half' (phase 0.75-0.25) or 'Full Moon Half' (phase 0.25-0.75). Daily returns are computed and aggregated by regime.",
                 formula: "Phase = (daysSinceReference / 29.53) mod 1 → 0=🌑, 0.5=🌕",
-                interpretation: "With 6,600+ S&P 500 trading days analyzed, we find a ~6.9% annualized yield gap favoring the New Moon Half. Bitcoin shows an even larger ~19.8% gap.",
+                interpretation: "Across the full S&P 500 daily history the New-Moon Half shows a positive annualized yield gap, and Bitcoin a larger one — but the Lunar module now runs a permutation test on the live data: check its p-value before trusting the gap, as large annualized numbers from small daily differences are often not statistically significant.",
             },
             {
                 term: "How to Use It",
@@ -271,7 +271,7 @@ const ALGORITHM_SECTIONS: WikiSection[] = [
         items: [
             {
                 term: "Total Score (0-100)",
-                definition: "Composite algorithmic score: Valuation (40%) + Trend (30%) + Timing (20%) + Macro (10%).",
+                definition: "Composite algorithmic score: Valuation (35%) + Trend (25%) + Timing (20%) + Cosmic Fluidity (10%), then adjusted by Macro multiplier (×0.90-1.00).",
                 interpretation: "≥ 75 = STRONG BUY (green) · 55-74 = BUY (blue) · 35-54 = HOLD (amber) · < 35 = AVOID (red).",
             },
             {
@@ -284,7 +284,7 @@ const ALGORITHM_SECTIONS: WikiSection[] = [
     {
         id: "valuation",
         icon: BarChart3,
-        title: "1 · Valuation (40% weight)",
+        title: "1 · Valuation (35% weight)",
         color: "var(--accent-emerald)",
         items: [
             {
@@ -304,7 +304,7 @@ const ALGORITHM_SECTIONS: WikiSection[] = [
     {
         id: "trend",
         icon: TrendingUp,
-        title: "2 · Trend & Quality (30% weight)",
+        title: "2 · Trend & Quality (25% weight)",
         color: "var(--accent-cyan)",
         items: [
             { term: "EBIT Margin Delta", definition: "Year-over-year change in operating margin. Measures improving or declining efficiency.", interpretation: "Positive delta = company getting more profitable. Negative = margins shrinking." },
@@ -328,13 +328,47 @@ const ALGORITHM_SECTIONS: WikiSection[] = [
     {
         id: "macro_adj",
         icon: Globe,
-        title: "4 · Macro Adjustment (10% weight)",
+        title: "4 · Macro Adjustment (multiplier)",
         color: "var(--text-secondary)",
         items: [
             {
                 term: "Interest Rate Trend",
                 definition: "A multiplier applied to the score based on the direction of interest rates.",
-                interpretation: "Falling rates (×1.0) = favorable. Stable (×0.95) = neutral. Rising (×0.85) = penalty since higher rates make bonds more attractive.",
+                interpretation: "Falling rates (×1.0) = favorable. Stable (×0.95) = neutral. Rising (×0.90) = penalty since higher rates make bonds more attractive.",
+            },
+        ],
+    },
+    {
+        id: "cosmic_fluidity",
+        icon: Activity,
+        title: "5 · Cosmic Fluidity (10% weight)",
+        color: "#a855f7",
+        items: [
+            {
+                term: "What is the Cosmic Fluidity Score?",
+                definition: "A composite market-weather indicator (0-100) that aggregates three astrological signals: Astro Turbulence (40%), Lunar Phase (35%), and Mercury Status (25%). It measures the 'cosmic environment' rather than the company itself.",
+                interpretation: "Score ≥ 60 = favorable market conditions. 40-60 = neutral. < 40 = caution advised. The score acts as a tailwind/headwind indicator for swing traders on medium-term horizons.",
+            },
+            {
+                term: "Astro Turbulence Component (40%)",
+                definition: "Inverted turbulence index from planetary cycles. Low turbulence periods historically correlate with calm markets and strong growth phases.",
+                interpretation: "The index is computed from slow-moving planetary transits (Saturn, Uranus, Neptune, Pluto). When no major tension aspects are active, fluidity is high. See the Macro Hub for full transit details.",
+            },
+            {
+                term: "Lunar Phase Component (35%)",
+                definition: "Score based on lunar cycle position using the Dichev & Janes (2001) methodology. New moon periods score highest, full moon periods score lowest.",
+                formula: "Score = ((cos(phase × 2π) + 1) / 2) × 100",
+                interpretation: "Academic research found 3-5% annualized return differences between new-moon and full-moon halves across 25+ years and 48 countries.",
+            },
+            {
+                term: "Mercury Status Component (25%)",
+                definition: "Binary signal based on Mercury retrograde status. Direct periods score 100, retrograde periods score 0, with a gradual pre-shadow transition.",
+                interpretation: "Mercury retrograde occurs 3-4 times per year for ~3 weeks. During these periods, markets historically show higher volatility and lower returns.",
+            },
+            {
+                term: "Why 10% weight?",
+                definition: "At 10%, cosmic fluidity provides a meaningful but non-dominant nudge to the total score. It's designed for swing traders who want cosmic confirmation without sacrificing fundamental analysis.",
+                interpretation: "The weight is intentionally kept low because the cosmic signal measures market environment, not company fundamentals. It's a timing overlay, not a substitute for due diligence.",
             },
         ],
     },
@@ -498,10 +532,10 @@ export default function WikiView() {
                         <ArrowRight size={16} className="text-zinc-600 group-hover:text-emerald-400 ml-auto transition-colors" />
                     </div>
                     <p className="text-xs text-zinc-400 leading-relaxed mb-4">
-                        How the algorithmic scoring engine works: Valuation (40%), Trend & Quality (30%), Timing (20%), Macro adjustment (10%), hard filters, and crypto-specific tokenomics metrics.
+                        How the algorithmic scoring engine works: Valuation (35%), Trend & Quality (25%), Timing (20%), Cosmic Fluidity (10%), macro adjustment, hard filters, and crypto-specific tokenomics metrics.
                     </p>
                     <div className="flex flex-wrap gap-2">
-                        {["FCF Yield", "B/M Ratio", "Momentum", "Hard Filters", "Crypto"].map((tag) => (
+                        {["FCF Yield", "B/M Ratio", "Momentum", "Hard Filters", "Cosmic Fluidity", "Crypto"].map((tag) => (
                             <span key={tag} className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{tag}</span>
                         ))}
                     </div>

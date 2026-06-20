@@ -1,18 +1,17 @@
 // ============================================================
-// Lunar Data - Moon phase calculator
+// Lunar Data — Moon phase from the REAL ephemeris (astronomy-engine)
 // ============================================================
+// Phase and exact new/full-moon dates are computed from the Moon's true
+// geocentric elongation from the Sun — not a mean-synodic approximation.
+
+import * as Astronomy from "astronomy-engine";
 
 /**
- * Calculate moon phase using the Trig method.
- * Returns phase as 0-1 (0 = new moon, 0.5 = full moon).
+ * Moon phase as 0-1 (0 = new moon, 0.5 = full moon), from the real
+ * Sun-Moon elongation. astronomy-engine MoonPhase returns 0-360°.
  */
 export function getMoonPhase(date: Date): number {
-    // Known new moon: January 6, 2000 at 18:14 UTC
-    const knownNewMoon = new Date("2000-01-06T18:14:00Z").getTime();
-    const synodicMonth = 29.53058867; // days
-    const daysSinceKnown = (date.getTime() - knownNewMoon) / 86400000;
-    const cycles = daysSinceKnown / synodicMonth;
-    return cycles - Math.floor(cycles); // 0-1
+    return Astronomy.MoonPhase(date) / 360;
 }
 
 /**
@@ -49,50 +48,32 @@ export function isFullMoon(phase: number): boolean {
 }
 
 /**
- * Get all new moon dates in a range.
+ * Find all dates in [startYear, endYear] where the Moon reaches a target
+ * phase angle (0 = new, 180 = full) — exact instants via root-finding.
  */
-export function getNewMoonDates(startYear: number, endYear: number): Date[] {
+function searchMoonPhaseDates(targetLon: number, startYear: number, endYear: number): Date[] {
     const results: Date[] = [];
-    const start = new Date(startYear, 0, 1);
-    const end = new Date(endYear, 11, 31);
+    const endTs = new Date(endYear, 11, 31).getTime();
+    let startTime: Astronomy.AstroTime = Astronomy.MakeTime(new Date(startYear, 0, 1));
 
-    // Walk day by day and find new moons (phase crosses 0)
-    let prevPhase = getMoonPhase(start);
-    const current = new Date(start);
-
-    while (current <= end) {
-        current.setDate(current.getDate() + 1);
-        const phase = getMoonPhase(current);
-        // New moon when phase wraps around (prevPhase > 0.9 and phase < 0.1)
-        if (prevPhase > 0.9 && phase < 0.1) {
-            results.push(new Date(current));
-        }
-        prevPhase = phase;
+    // The synodic month is ~29.5 days; search a 40-day window each step.
+    for (let guard = 0; guard < 2000; guard++) {
+        const found = Astronomy.SearchMoonPhase(targetLon, startTime, 40);
+        if (!found) break;
+        const d = found.date;
+        if (d.getTime() > endTs) break;
+        results.push(d);
+        startTime = found.AddDays(1); // continue after this event
     }
-
     return results;
 }
 
-/**
- * Get all full moon dates in a range.
- */
+/** All new-moon dates in a year range (exact, from the ephemeris). */
+export function getNewMoonDates(startYear: number, endYear: number): Date[] {
+    return searchMoonPhaseDates(0, startYear, endYear);
+}
+
+/** All full-moon dates in a year range (exact, from the ephemeris). */
 export function getFullMoonDates(startYear: number, endYear: number): Date[] {
-    const results: Date[] = [];
-    const start = new Date(startYear, 0, 1);
-    const end = new Date(endYear, 11, 31);
-
-    let prevPhase = getMoonPhase(start);
-    const current = new Date(start);
-
-    while (current <= end) {
-        current.setDate(current.getDate() + 1);
-        const phase = getMoonPhase(current);
-        // Full moon when phase crosses 0.5 (prevPhase < 0.5 and phase >= 0.5)
-        if (prevPhase < 0.5 && phase >= 0.5) {
-            results.push(new Date(current));
-        }
-        prevPhase = phase;
-    }
-
-    return results;
+    return searchMoonPhaseDates(180, startYear, endYear);
 }

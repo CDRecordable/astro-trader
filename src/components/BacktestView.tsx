@@ -13,6 +13,8 @@ import { FlaskConical, Sliders, TrendingUp, TrendingDown, Info, Lightbulb } from
 import { generateMacroTimeline } from "@/lib/macro-algorithm";
 import { getMoonPhase, isNewMoon } from "@/lib/lunar-data";
 import { isRetrograde } from "@/lib/mercury-data";
+import { permutationPValue, mean, formatPValue, significanceStrength } from "@/lib/stats";
+import type { EChartParam } from "@/lib/echarts-types";
 import { useTranslations } from "next-intl";
 
 type AssetKey = "sp500" | "btc" | "gold" | "nasdaq";
@@ -24,12 +26,34 @@ const ASSETS: { key: AssetKey; label: string; color: string; symbol: string }[] 
     { key: "nasdaq", label: "Nasdaq (QQQ)", color: "#06b6d4", symbol: "QQQ" },
 ];
 
+// Stateless metric comparison cell — top-level so it isn't recreated each render.
+function MetricBox({ label, bhVal, stratVal, unit, lowerIsBetter, baselineLabel }: { label: string; bhVal: number; stratVal: number; unit: string; lowerIsBetter?: boolean; baselineLabel?: string }) {
+    const t = useTranslations("backtester");
+    const better = lowerIsBetter ? stratVal < bhVal : stratVal > bhVal;
+    return (
+        <div>
+            <div className="text-[9px] uppercase tracking-widest text-zinc-600 mb-1.5">{label}</div>
+            <div className="flex gap-3 text-xs">
+                <div>
+                    <span className="text-[8px] text-zinc-600 block mb-0.5">{baselineLabel ?? t("buyAndHold")}</span>
+                    <span className="font-mono font-semibold text-zinc-400">{bhVal.toFixed(1)}{unit}</span>
+                </div>
+                <div>
+                    <span className="text-[8px] text-zinc-600 block mb-0.5">{t("astroStrategy")}</span>
+                    <span className={`font-mono font-semibold ${better ? "text-purple-400" : "text-red-400"}`}>{stratVal.toFixed(1)}{unit}</span>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function BacktestView() {
     const t = useTranslations("backtester");
     const [selectedAsset, setSelectedAsset] = useState<AssetKey>("sp500");
     const [turbThreshold, setTurbThreshold] = useState(50);
     const [useLunar, setUseLunar] = useState(false);
     const [useMercury, setUseMercury] = useState(false);
+    const [costBps, setCostBps] = useState(10); // transaction cost per switch, basis points (0.10%)
 
     const [dailySp500, setDailySp500] = useState<{ date: string; price: number }[]>([]);
     const [dailyBtc, setDailyBtc] = useState<{ date: string; price: number }[]>([]);
@@ -38,7 +62,7 @@ export default function BacktestView() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        setLoading(true);
+        // loading initial state is already true
         fetch("/api/macro-daily")
             .then((r) => r.json())
             .then((data) => {
@@ -56,7 +80,9 @@ export default function BacktestView() {
     const turbulenceData = useMemo(() => {
         const start = "2000-01-01";
         const end = new Date().toISOString().split("T")[0];
-        const timeline = generateMacroTimeline(start, end, 9500);
+        // Turbulence is slow-moving (generational aspects), so a coarse grid is
+        // plenty; getTurbulence() maps each daily bar to the nearest point.
+        const timeline = generateMacroTimeline(start, end, 700);
         const map = new Map<string, number>();
         const sortedDates: string[] = [];
         const sortedValues: number[] = [];
@@ -106,16 +132,28 @@ export default function BacktestView() {
         let maxDdBuyHold = 0;
         let maxDdStrategy = 0;
 
+        // Win-rate measured on real 22-bar (≈1 month) windows, not single days.
         let winMonths = 0;
         let totalMonths = 0;
+        let winCheckStrat = 10000;   // strategy value at the start of the current window
+        let winCheckBH = 10000;      // buy&hold value at the start of the current window
+
+        // Returns split by regime — the honest significance test:
+        // does avoiding high-turbulence days actually separate good days from bad?
+        const inMarketReturns: number[] = [];   // decimal daily returns while invested
+        const outMarketReturns: number[] = [];  // decimal daily returns while in cash
+        let prevInMarket = true;
+        let nSwitches = 0;
+        const costRate = costBps / 10000; // bps → decimal
 
         for (let i = 0; i < priceData.length; i++) {
             const pt = priceData[i];
             const d = new Date(pt.date);
             const dateKey = pt.date;
 
-            const dailyReturn = prevPrice > 0 ? pt.price / prevPrice : 1;
-            buyHoldValue *= dailyReturn;
+            const dailyRatio = prevPrice > 0 ? pt.price / prevPrice : 1;
+            const decReturn = dailyRatio - 1;
+            buyHoldValue *= dailyRatio;
 
             const turb = getTurbulence(dateKey);
             let shouldBeInMarket = turb < turbThreshold;
@@ -128,19 +166,28 @@ export default function BacktestView() {
                 if (isRetrograde(d)) shouldBeInMarket = false;
             }
 
+            // Transaction cost: charge on every switch between invested ↔ cash.
+            if (i > 0 && shouldBeInMarket !== prevInMarket) {
+                strategyValue *= 1 - costRate;
+                nSwitches++;
+            }
+            prevInMarket = shouldBeInMarket;
+
             if (shouldBeInMarket) {
-                strategyValue *= dailyReturn;
+                strategyValue *= dailyRatio;
+                if (i > 0) inMarketReturns.push(decReturn);
+            } else if (i > 0) {
+                outMarketReturns.push(decReturn);
             }
 
+            // Monthly win-rate on the actual window return (fixes the 1-day bug)
             if (i > 0 && i % 22 === 0) {
                 totalMonths++;
-                const stratReturn = strategyCurve.length > 0
-                    ? (strategyValue / strategyCurve[strategyCurve.length - 1].value - 1)
-                    : 0;
-                const bhReturn = buyHoldCurve.length > 0
-                    ? (buyHoldValue / buyHoldCurve[buyHoldCurve.length - 1].value - 1)
-                    : 0;
-                if (stratReturn > bhReturn) winMonths++;
+                const sR = strategyValue / winCheckStrat - 1;
+                const bR = buyHoldValue / winCheckBH - 1;
+                if (sR > bR) winMonths++;
+                winCheckStrat = strategyValue;
+                winCheckBH = buyHoldValue;
             }
 
             buyHoldCurve.push({ date: dateKey, value: buyHoldValue });
@@ -154,11 +201,21 @@ export default function BacktestView() {
             prevPrice = pt.price;
         }
 
-        const years = priceData.length / 252;
+        // CAGR from actual CALENDAR span — correct for BTC (365d) and stocks (252d) alike.
+        const msSpan = new Date(priceData[priceData.length - 1].date).getTime() - new Date(priceData[0].date).getTime();
+        const years = msSpan > 0 ? msSpan / (365.25 * 86400000) : priceData.length / 252;
         const bhReturn = (buyHoldValue / 10000 - 1) * 100;
         const stratReturn = (strategyValue / 10000 - 1) * 100;
         const bhCagr = years > 0 ? (Math.pow(buyHoldValue / 10000, 1 / years) - 1) * 100 : 0;
         const stratCagr = years > 0 ? (Math.pow(strategyValue / 10000, 1 / years) - 1) * 100 : 0;
+
+        // Significance: permutation test on in-market vs out-of-market daily returns.
+        const inAvg = mean(inMarketReturns) * 100;
+        const outAvg = mean(outMarketReturns) * 100;
+        const pValue = (inMarketReturns.length >= 30 && outMarketReturns.length >= 30)
+            ? permutationPValue(inMarketReturns, outMarketReturns, 2000, 1234)
+            : 1;
+        const edgeReal = pValue < 0.05 && inAvg > outAvg;
 
         return {
             buyHoldCurve, strategyCurve,
@@ -167,8 +224,14 @@ export default function BacktestView() {
             maxDdBuyHold, maxDdStrategy,
             winRate: totalMonths > 0 ? (winMonths / totalMonths) * 100 : 0,
             totalMonths, years,
+            // significance / honesty
+            inAvg, outAvg, pValue, edgeReal,
+            pStrength: significanceStrength(pValue),
+            nInMarket: inMarketReturns.length,
+            nOutMarket: outMarketReturns.length,
+            nSwitches,
         };
-    }, [priceData, turbulenceData, getTurbulence, turbThreshold, useLunar, useMercury]);
+    }, [priceData, turbulenceData, getTurbulence, turbThreshold, useLunar, useMercury, costBps]);
 
     const chartOptions = useMemo(() => {
         if (!backtestResults) return null;
@@ -186,11 +249,11 @@ export default function BacktestView() {
                 padding: 14,
                 borderRadius: 12,
                 textStyle: { color: "#fff", fontSize: 11 },
-                formatter: (params: any) => {
+                formatter: (params: EChartParam[]) => {
                     if (!params?.length) return "";
                     const date = params[0].axisValue;
                     return `<div style="color:#a1a1aa;font-size:10px;margin-bottom:6px">${date}</div>
-                        ${params.map((p: any) => `<div style="color:${p.color};font-size:12px;font-weight:600">
+                        ${params.map((p) => `<div style="color:${p.color};font-size:12px;font-weight:600">
                             ${p.seriesName}: $${Number(p.value).toLocaleString()}</div>`).join("")}`;
                 },
             },
@@ -230,25 +293,6 @@ export default function BacktestView() {
             ],
         };
     }, [backtestResults, t]);
-
-    function MetricBox({ label, bhVal, stratVal, unit, lowerIsBetter }: { label: string; bhVal: number; stratVal: number; unit: string; lowerIsBetter?: boolean }) {
-        const better = lowerIsBetter ? stratVal < bhVal : stratVal > bhVal;
-        return (
-            <div>
-                <div className="text-[9px] uppercase tracking-widest text-zinc-600 mb-1.5">{label}</div>
-                <div className="flex gap-3 text-xs">
-                    <div>
-                        <span className="text-[8px] text-zinc-600 block mb-0.5">{t("buyAndHold")}</span>
-                        <span className="font-mono font-semibold text-zinc-400">{bhVal.toFixed(1)}{unit}</span>
-                    </div>
-                    <div>
-                        <span className="text-[8px] text-zinc-600 block mb-0.5">{t("astroStrategy")}</span>
-                        <span className={`font-mono font-semibold ${better ? "text-purple-400" : "text-red-400"}`}>{stratVal.toFixed(1)}{unit}</span>
-                    </div>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="min-h-screen">
@@ -324,6 +368,17 @@ export default function BacktestView() {
                                     <input type="checkbox" checked={useMercury} onChange={(e) => setUseMercury(e.target.checked)} className="accent-purple-500" />
                                     <span className="text-xs text-zinc-400">{t("mercuryFilter")}</span>
                                 </label>
+                                <div className="pt-1">
+                                    <label className="text-[10px] text-zinc-500 block mb-1">
+                                        {t("txCost")}: <span className="text-purple-400 font-semibold">{(costBps / 100).toFixed(2)}%</span>
+                                    </label>
+                                    <input
+                                        type="range" min={0} max={50} step={5}
+                                        value={costBps}
+                                        onChange={(e) => setCostBps(Number(e.target.value))}
+                                        className="w-full accent-purple-500"
+                                    />
+                                </div>
                             </div>
                         </div>
 
@@ -379,7 +434,7 @@ export default function BacktestView() {
                                 <MetricBox label={t("totalReturn")} bhVal={backtestResults.bhReturn} stratVal={backtestResults.stratReturn} unit="%" />
                                 <MetricBox label={t("cagr")} bhVal={backtestResults.bhCagr} stratVal={backtestResults.stratCagr} unit="%" />
                                 <MetricBox label={t("maxDrawdown")} bhVal={backtestResults.maxDdBuyHold} stratVal={backtestResults.maxDdStrategy} unit="%" lowerIsBetter />
-                                <MetricBox label={t("winRate")} bhVal={50} stratVal={backtestResults.winRate} unit="%" />
+                                <MetricBox label={t("winRate")} bhVal={50} stratVal={backtestResults.winRate} unit="%" baselineLabel={t("winRateVsCoin")} />
                             </div>
                         </div>
 
@@ -411,39 +466,46 @@ export default function BacktestView() {
                     </div>
                 )}
 
-                {/* Signal Hierarchy Analysis */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="glass-card p-5 border border-purple-500/10 bg-purple-500/[0.02] mb-6">
-                    <div className="flex items-center gap-2 mb-4">
-                        <Lightbulb size={14} className="text-purple-400" />
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-purple-400/60">{t("signalHierarchy")}</h3>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-zinc-400 leading-relaxed">
-                        <div className="space-y-2">
-                            <div className="text-sm font-semibold text-zinc-200">{t("turbulenceAlone")}</div>
-                            <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
-                                <div className="text-emerald-400 font-semibold mb-1">{t("turbulenceAloneTag")}</div>
-                                <p>{t("turbulenceAloneText")}</p>
+                {/* Statistical significance — replaces hardcoded marketing verdicts */}
+                {backtestResults && (
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="glass-card p-5 border border-purple-500/10 bg-purple-500/[0.02] mb-6">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Lightbulb size={14} className="text-purple-400" />
+                            <h3 className="text-xs font-bold uppercase tracking-widest text-purple-400/60">{t("significanceTitle")}</h3>
+                        </div>
+                        <p className="text-[11px] text-zinc-500 mb-4 leading-relaxed">{t("significanceDesc")}</p>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                            <div>
+                                <div className="text-[9px] uppercase tracking-widest text-zinc-600 mb-1">{t("inMarketAvg")}</div>
+                                <div className="text-lg font-bold font-mono text-emerald-400">{backtestResults.inAvg >= 0 ? "+" : ""}{backtestResults.inAvg.toFixed(3)}%</div>
+                                <div className="text-[9px] text-zinc-600">{backtestResults.nInMarket.toLocaleString()} {t("days")}</div>
+                            </div>
+                            <div>
+                                <div className="text-[9px] uppercase tracking-widest text-zinc-600 mb-1">{t("outMarketAvg")}</div>
+                                <div className="text-lg font-bold font-mono text-zinc-400">{backtestResults.outAvg >= 0 ? "+" : ""}{backtestResults.outAvg.toFixed(3)}%</div>
+                                <div className="text-[9px] text-zinc-600">{backtestResults.nOutMarket.toLocaleString()} {t("days")}</div>
+                            </div>
+                            <div>
+                                <div className="text-[9px] uppercase tracking-widest text-zinc-600 mb-1">p-value</div>
+                                <div className={`text-lg font-bold font-mono ${backtestResults.edgeReal ? "text-emerald-400" : "text-amber-400"}`}>{formatPValue(backtestResults.pValue)}</div>
+                                <div className="text-[9px] text-zinc-600">{backtestResults.pStrength}</div>
+                            </div>
+                            <div>
+                                <div className="text-[9px] uppercase tracking-widest text-zinc-600 mb-1">{t("switches")}</div>
+                                <div className="text-lg font-bold font-mono text-zinc-400">{backtestResults.nSwitches.toLocaleString()}</div>
+                                <div className="text-[9px] text-zinc-600">@ {(costBps / 100).toFixed(2)}%</div>
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <div className="text-sm font-semibold text-zinc-200">{t("lunarFilter2")}</div>
-                            <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/10">
-                                <div className="text-amber-400 font-semibold mb-1">{t("lunarFilter2Tag")}</div>
-                                <p>{t("lunarFilter2Text")}</p>
-                            </div>
+
+                        <div className={`p-3 rounded-lg text-xs leading-relaxed ${backtestResults.edgeReal ? "bg-emerald-500/5 border border-emerald-500/10 text-emerald-300/90" : "bg-amber-500/5 border border-amber-500/10 text-amber-300/90"}`}>
+                            {backtestResults.edgeReal ? t("edgeRealText") : t("edgeNotRealText")}
                         </div>
-                        <div className="space-y-2">
-                            <div className="text-sm font-semibold text-zinc-200">{t("combined")}</div>
-                            <div className="p-3 rounded-lg bg-cyan-500/5 border border-cyan-500/10">
-                                <div className="text-cyan-400 font-semibold mb-1">{t("combinedTag")}</div>
-                                <p>{t("combinedText")}</p>
-                            </div>
+                        <div className="mt-3 p-3 rounded-lg bg-white/[0.02] border border-white/5 text-[10px] text-zinc-500 italic leading-relaxed">
+                            {t("hindsightCaveat")}
                         </div>
-                    </div>
-                    <div className="mt-4 p-3 rounded-lg bg-white/[0.02] border border-white/5 text-[10px] text-zinc-500 italic">
-                        <strong className="text-zinc-400 not-italic">{t("conclusion")}</strong> {t("conclusionText")}
-                    </div>
-                </motion.div>
+                    </motion.div>
+                )}
 
                 {/* How to Read */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="glass-card p-5 border border-amber-500/10 bg-amber-500/[0.02]">

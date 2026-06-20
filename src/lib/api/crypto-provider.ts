@@ -4,21 +4,9 @@
 
 import { db } from "@/db";
 import { cryptoAssets } from "@/db/schema";
-import { eq } from "drizzle-orm";
 import { fetchCryptoMarkets, type CoinGeckoMarketData } from "./coingecko-client";
 import { calculateCryptoScore } from "./crypto-algorithm";
 import type { Company } from "../types";
-
-const MAX_CACHE_AGE_MS = 1000 * 60 * 15; // 15 minutes cache for crypto (moves faster)
-
-/**
- * Checks if a cached timestamp is fresh enough.
- */
-function isCacheFresh(lastScannedAt: Date | null | undefined): boolean {
-    if (!lastScannedAt) return false;
-    const now = new Date();
-    return now.getTime() - lastScannedAt.getTime() < MAX_CACHE_AGE_MS;
-}
 
 /**
  * Converts CoinGecko data into the common `Company` type we use in the UI to reuse Explorer components,

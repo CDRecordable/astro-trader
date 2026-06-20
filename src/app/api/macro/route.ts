@@ -4,7 +4,11 @@ import YahooFinance from "yahoo-finance2";
 export const dynamic = "force-dynamic";
 
 // yahoo-finance2 v3 requires explicit instantiation
-const yf = new (YahooFinance as any)();
+type ChartQuote = { date: Date | string; close: number | null };
+type ChartResult = { quotes: ChartQuote[] };
+type YF = { chart: (symbol: string, opts: { period1: Date; interval: string }) => Promise<ChartResult> };
+
+const yf = new (YahooFinance as unknown as new () => YF)();
 
 export async function GET() {
     try {
@@ -21,15 +25,15 @@ export async function GET() {
             yf.chart("QQQ", { period1: qqqFromDate, interval: "1mo" }),
         ]);
 
-        const parse = (res: PromiseSettledResult<any>) => {
+        const parse = (res: PromiseSettledResult<ChartResult>) => {
             if (res.status !== "fulfilled") return [];
-            const quotes = (res.value as any)?.quotes;
+            const quotes = res.value?.quotes;
             if (!Array.isArray(quotes)) return [];
             return quotes
-                .filter((q: any) => q.close != null)
-                .map((q: any) => ({
+                .filter((q: ChartQuote) => q.close != null)
+                .map((q: ChartQuote) => ({
                     date: new Date(q.date).toISOString().split("T")[0],
-                    price: Math.round(q.close),
+                    price: Math.round(Number(q.close)),
                 }));
         };
 

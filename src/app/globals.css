@@ -97,6 +97,16 @@ body {
   background: var(--text-muted);
 }
 
+/* ── Hide Scrollbar Utility ───────────────────────────────── */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* ── Glass Card ────────────────────────────────────────────── */
 .glass-card {
   background: var(--glass-bg);
