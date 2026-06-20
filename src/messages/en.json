@@ -589,6 +589,11 @@
     "watchlist": {
         "title": "My Watchlist",
         "subtitle": "Your saved assets with real-time analysis",
+        "filterAll": "All",
+        "filterStocks": "Stocks",
+        "filterCrypto": "Crypto",
+        "filterAllSectors": "All sectors",
+        "noFilterMatch": "No asset matches the filter.",
         "add": "Add",
         "addPlaceholder": "Search company or crypto (e.g. Apple, Hedera, NVDA)…",
         "refreshAll": "Refresh all",

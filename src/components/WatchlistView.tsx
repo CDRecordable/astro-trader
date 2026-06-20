@@ -4,7 +4,7 @@
 
 "use client";
 
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
 import {
@@ -81,6 +81,10 @@ export default function WatchlistView() {
     const [highlightIndex, setHighlightIndex] = useState(-1);
     const [addError, setAddError] = useState<string | null>(null);
     const [addingKey, setAddingKey] = useState<string | null>(null);
+
+    // Filters
+    const [typeFilter, setTypeFilter] = useState<"all" | "s" | "c">("all");
+    const [sectorFilter, setSectorFilter] = useState<string>("all");
     const inputRef = useRef<HTMLInputElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const autoAnalyzedRef = useRef(false);
@@ -263,6 +267,26 @@ export default function WatchlistView() {
         }
     }, [rows, t]);
 
+    // ── Filters: available sectors + visible rows ──────────────
+    const sectors = useMemo(() => {
+        const set = new Set<string>();
+        for (const r of rows) {
+            if ((typeFilter === "all" || r.assetType === typeFilter) && r.company?.sector) {
+                set.add(r.company.sector);
+            }
+        }
+        return Array.from(set).sort();
+    }, [rows, typeFilter]);
+
+    const visibleRows = useMemo(() => rows.filter((r) => {
+        if (typeFilter !== "all" && r.assetType !== typeFilter) return false;
+        if (sectorFilter !== "all" && r.company?.sector !== sectorFilter) return false;
+        return true;
+    }), [rows, typeFilter, sectorFilter]);
+
+    // Switch asset type and drop any sector filter that no longer applies.
+    const selectType = (tf: "all" | "s" | "c") => { setTypeFilter(tf); setSectorFilter("all"); };
+
     // ── Keyboard navigation ───────────────────────────────────
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (!isOpen || results.length === 0) return;
@@ -436,6 +460,57 @@ export default function WatchlistView() {
                     </AnimatePresence>
                 </div>
 
+                {/* Filters: asset type + sector */}
+                {!loadingAll && rows.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2 mb-5">
+                        {([["all", t("filterAll")], ["s", t("filterStocks")], ["c", t("filterCrypto")]] as const).map(([val, label]) => (
+                            <button
+                                key={val}
+                                onClick={() => selectType(val)}
+                                className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all"
+                                style={{
+                                    background: typeFilter === val ? "var(--accent-cyan-dim)" : "var(--bg-tertiary)",
+                                    color: typeFilter === val ? "white" : "var(--text-muted)",
+                                    border: "1px solid var(--border-subtle)",
+                                }}
+                            >
+                                {label}
+                            </button>
+                        ))}
+
+                        {sectors.length > 0 && (
+                            <>
+                                <span className="w-px h-5 mx-1" style={{ background: "var(--border-subtle)" }} />
+                                <button
+                                    onClick={() => setSectorFilter("all")}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all"
+                                    style={{
+                                        background: sectorFilter === "all" ? "var(--accent-violet-dim)" : "var(--bg-tertiary)",
+                                        color: sectorFilter === "all" ? "white" : "var(--text-muted)",
+                                        border: "1px solid var(--border-subtle)",
+                                    }}
+                                >
+                                    {t("filterAllSectors")}
+                                </button>
+                                {sectors.map((s) => (
+                                    <button
+                                        key={s}
+                                        onClick={() => setSectorFilter(s)}
+                                        className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all"
+                                        style={{
+                                            background: sectorFilter === s ? "var(--accent-violet-dim)" : "var(--bg-tertiary)",
+                                            color: sectorFilter === s ? "white" : "var(--text-muted)",
+                                            border: "1px solid var(--border-subtle)",
+                                        }}
+                                    >
+                                        {s}
+                                    </button>
+                                ))}
+                            </>
+                        )}
+                    </div>
+                )}
+
                 {/* Loading state */}
                 {loadingAll && (
                     <div className="flex items-center justify-center py-20">
@@ -465,9 +540,14 @@ export default function WatchlistView() {
                     </motion.div>
                 )}
 
+                {/* No rows match the active filter */}
+                {!loadingAll && rows.length > 0 && visibleRows.length === 0 && (
+                    <p className="text-center text-xs py-10" style={{ color: "var(--text-muted)" }}>{t("noFilterMatch")}</p>
+                )}
+
                 {/* Watchlist rows */}
                 <AnimatePresence>
-                    {rows.map((row) => (
+                    {visibleRows.map((row) => (
                         <WatchlistRowItem
                             key={row.ticker}
                             row={row}

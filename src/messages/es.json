@@ -589,6 +589,11 @@
     "watchlist": {
         "title": "Mi Watchlist",
         "subtitle": "Tus activos favoritos con análisis en tiempo real",
+        "filterAll": "Todos",
+        "filterStocks": "Acciones",
+        "filterCrypto": "Cripto",
+        "filterAllSectors": "Todos los sectores",
+        "noFilterMatch": "Ningún activo coincide con el filtro.",
         "add": "Añadir",
         "addPlaceholder": "Busca empresa o cripto (ej. Apple, Hedera, NVDA)…",
         "refreshAll": "Actualizar todo",
