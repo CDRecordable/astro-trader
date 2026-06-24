@@ -11,8 +11,9 @@ import { useRouter } from "@/i18n/navigation";
 import {
     Star, Trash2, RefreshCw, Search, TrendingUp, TrendingDown,
     Building2, Bitcoin, AlertCircle, Loader2, Sparkles, BookmarkX, X,
-    Ban, RotateCcw, Activity,
+    Ban, RotateCcw, Activity, ChevronUp, ChevronDown,
 } from "lucide-react";
+import { reinforcementLevel } from "./ReinforcementBadge";
 import type { WatchlistItem } from "@/app/api/watchlist/route";
 import type { DiscardItem } from "@/app/api/discards/route";
 import type { Company, AlgorithmScore } from "@/lib/types";
@@ -689,6 +690,7 @@ export default function WatchlistView() {
                             key={row.ticker}
                             row={row}
                             aiDate={aiByKey.get(row.ticker.toLowerCase())?.generatedAt ?? null}
+                            aiScore={aiByKey.get(row.ticker.toLowerCase())?.qualitativeScore ?? null}
                             onOpen={() => openDetail(row.assetType, row.ticker)}
                             onRefresh={() => refreshRow(row.ticker, row.assetType)}
                             onRemove={() => removeItem(row.ticker)}
@@ -707,12 +709,14 @@ export default function WatchlistView() {
 function WatchlistRowItem({
     row,
     aiDate,
+    aiScore,
     onOpen,
     onRefresh,
     onRemove,
 }: {
     row: WatchlistRow;
     aiDate: string | null;
+    aiScore: number | null;
     onOpen: () => void;
     onRefresh: () => void;
     onRemove: () => void;
@@ -721,6 +725,7 @@ function WatchlistRowItem({
     const isCrypto = row.assetType === "c";
     const score = row.score;
     const company = row.company;
+    const aiLevel = aiScore !== null ? reinforcementLevel(aiScore) : 0;
     const stop = (fn: () => void) => (e: React.MouseEvent) => { e.stopPropagation(); fn(); };
 
     return (
@@ -801,6 +806,17 @@ function WatchlistRowItem({
                         >
                             {Math.round(score.totalScore)}
                         </span>
+                        {/* AI reinforcement arrows */}
+                        {aiScore !== null && aiLevel !== 0 && (
+                            <div className="absolute -top-1 -right-1 flex flex-col items-center -space-y-1.5"
+                                title={t("aiSaved")}>
+                                {Array.from({ length: Math.abs(aiLevel) }).map((_, i) => (
+                                    aiLevel > 0
+                                        ? <ChevronUp key={i} size={11} strokeWidth={3.5} style={{ color: "var(--signal-strong-buy)" }} />
+                                        : <ChevronDown key={i} size={11} strokeWidth={3.5} style={{ color: "var(--signal-avoid)" }} />
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* Recommendation badge */}
