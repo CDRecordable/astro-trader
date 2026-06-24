@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 
-const STARTING_CASH = 10_000;
+const STARTING_CASH = 100_000;
 const EPS = 1e-6;
 
 export interface Holding {

@@ -93,7 +93,7 @@ export default function PortfolioView() {
     const totals = useMemo(() => {
         const invested = positions.reduce((s, p) => s + p.marketValue, 0);
         const cash = pf?.cash ?? 0;
-        const start = pf?.startingCash ?? 10000;
+        const start = pf?.startingCash ?? 100000;
         const totalValue = cash + invested;
         const totalReturn = totalValue - start;
         const totalReturnPct = start > 0 ? (totalReturn / start) * 100 : 0;
