@@ -27,7 +27,7 @@ interface CachedAnalysis {
 const IMPACT_COLOR: Record<string, string> = { alto: "var(--signal-strong-buy)", medio: "var(--signal-hold)", bajo: "var(--text-muted)" };
 const SEVERITY_COLOR: Record<string, string> = { alto: "var(--signal-avoid)", medio: "var(--signal-hold)", bajo: "var(--text-muted)" };
 
-export default function AiAnalysisSection({ ticker }: { ticker: string }) {
+export default function AiAnalysisSection({ ticker, onResult }: { ticker: string; onResult?: (a: QualitativeAnalysis | null) => void }) {
     const t = useTranslations("aiAnalysis");
     const [data, setData] = useState<CachedAnalysis | null>(null);
     const [loading, setLoading] = useState(false);
@@ -42,6 +42,9 @@ export default function AiAnalysisSection({ ticker }: { ticker: string }) {
             .catch(() => { });
         return () => { active = false; };
     }, [ticker]);
+
+    // Report the analysis (or null) to the parent for the header arrows + about card
+    useEffect(() => { onResult?.(data?.analysis ?? null); }, [data, onResult]);
 
     const generate = useCallback(async () => {
         setLoading(true);

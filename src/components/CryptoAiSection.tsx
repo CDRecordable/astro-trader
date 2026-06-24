@@ -64,9 +64,10 @@ function buildQuantSummary(f: CryptoFundamentals): string {
     ].join("\n");
 }
 
-export default function CryptoAiSection({ fundamentals, description }: {
+export default function CryptoAiSection({ fundamentals, description, onResult }: {
     fundamentals: CryptoFundamentals;
     description: string;
+    onResult?: (a: CryptoQualitative | null) => void;
 }) {
     const t = useTranslations("aiAnalysis");
     const id = fundamentals.id;
@@ -82,6 +83,8 @@ export default function CryptoAiSection({ fundamentals, description }: {
             .catch(() => { });
         return () => { active = false; };
     }, [id]);
+
+    useEffect(() => { onResult?.(data?.analysis ?? null); }, [data, onResult]);
 
     const generate = useCallback(async () => {
         setLoading(true);
