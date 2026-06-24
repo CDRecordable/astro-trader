@@ -17,7 +17,7 @@ import { useTranslations } from "next-intl";
 import {
     X, ArrowUpRight, ArrowDownRight,
     Shield, Target, Activity, BarChart3, Globe,
-    HelpCircle, CheckCircle2, XCircle, MinusCircle, Info, TrendingUp
+    HelpCircle, CheckCircle2, XCircle, MinusCircle, Info, TrendingUp, Building2
 } from "lucide-react";
 
 interface CompanyDetailProps {
@@ -218,6 +218,25 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
 
                 {/* ── Paired Rows: Section + Insight Card aligned ── */}
                 <div className="px-6 py-5 space-y-6">
+
+                    {/* ── Intro: what the company is / does (highlighted) ── */}
+                    {company.description && (
+                        <div className="rounded-2xl p-5" style={{
+                            background: "linear-gradient(135deg, rgba(34,211,238,0.06), rgba(167,139,250,0.05))",
+                            border: "1px solid var(--border-active)",
+                        }}>
+                            <div className="flex items-center gap-2 mb-2">
+                                <Building2 size={15} style={{ color: "var(--accent-cyan)" }} />
+                                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--accent-cyan)" }}>
+                                    {t("aboutTitle")}
+                                </span>
+                                <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>· {company.sector}</span>
+                            </div>
+                            <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                                {company.description}
+                            </p>
+                        </div>
+                    )}
 
                     {/* ── Row 1: Score Breakdown + Score Interpretation ── */}
                     <div className="flex flex-col lg:flex-row gap-5 items-stretch">
@@ -654,14 +673,9 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                         <AiAnalysisSection ticker={company.ticker} />
                     </div>
 
-                    {/* ── Row 6: Description + Verdict ── */}
-                    <div className="flex flex-col lg:flex-row gap-5 items-stretch">
-                        <section className="glass-card p-4 flex-1 min-w-0">
-                            <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                                {company.description}
-                            </p>
-                        </section>
-                        <div className="w-full lg:w-[340px] shrink-0">
+                    {/* ── Row 6: Verdict ── */}
+                    <div className="flex">
+                        <div className="w-full">
                             <div
                                 className="rounded-xl p-4 h-full"
                                 style={{

@@ -409,6 +409,7 @@
         "addToWatchlist": "Añadir a watchlist",
         "inWatchlist": "En watchlist",
         "removeFromWatchlist": "Quitar de watchlist",
+        "aboutTitle": "Sobre la empresa",
         "peRatio": "PER (Precio/Beneficio)",
         "peRatioTip": "Price-to-Earnings: cuántas veces el beneficio anual estás pagando por la acción. Más bajo = más barata (orientativo; <25 razonable, >40 caro). Es complementario a nuestra valoración por EV/FCF.",
         "annualTitle": "Ingresos y beneficios (anual)",
@@ -708,6 +709,7 @@
         "disclaimerCrypto": "⚠ Generado por IA con conocimiento hasta su fecha de corte. No predice precio ni es asesoramiento financiero; verifica hitos y fechas. Cripto es un mercado altamente especulativo."
     },
     "cryptoDetail": {
+        "aboutTitle": "Sobre el proyecto",
         "disclaimer": "Cripto es un mercado altamente especulativo. Esto no predice precio: agrega señales fundamentales (tokenomics, on-chain, desarrollo, catalizadores). Lo que no tenemos aparece como N/D (neutro, no penaliza).",
         "hardFilterFail": "Filtros duros no superados",
         "scoreTitle": "Puntuación compuesta",

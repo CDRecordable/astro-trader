@@ -171,6 +171,25 @@ export default function CryptoDetail({ company, score: initialScore, onClose }: 
                 </div>
 
                 <div className="px-6 py-4 space-y-5">
+                    {/* Intro: what the project is / does (highlighted) */}
+                    {description && (
+                        <div className="rounded-2xl p-5" style={{
+                            background: "linear-gradient(135deg, rgba(251,191,36,0.06), rgba(167,139,250,0.05))",
+                            border: "1px solid var(--border-active)",
+                        }}>
+                            <div className="flex items-center gap-2 mb-2">
+                                <Coins size={15} style={{ color: "var(--accent-amber)" }} />
+                                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--accent-amber)" }}>
+                                    {t("aboutTitle")}
+                                </span>
+                                <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>· {company.sector}</span>
+                            </div>
+                            <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                                {description}
+                            </p>
+                        </div>
+                    )}
+
                     {/* Disclaimer */}
                     <p className="text-[11px] leading-relaxed px-3 py-2 rounded-lg" style={{ background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.12)", color: "var(--text-muted)" }}>
                         {t("disclaimer")}
