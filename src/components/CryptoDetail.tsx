@@ -190,6 +190,9 @@ export default function CryptoDetail({ company, score: initialScore, onClose }: 
                         </div>
                     )}
 
+                    {/* AI qualitative layer (reinforces/weakens the score) */}
+                    {f && <CryptoAiSection fundamentals={f} description={description} />}
+
                     {/* Disclaimer */}
                     <p className="text-[11px] leading-relaxed px-3 py-2 rounded-lg" style={{ background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.12)", color: "var(--text-muted)" }}>
                         {t("disclaimer")}
@@ -330,9 +333,6 @@ export default function CryptoDetail({ company, score: initialScore, onClose }: 
                                     </div>
                                 </section>
                             )}
-
-                            {/* AI qualitative layer */}
-                            <CryptoAiSection fundamentals={f} description={description} />
                         </>
                     )}
                 </div>

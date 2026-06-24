@@ -238,6 +238,11 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                         </div>
                     )}
 
+                    {/* ── AI qualitative layer (reinforces/weakens the score) ── */}
+                    <div className="flex">
+                        <AiAnalysisSection ticker={company.ticker} />
+                    </div>
+
                     {/* ── Row 1: Score Breakdown + Score Interpretation ── */}
                     <div className="flex flex-col lg:flex-row gap-5 items-stretch">
                         <section className="glass-card p-4 flex-1 min-w-0">
@@ -666,11 +671,6 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                                 />
                             </InsightCard>
                         </div>
-                    </div>
-
-                    {/* ── Row 5.7: AI Qualitative Analysis (user's LLM) ── */}
-                    <div className="flex">
-                        <AiAnalysisSection ticker={company.ticker} />
                     </div>
 
                     {/* ── Row 6: Verdict ── */}
