@@ -245,13 +245,15 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
 
                         {/* About — heuristic description; richer when AI is present */}
                         <section className="glass-card p-4 flex flex-col" style={{ border: "1px solid var(--border-active)" }}>
-                            <div className="flex items-center gap-2 mb-2">
+                            <div className="flex items-center gap-2 mb-2 shrink-0">
                                 <Building2 size={15} style={{ color: "var(--accent-cyan)" }} />
                                 <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--accent-cyan)" }}>{t("aboutTitle")}</span>
                                 <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>· {company.sector}</span>
                             </div>
+                            <div className="relative flex-1 min-h-0" style={{ minHeight: 200 }}>
+                              <div className="absolute inset-0 overflow-y-auto pr-1">
                             {ai ? (
-                                <div className="space-y-3 overflow-y-auto pr-1" style={{ maxHeight: 300 }}>
+                                <div className="space-y-3">
                                     {/* AI thesis */}
                                     {ai.summary && (
                                         <p className="text-[11px] leading-relaxed flex gap-1.5" style={{ color: "var(--text-secondary)" }}>
@@ -297,10 +299,12 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                                     )}
                                 </div>
                             ) : (
-                                <p className="text-xs leading-relaxed overflow-y-auto pr-1" style={{ color: "var(--text-secondary)", maxHeight: 280 }}>
+                                <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
                                     {company.description || t("noDescription")}
                                 </p>
                             )}
+                              </div>
+                            </div>
                         </section>
 
                         {/* Score breakdown */}
