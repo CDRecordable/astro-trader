@@ -10,13 +10,16 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import ReactECharts from "echarts-for-react";
 import {
     Wallet, TrendingUp, TrendingDown, RotateCcw, Building2, Bitcoin,
-    Loader2, ArrowUpRight, ArrowDownRight, Coins,
+    Loader2, ArrowUpRight, ArrowDownRight, Coins, SlidersHorizontal,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import type { Company } from "@/lib/types";
 import type { Portfolio, Holding } from "@/app/api/portfolio/route";
+import type { EquityPoint } from "@/app/api/portfolio/equity/route";
+import PortfolioConfig from "./PortfolioConfig";
 
 function useOpenDetail() {
     const router = useRouter();
@@ -47,8 +50,10 @@ export default function PortfolioView() {
     const openDetail = useOpenDetail();
     const [pf, setPf] = useState<Portfolio | null>(null);
     const [prices, setPrices] = useState<Record<string, number>>({});
+    const [equity, setEquity] = useState<EquityPoint[]>([]);
     const [loading, setLoading] = useState(true);
     const [confirmReset, setConfirmReset] = useState(false);
+    const [showConfig, setShowConfig] = useState(false);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -66,7 +71,18 @@ export default function PortfolioView() {
                     return [h.ticker.toLowerCase(), data.company?.metrics.currentPrice ?? 0] as const;
                 } catch { return [h.ticker.toLowerCase(), 0] as const; }
             }));
-            setPrices(Object.fromEntries(priced));
+            const priceMap = Object.fromEntries(priced);
+            setPrices(priceMap);
+
+            // Snapshot today's total value onto the equity curve, then load it.
+            const invested = entries.reduce((s, h) => s + (priceMap[h.ticker.toLowerCase()] ?? 0) * h.qty, 0);
+            await fetch("/api/portfolio/equity", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ totalValue: p.cash + invested, cash: p.cash, invested }),
+            }).catch(() => { });
+            const eq = await fetch("/api/portfolio/equity").then((r) => r.json()).catch(() => ({ points: [] }));
+            setEquity(eq.points ?? []);
         } catch { setPf(null); }
         finally { setLoading(false); }
     }, []);
@@ -74,6 +90,7 @@ export default function PortfolioView() {
 
     const reset = async () => {
         await fetch("/api/portfolio", { method: "DELETE" }).catch(() => { });
+        await fetch("/api/portfolio/equity", { method: "DELETE" }).catch(() => { });
         setConfirmReset(false);
         load();
     };
@@ -103,6 +120,43 @@ export default function PortfolioView() {
 
     const pnlColor = (n: number) => (n > 0 ? "var(--signal-strong-buy)" : n < 0 ? "var(--signal-avoid)" : "var(--text-muted)");
 
+    // Equity-curve chart option
+    const equityOption = useMemo(() => {
+        const start = pf?.startingCash ?? 100000;
+        const dates = equity.map((p) => new Date(p.date).toLocaleDateString("es-ES", { day: "2-digit", month: "short" }));
+        const values = equity.map((p) => Math.round(p.totalValue));
+        return {
+            grid: { left: 56, right: 16, top: 16, bottom: 28 },
+            tooltip: {
+                trigger: "axis",
+                backgroundColor: "rgba(20,22,30,0.95)", borderColor: "rgba(255,255,255,0.1)",
+                textStyle: { color: "#e5e7eb", fontSize: 11 },
+                valueFormatter: (v: number) => `$${v.toLocaleString("en-US")}`,
+            },
+            xAxis: {
+                type: "category", data: dates, boundaryGap: false,
+                axisLine: { lineStyle: { color: "rgba(255,255,255,0.1)" } },
+                axisLabel: { color: "#6b7280", fontSize: 10 },
+            },
+            yAxis: {
+                type: "value", scale: true,
+                axisLabel: { color: "#6b7280", fontSize: 10, formatter: (v: number) => `$${(v / 1000).toFixed(0)}k` },
+                splitLine: { lineStyle: { color: "rgba(255,255,255,0.05)" } },
+            },
+            series: [{
+                type: "line", data: values, smooth: true, showSymbol: false,
+                lineStyle: { color: "#22d3ee", width: 2 },
+                areaStyle: { color: { type: "linear", x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: "rgba(34,211,238,0.28)" }, { offset: 1, color: "rgba(34,211,238,0.02)" }] } },
+                markLine: {
+                    silent: true, symbol: "none",
+                    lineStyle: { color: "rgba(255,255,255,0.25)", type: "dashed", width: 1 },
+                    data: [{ yAxis: start }],
+                    label: { formatter: t("startLine"), color: "#6b7280", fontSize: 9, position: "insideEndTop" },
+                },
+            }],
+        };
+    }, [equity, pf, t]);
+
     if (loading && !pf) {
         return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" style={{ color: "var(--accent-cyan)" }} /></div>;
     }
@@ -123,9 +177,14 @@ export default function PortfolioView() {
                     </div>
                 </div>
                 {!confirmReset ? (
-                    <button onClick={() => setConfirmReset(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium cursor-pointer" style={{ background: "var(--bg-tertiary)", color: "var(--text-muted)", border: "1px solid var(--border-subtle)" }}>
-                        <RotateCcw size={13} /> {t("reset")}
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => setShowConfig(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer" style={{ background: "var(--accent-cyan-dim)", color: "white", border: "1px solid var(--border-active)" }}>
+                            <SlidersHorizontal size={13} /> {t("cfgButton")}
+                        </button>
+                        <button onClick={() => setConfirmReset(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium cursor-pointer" style={{ background: "var(--bg-tertiary)", color: "var(--text-muted)", border: "1px solid var(--border-subtle)" }}>
+                            <RotateCcw size={13} /> {t("reset")}
+                        </button>
+                    </div>
                 ) : (
                     <div className="flex items-center gap-2">
                         <span className="text-[11px]" style={{ color: "var(--text-secondary)" }}>{t("resetConfirm")}</span>
@@ -148,6 +207,18 @@ export default function PortfolioView() {
                 <StatCard label={t("invested")} value={money(totals.invested)} accent="var(--text-secondary)" />
                 <StatCard label={t("cash")} value={money(totals.cash)} accent="var(--text-secondary)" />
             </div>
+
+            {/* Equity curve */}
+            {!isEmpty && (
+                <section className="mb-8 p-4 rounded-2xl" style={{ background: "var(--bg-card)", border: "1px solid var(--border-subtle)" }}>
+                    <h2 className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>{t("equityCurve")}</h2>
+                    {equity.length >= 2 ? (
+                        <ReactECharts option={equityOption} style={{ height: 240 }} notMerge lazyUpdate />
+                    ) : (
+                        <p className="text-[11px] py-10 text-center" style={{ color: "var(--text-muted)" }}>{t("equityBuilding")}</p>
+                    )}
+                </section>
+            )}
 
             {isEmpty && (
                 <div className="text-center py-20 rounded-2xl" style={{ background: "var(--bg-card)", border: "1px solid var(--border-subtle)" }}>
@@ -232,6 +303,14 @@ export default function PortfolioView() {
                         ))}
                     </div>
                 </section>
+            )}
+
+            {showConfig && (
+                <PortfolioConfig
+                    startingCash={pf?.startingCash ?? 100000}
+                    onClose={() => setShowConfig(false)}
+                    onApplied={load}
+                />
             )}
         </div>
     );
