@@ -4,6 +4,7 @@
         "explorer": "Explorador",
         "screener": "Screener",
         "watchlist": "Watchlist",
+        "portfolio": "Cartera",
         "wiki": "Wiki",
         "settings": "Ajustes",
         "stocks": "Acciones",
@@ -12,6 +13,40 @@
         "serious": "Análisis",
         "vix": "VIX",
         "home": "Inicio"
+    },
+    "portfolio": {
+        "title": "Mi Cartera",
+        "subtitle": "Cartera simulada · compra y vende a precios reales para validar tus análisis",
+        "buy": "Comprar",
+        "sell": "Vender",
+        "noPosition": "No tienes posición en este activo",
+        "dialogBuyTitle": "Comprar {symbol}",
+        "dialogSellTitle": "Vender {symbol}",
+        "currentPrice": "Precio actual",
+        "availableCash": "Efectivo disponible",
+        "positionValue": "Valor de tu posición",
+        "amountLabel": "Importe",
+        "max": "Máx",
+        "units": "unidades",
+        "confirmBuy": "Confirmar compra",
+        "confirmSell": "Confirmar venta",
+        "err_insufficient_cash": "Efectivo insuficiente",
+        "err_no_position": "No tienes posición que vender",
+        "err_network": "Error de conexión, inténtalo de nuevo",
+        "err_error": "No se pudo completar la operación",
+        "totalValue": "Valor total",
+        "totalReturn": "Rendimiento total",
+        "invested": "Invertido",
+        "cash": "Efectivo",
+        "positions": "Posiciones abiertas",
+        "history": "Historial de operaciones",
+        "avgCost": "coste medio",
+        "reset": "Reiniciar",
+        "resetConfirm": "¿Borrar toda la cartera y volver al capital inicial?",
+        "resetYes": "Sí, reiniciar",
+        "cancel": "Cancelar",
+        "emptyTitle": "Tu cartera está vacía",
+        "emptyHint": "Abre la ficha de una acción o cripto y pulsa «Comprar» para empezar a operar."
     },
     "macroNav": {
         "title": "Análisis Macro",
@@ -88,6 +123,10 @@
         "vix": {
             "title": "Régimen de Volatilidad VIX — Astro Trader Insights",
             "description": "Retorno futuro del S&P 500 según el nivel real del VIX. Análisis empírico de volatilidad."
+        },
+        "portfolio": {
+            "title": "Mi Cartera — Astro Trader Insights",
+            "description": "Cartera simulada de paper-trading: compra y vende a precios reales para validar tus análisis."
         }
     },
     "macroOverview": {

@@ -4,6 +4,7 @@
         "explorer": "Explorer",
         "screener": "Screener",
         "watchlist": "Watchlist",
+        "portfolio": "Portfolio",
         "wiki": "Wiki",
         "settings": "Settings",
         "stocks": "Stocks",
@@ -12,6 +13,40 @@
         "serious": "Analysis",
         "vix": "VIX",
         "home": "Home"
+    },
+    "portfolio": {
+        "title": "My Portfolio",
+        "subtitle": "Simulated portfolio · buy and sell at real prices to validate your analyses",
+        "buy": "Buy",
+        "sell": "Sell",
+        "noPosition": "You hold no position in this asset",
+        "dialogBuyTitle": "Buy {symbol}",
+        "dialogSellTitle": "Sell {symbol}",
+        "currentPrice": "Current price",
+        "availableCash": "Available cash",
+        "positionValue": "Your position value",
+        "amountLabel": "Amount",
+        "max": "Max",
+        "units": "units",
+        "confirmBuy": "Confirm buy",
+        "confirmSell": "Confirm sell",
+        "err_insufficient_cash": "Insufficient cash",
+        "err_no_position": "No position to sell",
+        "err_network": "Connection error, please try again",
+        "err_error": "Could not complete the order",
+        "totalValue": "Total value",
+        "totalReturn": "Total return",
+        "invested": "Invested",
+        "cash": "Cash",
+        "positions": "Open positions",
+        "history": "Transaction history",
+        "avgCost": "avg cost",
+        "reset": "Reset",
+        "resetConfirm": "Wipe the whole portfolio back to starting cash?",
+        "resetYes": "Yes, reset",
+        "cancel": "Cancel",
+        "emptyTitle": "Your portfolio is empty",
+        "emptyHint": "Open a stock or crypto detail and hit \"Buy\" to start trading."
     },
     "macroNav": {
         "title": "Macro Analysis",
@@ -88,6 +123,10 @@
         "vix": {
             "title": "VIX Volatility Regime — Astro Trader Insights",
             "description": "S&P 500 forward returns by real VIX level. Empirical volatility analysis."
+        },
+        "portfolio": {
+            "title": "My Portfolio — Astro Trader Insights",
+            "description": "Simulated paper-trading portfolio: buy and sell at real prices to validate your analyses."
         }
     },
     "macroOverview": {

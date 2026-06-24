@@ -15,6 +15,7 @@ import ScoreRing from "./ScoreRing";
 import AiAnalysisSection from "./AiAnalysisSection";
 import WatchlistButton from "./WatchlistButton";
 import DiscardButton from "./DiscardButton";
+import TradeButtons from "./TradeButtons";
 import { useTranslations } from "next-intl";
 import {
     X, ArrowUpRight, ArrowDownRight,
@@ -226,6 +227,7 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        <TradeButtons company={company} assetType="s" />
                         <DiscardButton company={company} assetType="s" />
                         <WatchlistButton company={company} assetType="s" />
                         <button

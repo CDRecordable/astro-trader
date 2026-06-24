@@ -16,6 +16,7 @@ import { useTranslations } from "next-intl";
 import ScoreRing from "./ScoreRing";
 import WatchlistButton from "./WatchlistButton";
 import DiscardButton from "./DiscardButton";
+import TradeButtons from "./TradeButtons";
 import CryptoAiSection from "./CryptoAiSection";
 import { reinforcementLevel } from "./ReinforcementBadge";
 import {
@@ -177,6 +178,7 @@ export default function CryptoDetail({ company, score: initialScore, onClose }: 
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        <TradeButtons company={company} assetType="c" />
                         <DiscardButton company={company} assetType="c" />
                         <WatchlistButton company={company} assetType="c" />
                         <button onClick={onClose} className="p-2 rounded-lg transition-colors hover:bg-white/5">
