@@ -96,8 +96,20 @@ export interface PipelineItem {
     note?: string;
 }
 
+export interface QualitativeProduct {
+    name: string;
+    detail?: string;    // one-line what it is
+    figure?: string;    // revenue/users figure IF known (else empty)
+}
+export interface UpcomingProduct {
+    name: string;
+    timeframe?: string;
+}
+
 export interface QualitativeAnalysis {
     summary: string;
+    products: QualitativeProduct[];          // main products (with figures if known)
+    upcomingProducts: UpcomingProduct[];     // known upcoming launches
     catalysts: QualitativeCatalyst[];
     risks: QualitativeRisk[];
     pharmaPipeline: PipelineItem[] | null;
@@ -203,6 +215,8 @@ export function parseAnalysisJson(raw: string): QualitativeAnalysis {
         throw new Error("JSON con esquema inesperado");
     }
     obj.qualitativeScore = Math.max(0, Math.min(100, Number(obj.qualitativeScore) || 0));
+    obj.products = Array.isArray(obj.products) ? obj.products : [];
+    obj.upcomingProducts = Array.isArray(obj.upcomingProducts) ? obj.upcomingProducts : [];
     obj.catalysts = Array.isArray(obj.catalysts) ? obj.catalysts : [];
     obj.risks = Array.isArray(obj.risks) ? obj.risks : [];
     obj.governanceFlags = Array.isArray(obj.governanceFlags) ? obj.governanceFlags : [];
@@ -349,6 +363,7 @@ Tu trabajo es la capa CUALITATIVA que las APIs financieras no capturan:
 - Catalizadores próximos (~12 meses): decisiones regulatorias (FDA/EMA/CE si es farma/biotech), juicios o arbitrajes, posibles ventas de divisiones o M&A, refinanciaciones, cambios de guidance, lanzamientos de producto, juntas relevantes.
 - Riesgos cualitativos: gobernanza (estructura accionarial, operaciones vinculadas), ataques de bajistas (p.ej. informes tipo Gotham/Hindenburg), dependencia de clientes/proveedores, riesgo regulatorio o político.
 - Si es farmacéutica/biotech: pipeline con fases y próximos hitos regulatorios conocidos.
+- Productos principales de la empresa (con su cifra de ingresos/usuarios SOLO si la conoces con certeza; si no, deja "figure" vacío). Y próximos lanzamientos conocidos (upcomingProducts). NO inventes cifras ni productos.
 - Foso competitivo (moat).
 - NARRATIVA dominante: a partir de los titulares y tu conocimiento, resume cuál ERA la narrativa de base (baselineNarrative) y en qué se está convirtiendo AHORA (recentNarrative), el giro ("Neutral → Positiva", etc.) y un narrativeScore 0-100 donde 100 = narrativa fuertemente positiva y con momentum.
 
@@ -361,6 +376,8 @@ REGLAS DE HONESTIDAD (críticas):
 Devuelve EXCLUSIVAMENTE un JSON válido (sin texto fuera del JSON) con este esquema:
 {
   "summary": "tesis cualitativa en 2-3 frases",
+  "products": [{"name": "...", "detail": "qué es en 1 frase", "figure": "cifra si la conoces (ej: '$2.5B ingresos', '8M usuarios') o vacío"}],
+  "upcomingProducts": [{"name": "...", "timeframe": "Q3 2026 | fecha desconocida"}],
   "catalysts": [{"title": "...", "timeframe": "Q3 2026 | H1 2027 | fecha desconocida", "impact": "alto|medio|bajo", "type": "regulatorio|corporativo|producto|macro|otro", "verify": true|false}],
   "risks": [{"title": "...", "severity": "alto|medio|bajo"}],
   "pharmaPipeline": [{"asset": "...", "stage": "...", "note": "..."}] o null si no aplica,

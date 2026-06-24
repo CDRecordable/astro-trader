@@ -250,15 +250,57 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                                 <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--accent-cyan)" }}>{t("aboutTitle")}</span>
                                 <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>· {company.sector}</span>
                             </div>
-                            {ai?.summary && (
-                                <p className="text-[11px] leading-relaxed mb-2 pb-2 flex gap-1.5" style={{ color: "var(--text-secondary)", borderBottom: "1px solid var(--border-subtle)" }}>
-                                    <Sparkles size={11} className="mt-0.5 shrink-0" style={{ color: "var(--accent-violet)" }} />
-                                    <span>{ai.summary}</span>
+                            {ai ? (
+                                <div className="space-y-3 overflow-y-auto pr-1" style={{ maxHeight: 300 }}>
+                                    {/* AI thesis */}
+                                    {ai.summary && (
+                                        <p className="text-[11px] leading-relaxed flex gap-1.5" style={{ color: "var(--text-secondary)" }}>
+                                            <Sparkles size={11} className="mt-0.5 shrink-0" style={{ color: "var(--accent-violet)" }} />
+                                            <span>{ai.summary}</span>
+                                        </p>
+                                    )}
+                                    {/* Main products (with figures if known) */}
+                                    {ai.products.length > 0 && (
+                                        <div>
+                                            <p className="text-[9px] uppercase tracking-wider mb-1.5 font-semibold" style={{ color: "var(--accent-cyan)" }}>{t("aboutProducts")}</p>
+                                            <div className="space-y-1.5">
+                                                {ai.products.map((p, i) => (
+                                                    <div key={i} className="flex items-start justify-between gap-2 px-2 py-1.5 rounded-lg" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid var(--border-subtle)" }}>
+                                                        <div className="min-w-0">
+                                                            <span className="text-[11px] font-semibold" style={{ color: "var(--text-primary)" }}>{p.name}</span>
+                                                            {p.detail && <span className="text-[10px] block leading-snug" style={{ color: "var(--text-muted)" }}>{p.detail}</span>}
+                                                        </div>
+                                                        {p.figure && (
+                                                            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded shrink-0" style={{ background: "rgba(52,211,153,0.12)", color: "var(--signal-strong-buy)" }}>{p.figure}</span>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {/* Upcoming products */}
+                                    {ai.upcomingProducts.length > 0 && (
+                                        <div>
+                                            <p className="text-[9px] uppercase tracking-wider mb-1.5 font-semibold" style={{ color: "var(--accent-violet)" }}>{t("aboutUpcoming")}</p>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {ai.upcomingProducts.map((p, i) => (
+                                                    <span key={i} className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "var(--bg-tertiary)", color: "var(--text-secondary)", border: "1px solid var(--border-subtle)" }}>
+                                                        {p.name}{p.timeframe && <span style={{ color: "var(--text-muted)" }}> · {p.timeframe}</span>}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {/* Fallback to the heuristic text if the (older) analysis has no products */}
+                                    {ai.products.length === 0 && company.description && (
+                                        <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>{company.description}</p>
+                                    )}
+                                </div>
+                            ) : (
+                                <p className="text-xs leading-relaxed overflow-y-auto pr-1" style={{ color: "var(--text-secondary)", maxHeight: 280 }}>
+                                    {company.description || t("noDescription")}
                                 </p>
                             )}
-                            <p className="text-xs leading-relaxed overflow-y-auto pr-1" style={{ color: ai?.summary ? "var(--text-muted)" : "var(--text-secondary)", maxHeight: 240 }}>
-                                {company.description || t("noDescription")}
-                            </p>
                         </section>
 
                         {/* Score breakdown */}

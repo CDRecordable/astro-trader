@@ -410,6 +410,8 @@
         "inWatchlist": "In watchlist",
         "removeFromWatchlist": "Remove from watchlist",
         "aboutTitle": "About the company",
+        "aboutProducts": "Main products",
+        "aboutUpcoming": "Upcoming products",
         "noDescription": "No description available for this company.",
         "legendLabel": "Jump to:",
         "scoreClarify": "The score is quantitative; the arrows show whether the AI analysis reinforces ⬆ or tempers ⬇ it.",
