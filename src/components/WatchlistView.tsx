@@ -21,7 +21,6 @@ import { useAppStore } from "@/lib/store";
 import { evaluateAll } from "@/lib/algorithm";
 import { getDefaultMacroContext } from "@/lib/mock-data";
 import { formatMarketCap } from "@/lib/utils";
-import { searchTickers, searchTickersLive, mergeTickerResults, type TickerEntry } from "@/lib/ticker-registry";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -108,21 +107,6 @@ function scoreRingColor(score: number) {
     return "var(--signal-avoid)";
 }
 
-function getMarketIcon(entry: TickerEntry): string {
-    if (entry.y === "c") return "₿";
-    if (entry.m.includes("IBEX")) return "🇪🇸";
-    if (entry.m.includes("Russell") || entry.m.includes("S&P")) return "🇺🇸";
-    return "🌍";
-}
-
-function getMarketColor(entry: TickerEntry): string {
-    if (entry.y === "c") return "var(--accent-amber)";
-    if (entry.m.includes("S&P")) return "var(--accent-cyan)";
-    if (entry.m.includes("IBEX")) return "var(--accent-emerald)";
-    if (entry.m.includes("Russell")) return "var(--accent-violet)";
-    return "var(--text-muted)";
-}
-
 // ── Component ─────────────────────────────────────────────────
 
 export default function WatchlistView() {
@@ -131,13 +115,10 @@ export default function WatchlistView() {
     const [rows, setRows] = useState<WatchlistRow[]>([]);
     const [loadingAll, setLoadingAll] = useState(true);
 
-    // Autocomplete state
+    // Local filter query — filters your SAVED rows (not a global search).
+    // Discovering/analysing a new asset happens in the Explorer; you save it
+    // to the watchlist from its detail card.
     const [query, setQuery] = useState("");
-    const [results, setResults] = useState<TickerEntry[]>([]);
-    const [isOpen, setIsOpen] = useState(false);
-    const [highlightIndex, setHighlightIndex] = useState(-1);
-    const [addError, setAddError] = useState<string | null>(null);
-    const [addingKey, setAddingKey] = useState<string | null>(null);
 
     // Filters
     const [typeFilter, setTypeFilter] = useState<"all" | "s" | "c">("all");
@@ -155,8 +136,6 @@ export default function WatchlistView() {
         for (const a of aiItems) map.set(a.key, a);
         return map;
     }, [aiItems]);
-
-    const discardSet = useMemo(() => new Set(discards.map((d) => d.ticker.toLowerCase())), [discards]);
 
     // Load discards + saved analyses once
     useEffect(() => {
@@ -181,7 +160,6 @@ export default function WatchlistView() {
         setDiscards((prev) => prev.filter((d) => d.ticker !== ticker));
     }, []);
     const inputRef = useRef<HTMLInputElement>(null);
-    const dropdownRef = useRef<HTMLDivElement>(null);
     const coldFilledRef = useRef(false);
 
     // ── Load watchlist from disk, hydrating saved score snapshots ──
@@ -221,43 +199,6 @@ export default function WatchlistView() {
     }, []);
 
     useEffect(() => { loadWatchlist(); }, [loadWatchlist]);
-
-    // ── Search registry on query change ────────────────────────
-    useEffect(() => {
-        if (query.trim().length === 0) {
-            setResults([]);
-            setIsOpen(false);
-            return;
-        }
-        const local = searchTickers(query, "all", 8);
-        setResults(local);
-        setIsOpen(local.length > 0);
-        setHighlightIndex(-1);
-
-        // Merge live Yahoo results so any small-cap is addable.
-        const controller = new AbortController();
-        const timer = setTimeout(async () => {
-            const live = await searchTickersLive(query, controller.signal);
-            if (live.length === 0) return;
-            setResults(mergeTickerResults(local, live, 10));
-            setIsOpen(true);
-        }, 250);
-        return () => { clearTimeout(timer); controller.abort(); };
-    }, [query]);
-
-    // ── Close dropdown on outside click ────────────────────────
-    useEffect(() => {
-        const onClick = (e: MouseEvent) => {
-            if (
-                dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
-                inputRef.current && !inputRef.current.contains(e.target as Node)
-            ) {
-                setIsOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", onClick);
-        return () => document.removeEventListener("mousedown", onClick);
-    }, []);
 
     // ── Refresh live data for a single row ────────────────────
     const refreshRow = useCallback(async (ticker: string, assetType: "s" | "c") => {
@@ -323,69 +264,6 @@ export default function WatchlistView() {
         setRows((prev) => prev.filter((r) => r.ticker !== ticker));
     }, []);
 
-    // ── Add a registry entry to the watchlist ─────────────────
-    const addEntry = useCallback(async (entry: TickerEntry) => {
-        const lookupKey = entry.t;       // CoinGecko ID for crypto, symbol for stocks
-        const assetType = entry.y;
-        setAddError(null);
-        setQuery("");
-        setIsOpen(false);
-        setResults([]);
-
-        // Already present?
-        if (rows.some((r) => r.ticker.toLowerCase() === lookupKey.toLowerCase())) {
-            setAddError(t("alreadyAdded", { symbol: entry.t.toUpperCase() }));
-            return;
-        }
-
-        setAddingKey(lookupKey);
-        try {
-            let company: Company;
-            let score: AlgorithmScore;
-            if (assetType === "c") {
-                const res = await fetch(`/api/crypto/${encodeURIComponent(lookupKey)}`);
-                if (!res.ok) { const err = await res.json(); throw new Error(err.error ?? `"${entry.n}" no encontrado`); }
-                const data = await res.json() as { company: Company; score: AlgorithmScore };
-                company = data.company;
-                score = data.score;
-            } else {
-                const res = await fetch(`/api/company/${encodeURIComponent(lookupKey)}`);
-                if (!res.ok) { const err = await res.json(); throw new Error(err.error ?? `"${entry.n}" no encontrado`); }
-                const data = await res.json() as { company: Company };
-                company = data.company;
-                score = evaluateAll([company], getDefaultMacroContext(), 5_000_000)[0];
-            }
-
-            const symbol = company.ticker; // "HBAR" / "AAPL"
-            const newItem: WatchlistItem = {
-                ticker: lookupKey,
-                symbol,
-                name: entry.n,
-                assetType,
-                addedAt: new Date().toISOString(),
-                note: "",
-            };
-
-            const saveRes = await fetch("/api/watchlist", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(newItem),
-            });
-            if (!saveRes.ok && saveRes.status !== 409) {
-                const err = await saveRes.json();
-                throw new Error(err.error ?? "Error guardando");
-            }
-
-            setRows((prev) => [{ ...newItem, company, score, loading: false }, ...prev]);
-            saveSnapshot(lookupKey, company, score);
-            inputRef.current?.focus();
-        } catch (e) {
-            setAddError(e instanceof Error ? e.message : "Error desconocido");
-        } finally {
-            setAddingKey(null);
-        }
-    }, [rows, t, saveSnapshot]);
-
     // ── Filters: available sectors + visible rows ──────────────
     const sectors = useMemo(() => {
         const set = new Set<string>();
@@ -397,32 +275,18 @@ export default function WatchlistView() {
         return Array.from(set).sort();
     }, [rows, typeFilter]);
 
-    const visibleRows = useMemo(() => rows.filter((r) => {
-        if (typeFilter !== "all" && r.assetType !== typeFilter) return false;
-        if (sectorFilter !== "all" && r.company?.sector !== sectorFilter) return false;
-        return true;
-    }), [rows, typeFilter, sectorFilter]);
+    const visibleRows = useMemo(() => {
+        const q = query.trim().toLowerCase();
+        return rows.filter((r) => {
+            if (typeFilter !== "all" && r.assetType !== typeFilter) return false;
+            if (sectorFilter !== "all" && r.company?.sector !== sectorFilter) return false;
+            if (q && !(`${r.symbol} ${r.name} ${r.ticker}`.toLowerCase().includes(q))) return false;
+            return true;
+        });
+    }, [rows, typeFilter, sectorFilter, query]);
 
     // Switch asset type and drop any sector filter that no longer applies.
     const selectType = (tf: "all" | "s" | "c") => { setTypeFilter(tf); setSectorFilter("all"); };
-
-    // ── Keyboard navigation ───────────────────────────────────
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (!isOpen || results.length === 0) return;
-        if (e.key === "ArrowDown") {
-            e.preventDefault();
-            setHighlightIndex((p) => (p < results.length - 1 ? p + 1 : 0));
-        } else if (e.key === "ArrowUp") {
-            e.preventDefault();
-            setHighlightIndex((p) => (p > 0 ? p - 1 : results.length - 1));
-        } else if (e.key === "Enter") {
-            e.preventDefault();
-            const target = highlightIndex >= 0 ? results[highlightIndex] : results[0];
-            if (target) addEntry(target);
-        } else if (e.key === "Escape") {
-            setIsOpen(false);
-        }
-    };
 
     // ── Render ────────────────────────────────────────────────
 
@@ -504,122 +368,37 @@ export default function WatchlistView() {
                 {/* ── Watchlist tab ── */}
                 {tab === "watchlist" && (<>
 
-                {/* Add ticker — autocomplete search */}
-                <div className="relative mb-8 z-30">
-                    <div
-                        className="flex items-center gap-3 px-4 py-3 rounded-2xl"
-                        style={{
-                            background: "var(--bg-secondary)",
-                            border: isOpen
-                                ? "1px solid var(--border-active)"
-                                : "1px solid var(--border-subtle)",
-                            boxShadow: isOpen ? "0 0 30px rgba(34,211,238,0.12)" : "none",
-                            transition: "all 0.2s ease",
-                        }}
-                    >
-                        <Search size={18} className="flex-shrink-0" style={{ color: "var(--text-muted)" }} />
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            value={query}
-                            onChange={(e) => { setQuery(e.target.value); setAddError(null); }}
-                            onKeyDown={handleKeyDown}
-                            onFocus={() => results.length > 0 && setIsOpen(true)}
-                            placeholder={t("addPlaceholder")}
-                            className="flex-1 bg-transparent text-sm outline-none"
-                            style={{ color: "var(--text-primary)", caretColor: "var(--accent-cyan)" }}
-                            autoComplete="off"
-                            spellCheck={false}
-                        />
-                        {query.length > 0 && (
-                            <button
-                                onClick={() => { setQuery(""); setIsOpen(false); inputRef.current?.focus(); }}
-                                className="p-1 rounded-full transition-colors cursor-pointer"
-                                style={{ color: "var(--text-muted)" }}
-                            >
-                                <X size={15} />
-                            </button>
-                        )}
+                {/* Local filter — searches only your saved assets */}
+                {!loadingAll && rows.length > 0 && (
+                    <div className="relative mb-6 z-30">
+                        <div
+                            className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+                            style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-subtle)" }}
+                        >
+                            <Search size={18} className="flex-shrink-0" style={{ color: "var(--text-muted)" }} />
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                placeholder={t("filterPlaceholder")}
+                                className="flex-1 bg-transparent text-sm outline-none"
+                                style={{ color: "var(--text-primary)", caretColor: "var(--accent-cyan)" }}
+                                autoComplete="off"
+                                spellCheck={false}
+                            />
+                            {query.length > 0 && (
+                                <button
+                                    onClick={() => { setQuery(""); inputRef.current?.focus(); }}
+                                    className="p-1 rounded-full transition-colors cursor-pointer"
+                                    style={{ color: "var(--text-muted)" }}
+                                >
+                                    <X size={15} />
+                                </button>
+                            )}
+                        </div>
                     </div>
-
-                    {addError && (
-                        <p className="text-xs mt-2 ml-1 flex items-center gap-1" style={{ color: "var(--signal-avoid)" }}>
-                            <AlertCircle size={11} /> {addError}
-                        </p>
-                    )}
-
-                    {/* Autocomplete dropdown */}
-                    <AnimatePresence>
-                        {isOpen && results.length > 0 && (
-                            <motion.div
-                                ref={dropdownRef}
-                                initial={{ opacity: 0, y: -8, scaleY: 0.96 }}
-                                animate={{ opacity: 1, y: 0, scaleY: 1 }}
-                                exit={{ opacity: 0, y: -8, scaleY: 0.96 }}
-                                transition={{ duration: 0.14 }}
-                                className="absolute z-50 w-full mt-2 overflow-hidden"
-                                style={{
-                                    background: "var(--bg-card)",
-                                    borderRadius: 14,
-                                    border: "1px solid var(--border-subtle)",
-                                    boxShadow: "0 12px 40px rgba(0,0,0,0.5), 0 0 20px rgba(34,211,238,0.08)",
-                                    transformOrigin: "top",
-                                }}
-                            >
-                                {results.map((entry, i) => {
-                                    const isAdding = addingKey === entry.t;
-                                    return (
-                                        <button
-                                            key={`${entry.t}-${entry.y}`}
-                                            onClick={() => addEntry(entry)}
-                                            onMouseEnter={() => setHighlightIndex(i)}
-                                            disabled={isAdding}
-                                            className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors duration-100 cursor-pointer"
-                                            style={{
-                                                background: highlightIndex === i ? "rgba(34,211,238,0.08)" : "transparent",
-                                                borderBottom: i < results.length - 1 ? "1px solid var(--border-subtle)" : "none",
-                                            }}
-                                        >
-                                            <span className="text-lg flex-shrink-0 w-7 text-center">
-                                                {getMarketIcon(entry)}
-                                            </span>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-bold text-sm tracking-wide" style={{ color: "var(--accent-cyan)" }}>
-                                                        {entry.y === "c" ? entry.n : entry.t}
-                                                    </span>
-                                                    <span className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>
-                                                        {entry.y === "c" ? entry.t : entry.n}
-                                                    </span>
-                                                    {discardSet.has(entry.t.toLowerCase()) && (
-                                                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 uppercase tracking-wider"
-                                                            style={{ background: "rgba(251,113,133,0.14)", color: "var(--signal-avoid)" }}>
-                                                            {t("discardedTag")}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            {isAdding ? (
-                                                <Loader2 size={14} className="animate-spin flex-shrink-0" style={{ color: "var(--accent-cyan)" }} />
-                                            ) : (
-                                                <span
-                                                    className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 uppercase tracking-wider"
-                                                    style={{
-                                                        background: `${getMarketColor(entry)}20`,
-                                                        color: getMarketColor(entry),
-                                                        border: `1px solid ${getMarketColor(entry)}30`,
-                                                    }}
-                                                >
-                                                    {entry.m}
-                                                </span>
-                                            )}
-                                        </button>
-                                    );
-                                })}
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
+                )}
 
                 {/* Filters: asset type + sector */}
                 {!loadingAll && rows.length > 0 && (

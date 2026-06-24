@@ -664,6 +664,7 @@
         "discardedTag": "Descartada",
         "add": "Añadir",
         "addPlaceholder": "Busca empresa o cripto (ej. Apple, Hedera, NVDA)…",
+        "filterPlaceholder": "Filtra tu watchlist por nombre o símbolo…",
         "refreshAll": "Actualizar todo",
         "analyze": "Analizar",
         "refresh": "Actualizar",
@@ -671,7 +672,7 @@
         "oneMonth": "1M",
         "alreadyAdded": "{symbol} ya está en tu watchlist",
         "emptyTitle": "Tu watchlist está vacía",
-        "emptySubtitle": "Busca una empresa o cripto arriba, o usa el ⭐ en el explorador"
+        "emptySubtitle": "Analiza un activo en el Explorador y guárdalo con la ⭐ desde su ficha"
     },
     "settings": {
         "title": "Ajustes",
