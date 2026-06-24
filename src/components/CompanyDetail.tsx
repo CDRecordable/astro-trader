@@ -4,20 +4,24 @@
 
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import type { Company, AlgorithmScore } from "@/lib/types";
+import type { QualitativeAnalysis } from "@/lib/api/llm-client";
+import { reinforcementLevel } from "./ReinforcementBadge";
 import { formatMarketCap, formatPercent, formatCurrency } from "@/lib/utils";
 import { PriceChart, MarginChart, ReturnChart, ScoreBreakdownChart } from "./FinancialCharts";
 import ScoreRing from "./ScoreRing";
 import AiAnalysisSection from "./AiAnalysisSection";
 import WatchlistButton from "./WatchlistButton";
 import DiscardButton from "./DiscardButton";
+import TradeButtons from "./TradeButtons";
 import { useTranslations } from "next-intl";
 import {
     X, ArrowUpRight, ArrowDownRight,
     Shield, Target, Activity, BarChart3, Globe,
-    HelpCircle, CheckCircle2, XCircle, MinusCircle, Info, TrendingUp, Building2
+    HelpCircle, CheckCircle2, XCircle, MinusCircle, Info, TrendingUp, Building2,
+    ChevronUp, ChevronDown, Sparkles
 } from "lucide-react";
 
 interface CompanyDetailProps {
@@ -143,6 +147,13 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
     const m = company.metrics;
     const t = useTranslations("companyDetail");
 
+    // AI result (lifted up): drives the header arrows + the "about" thesis.
+    const [ai, setAi] = useState<QualitativeAnalysis | null>(null);
+    const aiLevel = ai ? reinforcementLevel(ai.qualitativeScore) : 0;
+
+    // Smooth-scroll to a heuristic section (legend jump links).
+    const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+
     // Data availability — legacy rows without flags are assumed complete.
     const dq = m.dataQuality ?? { deltas: true, roc: true, growth: true };
 
@@ -191,7 +202,18 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                     }}
                 >
                     <div className="flex items-center gap-4">
-                        <ScoreRing score={score.totalScore} size={48} strokeWidth={3} recommendation={score.recommendation.replace("_", " ")} />
+                        <div className="relative" title={ai ? t("scoreClarify") : undefined}>
+                            <ScoreRing score={score.totalScore} size={48} strokeWidth={3} recommendation={score.recommendation.replace("_", " ")} />
+                            {ai && aiLevel !== 0 && (
+                                <div className="absolute -top-1.5 -right-1.5 flex flex-col items-center -space-y-1.5">
+                                    {Array.from({ length: Math.abs(aiLevel) }).map((_, i) => (
+                                        aiLevel > 0
+                                            ? <ChevronUp key={i} size={12} strokeWidth={3.5} style={{ color: "var(--signal-strong-buy)" }} />
+                                            : <ChevronDown key={i} size={12} strokeWidth={3.5} style={{ color: "var(--signal-avoid)" }} />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                         <div>
                             <div className="flex items-center gap-2">
                                 <span className="font-bold text-base" style={{ color: "var(--accent-cyan)" }}>
@@ -205,6 +227,7 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        <TradeButtons company={company} assetType="s" />
                         <DiscardButton company={company} assetType="s" />
                         <WatchlistButton company={company} assetType="s" />
                         <button
@@ -219,63 +242,123 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                 {/* ── Paired Rows: Section + Insight Card aligned ── */}
                 <div className="px-6 py-5 space-y-6">
 
-                    {/* ── Intro: what the company is / does (highlighted) ── */}
-                    {company.description && (
-                        <div className="rounded-2xl p-5" style={{
-                            background: "linear-gradient(135deg, rgba(34,211,238,0.06), rgba(167,139,250,0.05))",
-                            border: "1px solid var(--border-active)",
-                        }}>
-                            <div className="flex items-center gap-2 mb-2">
+                    {/* ── Top: About · Score breakdown · Interpretation ── */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-stretch">
+
+                        {/* About — heuristic description; richer when AI is present */}
+                        <section className="glass-card p-4 flex flex-col" style={{ border: "1px solid var(--border-active)" }}>
+                            <div className="flex items-center gap-2 mb-2 shrink-0">
                                 <Building2 size={15} style={{ color: "var(--accent-cyan)" }} />
-                                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--accent-cyan)" }}>
-                                    {t("aboutTitle")}
-                                </span>
+                                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--accent-cyan)" }}>{t("aboutTitle")}</span>
                                 <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>· {company.sector}</span>
                             </div>
-                            <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                                {company.description}
-                            </p>
-                        </div>
-                    )}
-
-                    {/* ── Row 1: Score Breakdown + Score Interpretation ── */}
-                    <div className="flex flex-col lg:flex-row gap-5 items-stretch">
-                        <section className="glass-card p-4 flex-1 min-w-0">
-                            <SectionHeader icon={Target} title={t("scoreTitle")} />
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <ScoreBreakdownChart
-                                        valuationScore={score.valuationScore}
-                                        trendScore={score.trendScore}
-                                        timingScore={score.timingScore}
-                                    />
+                            <div className="relative flex-1 min-h-0" style={{ minHeight: 200 }}>
+                              <div className="absolute inset-0 overflow-y-auto pr-1">
+                            {ai ? (
+                                <div className="space-y-3">
+                                    {/* AI thesis */}
+                                    {ai.summary && (
+                                        <p className="text-[11px] leading-relaxed flex gap-1.5" style={{ color: "var(--text-secondary)" }}>
+                                            <Sparkles size={11} className="mt-0.5 shrink-0" style={{ color: "var(--accent-violet)" }} />
+                                            <span>{ai.summary}</span>
+                                        </p>
+                                    )}
+                                    {/* Main products (with figures if known) */}
+                                    {ai.products && ai.products.length > 0 && (
+                                        <div>
+                                            <p className="text-[9px] uppercase tracking-wider mb-1.5 font-semibold" style={{ color: "var(--accent-cyan)" }}>{t("aboutProducts")}</p>
+                                            <div className="space-y-1.5">
+                                                {ai.products.map((p, i) => (
+                                                    <div key={i} className="flex items-start justify-between gap-2 px-2 py-1.5 rounded-lg" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid var(--border-subtle)" }}>
+                                                        <div className="min-w-0">
+                                                            <span className="text-[11px] font-semibold" style={{ color: "var(--text-primary)" }}>{p.name}</span>
+                                                            {p.detail && <span className="text-[10px] block leading-snug" style={{ color: "var(--text-muted)" }}>{p.detail}</span>}
+                                                        </div>
+                                                        {p.figure && (
+                                                            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded shrink-0" style={{ background: "rgba(52,211,153,0.12)", color: "var(--signal-strong-buy)" }}>{p.figure}</span>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {/* Upcoming products */}
+                                    {ai.upcomingProducts && ai.upcomingProducts.length > 0 && (
+                                        <div>
+                                            <p className="text-[9px] uppercase tracking-wider mb-1.5 font-semibold" style={{ color: "var(--accent-violet)" }}>{t("aboutUpcoming")}</p>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {ai.upcomingProducts.map((p, i) => (
+                                                    <span key={i} className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "var(--bg-tertiary)", color: "var(--text-secondary)", border: "1px solid var(--border-subtle)" }}>
+                                                        {p.name}{p.timeframe && <span style={{ color: "var(--text-muted)" }}> · {p.timeframe}</span>}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {/* Fallback to the heuristic text if the (older) analysis has no products */}
+                                    {(!ai.products || ai.products.length === 0) && company.description && (
+                                        <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>{company.description}</p>
+                                    )}
                                 </div>
-                                <div className="flex flex-col justify-center space-y-2">
-                                    <MetricRow label={t("valuation35")} value={`${score.valuationScore}/100`} color="var(--accent-cyan)" />
-                                    <MetricRow label={t("trend25")} value={`${score.trendScore}/100`} color="var(--accent-violet)" />
-                                    <MetricRow label={t("timing20")} value={`${score.timingScore}/100`} color="var(--accent-amber)" />
-                                    <MetricRow label={t("macroAdj")} value={`×${score.macroAdjustment.toFixed(2)}`} color="var(--text-secondary)" />
-                                    <MetricRow label={t("totalScore")} value={`${score.totalScore}/100`} color="var(--accent-emerald)" />
-                                </div>
+                            ) : (
+                                <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                                    {company.description || t("noDescription")}
+                                </p>
+                            )}
+                              </div>
                             </div>
                         </section>
-                        <div className="w-full lg:w-[340px] shrink-0">
-                            <InsightCard title={t("insightScore")} icon={Target}>
-                                <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
-                                    {t("insightScoreDesc")}
-                                </p>
-                                <CheckItem pass={score.totalScore >= 70} label={t("checkScoreHigh")} tip={t("checkScoreHighTip")} value={`${score.totalScore}`} />
-                                <CheckItem pass={score.totalScore >= 40} label={t("checkScoreMid")} tip={t("checkScoreMidTip")} value={`${score.totalScore}`} />
-                                <CheckItem pass={score.passesHardFilters} label={t("checkPassesFilters")} tip={t("checkPassesFiltersTip")} />
-                                <CheckItem pass={score.valuationScore >= 50} label={t("checkValuationAbove50")} tip={t("checkValuationAbove50Tip")} value={`${score.valuationScore}`} />
-                                <CheckItem pass={score.trendScore >= 50} label={t("checkTrendAbove50")} tip={t("checkTrendAbove50Tip")} value={`${score.trendScore}`} />
-                                <CheckItem pass={score.timingScore >= 50} label={t("checkTimingAbove50")} tip={t("checkTimingAbove50Tip")} value={`${score.timingScore}`} />
-                            </InsightCard>
-                        </div>
+
+                        {/* Score breakdown */}
+                        <section className="glass-card p-4">
+                            <SectionHeader icon={Target} title={t("scoreTitle")} />
+                            <ScoreBreakdownChart
+                                valuationScore={score.valuationScore}
+                                trendScore={score.trendScore}
+                                timingScore={score.timingScore}
+                            />
+                            <div className="space-y-1.5 mt-2">
+                                <MetricRow label={t("valuation35")} value={`${score.valuationScore}/100`} color="var(--accent-cyan)" />
+                                <MetricRow label={t("trend25")} value={`${score.trendScore}/100`} color="var(--accent-violet)" />
+                                <MetricRow label={t("timing20")} value={`${score.timingScore}/100`} color="var(--accent-amber)" />
+                                <MetricRow label={t("macroAdj")} value={`×${score.macroAdjustment.toFixed(2)}`} color="var(--text-secondary)" />
+                                <MetricRow label={t("totalScore")} value={`${score.totalScore}/100`} color="var(--accent-emerald)" />
+                            </div>
+                        </section>
+
+                        {/* Interpretation */}
+                        <InsightCard title={t("insightScore")} icon={Target}>
+                            <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                                {t("insightScoreDesc")}
+                            </p>
+                            <CheckItem pass={score.totalScore >= 70} label={t("checkScoreHigh")} tip={t("checkScoreHighTip")} value={`${score.totalScore}`} />
+                            <CheckItem pass={score.totalScore >= 40} label={t("checkScoreMid")} tip={t("checkScoreMidTip")} value={`${score.totalScore}`} />
+                            <CheckItem pass={score.passesHardFilters} label={t("checkPassesFilters")} tip={t("checkPassesFiltersTip")} />
+                            <CheckItem pass={score.valuationScore >= 50} label={t("checkValuationAbove50")} tip={t("checkValuationAbove50Tip")} value={`${score.valuationScore}`} />
+                            <CheckItem pass={score.trendScore >= 50} label={t("checkTrendAbove50")} tip={t("checkTrendAbove50Tip")} value={`${score.trendScore}`} />
+                            <CheckItem pass={score.timingScore >= 50} label={t("checkTimingAbove50")} tip={t("checkTimingAbove50Tip")} value={`${score.timingScore}`} />
+                        </InsightCard>
+                    </div>
+
+                    {/* ── AI qualitative layer (reinforces/weakens the score) ── */}
+                    <div className="flex">
+                        <AiAnalysisSection ticker={company.ticker} onResult={setAi} />
+                    </div>
+
+                    {/* ── Legend: jump to the heuristic blocks ── */}
+                    <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[10px] uppercase tracking-wider mr-1" style={{ color: "var(--text-muted)" }}>{t("legendLabel")}</span>
+                        {([["sec-filters", t("filtersTitle")], ["sec-valuation", t("valuationTitle")], ["sec-trend", t("trendTitle")], ["sec-timing", t("timingTitle")], ["sec-catalysts", t("insightCatalysts")]] as const).map(([id, label]) => (
+                            <button key={id} onClick={() => scrollTo(id)}
+                                className="px-2.5 py-1 rounded-lg text-[11px] font-medium cursor-pointer transition-all hover:brightness-125"
+                                style={{ background: "var(--bg-tertiary)", color: "var(--text-secondary)", border: "1px solid var(--border-subtle)" }}>
+                                {label}
+                            </button>
+                        ))}
                     </div>
 
                     {/* ── Row 2: Hard Filters + Filters Check ── */}
-                    <div className="flex flex-col lg:flex-row gap-5 items-stretch">
+                    <div id="sec-filters" className="flex flex-col lg:flex-row gap-5 items-stretch scroll-mt-24">
                         <section className="glass-card p-4 flex-1 min-w-0">
                             <SectionHeader icon={Shield} title={t("filtersTitle")} />
                             <div className="space-y-1">
@@ -320,7 +403,7 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                     </div>
 
                     {/* ── Row 3: Valuation & Solvency + Check ── */}
-                    <div className="flex flex-col lg:flex-row gap-5 items-stretch">
+                    <div id="sec-valuation" className="flex flex-col lg:flex-row gap-5 items-stretch scroll-mt-24">
                         <section className="glass-card p-4 flex-1 min-w-0">
                             <SectionHeader icon={BarChart3} title={t("valuationTitle")} />
                             <MetricRow
@@ -407,7 +490,7 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                     </div>
 
                     {/* ── Row 4: Trend & Quality + Quality & Trend Check ── */}
-                    <div className="flex flex-col lg:flex-row gap-5 items-start">
+                    <div id="sec-trend" className="flex flex-col lg:flex-row gap-5 items-start scroll-mt-24">
                         <section className="glass-card p-4 space-y-6 flex-1 min-w-0">
                             <SectionHeader icon={Activity} title={t("trendTitle")} />
 
@@ -547,7 +630,7 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                     </div>
 
                     {/* ── Row 5: Timing & Momentum + Timing Check ── */}
-                    <div className="flex flex-col lg:flex-row gap-5 items-start">
+                    <div id="sec-timing" className="flex flex-col lg:flex-row gap-5 items-start scroll-mt-24">
                         <section className="glass-card p-4 space-y-6 flex-1 min-w-0">
                             <SectionHeader icon={Globe} title={t("timingTitle")} />
 
@@ -589,7 +672,7 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                     </div>
 
                     {/* ── Row 5.5: Catalysts & Sentiment Signals ── */}
-                    <div className="flex flex-col lg:flex-row gap-5 items-stretch">
+                    <div id="sec-catalysts" className="flex flex-col lg:flex-row gap-5 items-stretch scroll-mt-24">
                         <section className="glass-card p-4 flex-1 min-w-0">
                             <SectionHeader icon={Info} title={t("catalystsTitle")} />
                             {m.nextEarningsDate && (
@@ -666,11 +749,6 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                                 />
                             </InsightCard>
                         </div>
-                    </div>
-
-                    {/* ── Row 5.7: AI Qualitative Analysis (user's LLM) ── */}
-                    <div className="flex">
-                        <AiAnalysisSection ticker={company.ticker} />
                     </div>
 
                     {/* ── Row 6: Verdict ── */}

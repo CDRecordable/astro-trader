@@ -4,6 +4,7 @@
         "explorer": "Explorer",
         "screener": "Screener",
         "watchlist": "Watchlist",
+        "portfolio": "Portfolio",
         "wiki": "Wiki",
         "settings": "Settings",
         "stocks": "Stocks",
@@ -12,6 +13,40 @@
         "serious": "Analysis",
         "vix": "VIX",
         "home": "Home"
+    },
+    "portfolio": {
+        "title": "My Portfolio",
+        "subtitle": "Simulated portfolio · buy and sell at real prices to validate your analyses",
+        "buy": "Buy",
+        "sell": "Sell",
+        "noPosition": "You hold no position in this asset",
+        "dialogBuyTitle": "Buy {symbol}",
+        "dialogSellTitle": "Sell {symbol}",
+        "currentPrice": "Current price",
+        "availableCash": "Available cash",
+        "positionValue": "Your position value",
+        "amountLabel": "Amount",
+        "max": "Max",
+        "units": "units",
+        "confirmBuy": "Confirm buy",
+        "confirmSell": "Confirm sell",
+        "err_insufficient_cash": "Insufficient cash",
+        "err_no_position": "No position to sell",
+        "err_network": "Connection error, please try again",
+        "err_error": "Could not complete the order",
+        "totalValue": "Total value",
+        "totalReturn": "Total return",
+        "invested": "Invested",
+        "cash": "Cash",
+        "positions": "Open positions",
+        "history": "Transaction history",
+        "avgCost": "avg cost",
+        "reset": "Reset",
+        "resetConfirm": "Wipe the whole portfolio back to starting cash?",
+        "resetYes": "Yes, reset",
+        "cancel": "Cancel",
+        "emptyTitle": "Your portfolio is empty",
+        "emptyHint": "Open a stock or crypto detail and hit \"Buy\" to start trading."
     },
     "macroNav": {
         "title": "Macro Analysis",
@@ -88,6 +123,10 @@
         "vix": {
             "title": "VIX Volatility Regime — Astro Trader Insights",
             "description": "S&P 500 forward returns by real VIX level. Empirical volatility analysis."
+        },
+        "portfolio": {
+            "title": "My Portfolio — Astro Trader Insights",
+            "description": "Simulated paper-trading portfolio: buy and sell at real prices to validate your analyses."
         }
     },
     "macroOverview": {
@@ -410,6 +449,11 @@
         "inWatchlist": "In watchlist",
         "removeFromWatchlist": "Remove from watchlist",
         "aboutTitle": "About the company",
+        "aboutProducts": "Main products",
+        "aboutUpcoming": "Upcoming products",
+        "noDescription": "No description available for this company.",
+        "legendLabel": "Jump to:",
+        "scoreClarify": "The score is quantitative; the arrows show whether the AI analysis reinforces ⬆ or tempers ⬇ it.",
         "peRatio": "P/E (Price/Earnings)",
         "peRatioTip": "Price-to-Earnings: how many times annual earnings you're paying for the stock. Lower = cheaper (rough guide; <25 reasonable, >40 expensive). Complements our EV/FCF valuation.",
         "annualTitle": "Revenue & earnings (annual)",
@@ -620,6 +664,7 @@
         "discardedTag": "Discarded",
         "add": "Add",
         "addPlaceholder": "Search company or crypto (e.g. Apple, Hedera, NVDA)…",
+        "filterPlaceholder": "Filter your watchlist by name or symbol…",
         "refreshAll": "Refresh all",
         "analyze": "Analyze",
         "refresh": "Refresh",
@@ -627,7 +672,7 @@
         "oneMonth": "1M",
         "alreadyAdded": "{symbol} is already in your watchlist",
         "emptyTitle": "Your watchlist is empty",
-        "emptySubtitle": "Search a company or crypto above, or use the ⭐ in the explorer"
+        "emptySubtitle": "Analyse an asset in the Explorer and save it with the ⭐ from its detail card"
     },
     "settings": {
         "title": "Settings",
@@ -688,6 +733,10 @@
         "noKey": "No LLM API key configured.",
         "goToSettings": "Go to Settings →",
         "qualScore": "Qual. score",
+        "aiReinforces": "Reinforces",
+        "aiWeakens": "Weakens",
+        "aiNeutralScore": "Neutral",
+        "scoreClarify": "The main score is quantitative (algorithm). This qualitative AI analysis reinforces ⬆ or tempers ⬇ it — it's not a competing second score.",
         "narrativeTitle": "Dominant narrative",
         "baselineNarrative": "Baseline narrative",
         "recentNarrative": "Recent narrative",

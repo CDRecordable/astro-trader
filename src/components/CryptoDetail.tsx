@@ -11,14 +11,17 @@ import React, { useEffect, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import type { Company, AlgorithmScore } from "@/lib/types";
 import type { CryptoFundamentals } from "@/lib/crypto-fundamentals";
+import type { CryptoQualitative } from "@/lib/api/llm-client";
 import { useTranslations } from "next-intl";
 import ScoreRing from "./ScoreRing";
 import WatchlistButton from "./WatchlistButton";
 import DiscardButton from "./DiscardButton";
+import TradeButtons from "./TradeButtons";
 import CryptoAiSection from "./CryptoAiSection";
+import { reinforcementLevel } from "./ReinforcementBadge";
 import {
     X, Coins, Network, ActivitySquare, Calendar,
-    AlertTriangle, Loader2, HelpCircle, Gauge,
+    AlertTriangle, Loader2, HelpCircle, Gauge, ChevronUp, ChevronDown,
 } from "lucide-react";
 
 interface CryptoDetailProps {
@@ -120,6 +123,8 @@ export default function CryptoDetail({ company, score: initialScore, onClose }: 
     const [score, setScore] = useState<AlgorithmScore>(initialScore);
     const [description, setDescription] = useState<string>(company.description ?? "");
     const [loading, setLoading] = useState(true);
+    const [ai, setAi] = useState<CryptoQualitative | null>(null);
+    const aiLevel = ai ? reinforcementLevel(ai.qualitativeScore) : 0;
 
     useEffect(() => {
         let active = true;
@@ -150,7 +155,18 @@ export default function CryptoDetail({ company, score: initialScore, onClose }: 
                     style={{ background: "var(--bg-secondary)", borderBottom: "1px solid var(--border-subtle)", backdropFilter: "blur(12px)" }}
                 >
                     <div className="flex items-center gap-4">
-                        <ScoreRing score={score.totalScore} size={48} strokeWidth={3} recommendation={score.recommendation.replace("_", " ")} />
+                        <div className="relative">
+                            <ScoreRing score={score.totalScore} size={48} strokeWidth={3} recommendation={score.recommendation.replace("_", " ")} />
+                            {ai && aiLevel !== 0 && (
+                                <div className="absolute -top-1.5 -right-1.5 flex flex-col items-center -space-y-1.5">
+                                    {Array.from({ length: Math.abs(aiLevel) }).map((_, i) => (
+                                        aiLevel > 0
+                                            ? <ChevronUp key={i} size={12} strokeWidth={3.5} style={{ color: "var(--signal-strong-buy)" }} />
+                                            : <ChevronDown key={i} size={12} strokeWidth={3.5} style={{ color: "var(--signal-avoid)" }} />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                         <div>
                             <div className="flex items-center gap-2">
                                 <span className="font-bold text-base" style={{ color: "var(--accent-amber)" }}>{company.ticker}</span>
@@ -162,6 +178,7 @@ export default function CryptoDetail({ company, score: initialScore, onClose }: 
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        <TradeButtons company={company} assetType="c" />
                         <DiscardButton company={company} assetType="c" />
                         <WatchlistButton company={company} assetType="c" />
                         <button onClick={onClose} className="p-2 rounded-lg transition-colors hover:bg-white/5">
@@ -189,6 +206,9 @@ export default function CryptoDetail({ company, score: initialScore, onClose }: 
                             </p>
                         </div>
                     )}
+
+                    {/* AI qualitative layer (reinforces/weakens the score) */}
+                    {f && <CryptoAiSection fundamentals={f} description={description} onResult={setAi} />}
 
                     {/* Disclaimer */}
                     <p className="text-[11px] leading-relaxed px-3 py-2 rounded-lg" style={{ background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.12)", color: "var(--text-muted)" }}>
@@ -330,9 +350,6 @@ export default function CryptoDetail({ company, score: initialScore, onClose }: 
                                     </div>
                                 </section>
                             )}
-
-                            {/* AI qualitative layer */}
-                            <CryptoAiSection fundamentals={f} description={description} />
                         </>
                     )}
                 </div>

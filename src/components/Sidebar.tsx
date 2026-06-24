@@ -25,6 +25,7 @@ import {
     Gauge,
     Moon,
     LineChart,
+    Wallet,
 } from "lucide-react";
 
 type NavItem = { icon: typeof LayoutDashboard; tKey: string; href: string };
@@ -39,13 +40,14 @@ const SERIOUS_NAV: NavItem[] = [
     { icon: LayoutDashboard, tKey: "explorer", href: "/explorer" },
     { icon: Telescope, tKey: "screener", href: "/screener" },
     { icon: TrendingUp, tKey: "watchlist", href: "/watchlist" },
+    { icon: Wallet, tKey: "portfolio", href: "/portfolio" },
     { icon: Gauge, tKey: "vix", href: "/vix" },
     { icon: Settings, tKey: "settings", href: "/settings" },
 ];
 
 /** Which mode a route section belongs to (null = neutral, e.g. wiki/settings). */
 function sectionMode(section: string): AppMode | null {
-    if (["explorer", "screener", "watchlist", "vix"].includes(section)) return "serious";
+    if (["explorer", "screener", "watchlist", "portfolio", "vix"].includes(section)) return "serious";
     if (section === "macro") return "esoteric";
     return null;
 }

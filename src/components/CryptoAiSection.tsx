@@ -15,6 +15,7 @@ import type { CryptoQualitative } from "@/lib/api/llm-client";
 import type { CryptoFundamentals } from "@/lib/crypto-fundamentals";
 import type { NewsItem } from "@/lib/api/news-client";
 import AiLoadingBar from "./AiLoadingBar";
+import ReinforcementBadge from "./ReinforcementBadge";
 
 interface CachedCryptoAnalysis {
     id: string;
@@ -63,9 +64,10 @@ function buildQuantSummary(f: CryptoFundamentals): string {
     ].join("\n");
 }
 
-export default function CryptoAiSection({ fundamentals, description }: {
+export default function CryptoAiSection({ fundamentals, description, onResult }: {
     fundamentals: CryptoFundamentals;
     description: string;
+    onResult?: (a: CryptoQualitative | null) => void;
 }) {
     const t = useTranslations("aiAnalysis");
     const id = fundamentals.id;
@@ -81,6 +83,8 @@ export default function CryptoAiSection({ fundamentals, description }: {
             .catch(() => { });
         return () => { active = false; };
     }, [id]);
+
+    useEffect(() => { onResult?.(data?.analysis ?? null); }, [data, onResult]);
 
     const generate = useCallback(async () => {
         setLoading(true);
@@ -157,16 +161,18 @@ export default function CryptoAiSection({ fundamentals, description }: {
 
             {a && !loading && (
                 <div className="space-y-4">
-                    {/* Summary + score */}
+                    {/* Summary + reinforcement on the main score */}
                     <div className="flex items-start gap-4">
-                        <div className="flex flex-col items-center shrink-0">
-                            <span className="text-2xl font-bold font-mono" style={{ color: scoreColor }}>{a.qualitativeScore}</span>
-                            <span className="text-[9px] uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{t("qualScore")}</span>
-                            <span className="text-[9px] mt-1 px-1.5 py-0.5 rounded" style={{ background: "var(--bg-tertiary)", color: "var(--text-secondary)" }}>
+                        <div className="flex flex-col items-center shrink-0 gap-1.5">
+                            <ReinforcementBadge score={a.qualitativeScore} />
+                            <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: "var(--bg-tertiary)", color: "var(--text-secondary)" }}>
                                 {t("moat")}: {a.moat}
                             </span>
                         </div>
-                        <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>{a.summary}</p>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>{a.summary}</p>
+                            <p className="text-[10px] italic mt-1.5" style={{ color: "var(--text-muted)" }}>{t("scoreClarify")}</p>
+                        </div>
                     </div>
 
                     {/* Narrative (baseline → recent), grounded on news */}
