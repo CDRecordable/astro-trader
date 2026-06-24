@@ -182,24 +182,42 @@ export default function WatchlistView() {
     }, []);
     const inputRef = useRef<HTMLInputElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const autoAnalyzedRef = useRef(false);
+    const coldFilledRef = useRef(false);
 
-    // ── Load watchlist from disk ───────────────────────────────
+    // ── Load watchlist from disk, hydrating saved score snapshots ──
     const loadWatchlist = useCallback(async () => {
         setLoadingAll(true);
         try {
-            const res = await fetch("/api/watchlist");
-            const data = await res.json() as { items: WatchlistItem[] };
-            setRows(data.items.map((item) => ({
-                ...item,
-                symbol: item.symbol ?? item.ticker, // back-compat for old entries
-                loading: false,
-            })));
+            const [wData, cData] = await Promise.all([
+                fetch("/api/watchlist").then((r) => r.json()),
+                fetch("/api/watchlist-cache").then((r) => (r.ok ? r.json() : { items: {} })).catch(() => ({ items: {} })),
+            ]);
+            const items = (wData.items ?? []) as WatchlistItem[];
+            const cache = (cData.items ?? {}) as Record<string, { company: Company; score: AlgorithmScore }>;
+            setRows(items.map((item) => {
+                const snap = cache[item.ticker.toLowerCase()];
+                return {
+                    ...item,
+                    symbol: item.symbol ?? item.ticker, // back-compat for old entries
+                    loading: false,
+                    company: snap?.company,             // instant from disk; refresh on demand
+                    score: snap?.score,
+                };
+            }));
         } catch {
             setRows([]);
         } finally {
             setLoadingAll(false);
         }
+    }, []);
+
+    // Persist a row's freshly-computed score so next load is instant.
+    const saveSnapshot = useCallback((ticker: string, company: Company, score: AlgorithmScore) => {
+        fetch("/api/watchlist-cache", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ticker, company, score }),
+        }).catch(() => { });
     }, []);
 
     useEffect(() => { loadWatchlist(); }, [loadWatchlist]);
@@ -271,6 +289,7 @@ export default function WatchlistView() {
                     r.ticker === ticker ? { ...r, company, score, loading: false } : r
                 )
             );
+            saveSnapshot(ticker, company, score); // persist → instant next load
         } catch (e) {
             setRows((prev) =>
                 prev.map((r) =>
@@ -280,23 +299,26 @@ export default function WatchlistView() {
                 )
             );
         }
-    }, []);
+    }, [saveSnapshot]);
 
-    // ── Refresh all ───────────────────────────────────────────
+    // ── Refresh all (on demand) ───────────────────────────────
     const refreshAll = useCallback(async () => {
         const snapshot = rows;
         await Promise.allSettled(snapshot.map((r) => refreshRow(r.ticker, r.assetType)));
     }, [rows, refreshRow]);
 
-    // ── Auto-analyze rows once after first load ───────────────
+    // Scores load from the saved snapshot on disk and are NOT recomputed on
+    // every visit. Only rows WITHOUT a snapshot (first time / newly added) are
+    // computed once and then persisted. Manual refresh is always explicit.
     useEffect(() => {
-        if (loadingAll || autoAnalyzedRef.current || rows.length === 0) return;
-        autoAnalyzedRef.current = true;
+        if (loadingAll || coldFilledRef.current || rows.length === 0) return;
+        coldFilledRef.current = true;
         rows.forEach((r) => { if (!r.score && !r.loading) refreshRow(r.ticker, r.assetType); });
     }, [loadingAll, rows, refreshRow]);
 
     // ── Remove from watchlist ─────────────────────────────────
     const removeItem = useCallback(async (ticker: string) => {
+        fetch(`/api/watchlist-cache?ticker=${encodeURIComponent(ticker)}`, { method: "DELETE" }).catch(() => { });
         await fetch(`/api/watchlist?ticker=${encodeURIComponent(ticker)}`, { method: "DELETE" });
         setRows((prev) => prev.filter((r) => r.ticker !== ticker));
     }, []);
@@ -355,13 +377,14 @@ export default function WatchlistView() {
             }
 
             setRows((prev) => [{ ...newItem, company, score, loading: false }, ...prev]);
+            saveSnapshot(lookupKey, company, score);
             inputRef.current?.focus();
         } catch (e) {
             setAddError(e instanceof Error ? e.message : "Error desconocido");
         } finally {
             setAddingKey(null);
         }
-    }, [rows, t]);
+    }, [rows, t, saveSnapshot]);
 
     // ── Filters: available sectors + visible rows ──────────────
     const sectors = useMemo(() => {
