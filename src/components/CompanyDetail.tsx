@@ -260,7 +260,7 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                                         </p>
                                     )}
                                     {/* Main products (with figures if known) */}
-                                    {ai.products.length > 0 && (
+                                    {ai.products && ai.products.length > 0 && (
                                         <div>
                                             <p className="text-[9px] uppercase tracking-wider mb-1.5 font-semibold" style={{ color: "var(--accent-cyan)" }}>{t("aboutProducts")}</p>
                                             <div className="space-y-1.5">
@@ -279,7 +279,7 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                                         </div>
                                     )}
                                     {/* Upcoming products */}
-                                    {ai.upcomingProducts.length > 0 && (
+                                    {ai.upcomingProducts && ai.upcomingProducts.length > 0 && (
                                         <div>
                                             <p className="text-[9px] uppercase tracking-wider mb-1.5 font-semibold" style={{ color: "var(--accent-violet)" }}>{t("aboutUpcoming")}</p>
                                             <div className="flex flex-wrap gap-1.5">
@@ -292,7 +292,7 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                                         </div>
                                     )}
                                     {/* Fallback to the heuristic text if the (older) analysis has no products */}
-                                    {ai.products.length === 0 && company.description && (
+                                    {(!ai.products || ai.products.length === 0) && company.description && (
                                         <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>{company.description}</p>
                                     )}
                                 </div>
