@@ -409,6 +409,7 @@
         "addToWatchlist": "Add to watchlist",
         "inWatchlist": "In watchlist",
         "removeFromWatchlist": "Remove from watchlist",
+        "aboutTitle": "About the company",
         "peRatio": "P/E (Price/Earnings)",
         "peRatioTip": "Price-to-Earnings: how many times annual earnings you're paying for the stock. Lower = cheaper (rough guide; <25 reasonable, >40 expensive). Complements our EV/FCF valuation.",
         "annualTitle": "Revenue & earnings (annual)",
@@ -708,6 +709,7 @@
         "disclaimerCrypto": "⚠ AI-generated with knowledge up to its training cutoff. Does not predict price and is not financial advice; verify milestones and dates. Crypto is a highly speculative market."
     },
     "cryptoDetail": {
+        "aboutTitle": "About the project",
         "disclaimer": "Crypto is a highly speculative market. This does not predict price: it aggregates fundamental signals (tokenomics, on-chain, development, catalysts). What we don't have shows as N/D (neutral, never penalizes).",
         "hardFilterFail": "Hard filters not passed",
         "scoreTitle": "Composite score",

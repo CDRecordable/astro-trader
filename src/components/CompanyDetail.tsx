@@ -17,7 +17,7 @@ import { useTranslations } from "next-intl";
 import {
     X, ArrowUpRight, ArrowDownRight,
     Shield, Target, Activity, BarChart3, Globe,
-    HelpCircle, CheckCircle2, XCircle, MinusCircle, Info, TrendingUp
+    HelpCircle, CheckCircle2, XCircle, MinusCircle, Info, TrendingUp, Building2
 } from "lucide-react";
 
 interface CompanyDetailProps {
@@ -85,7 +85,7 @@ function SectionHeader({ icon: Icon, title }: { icon: React.ElementType; title: 
 /** Three states: pass (green ✓), fail (red ✗), or `na` = data not available,
  *  rendered NEUTRAL in amber with an "N/D" tag — never as a failure.
  *  `tip` adds a dashed-underline hover tooltip explaining the concept. */
-function CheckItem({ pass, label, na, tip }: { pass: boolean; label: string; na?: boolean; tip?: string }) {
+function CheckItem({ pass, label, na, tip, value }: { pass: boolean; label: string; na?: boolean; tip?: string; value?: string }) {
     const Icon = na ? MinusCircle : pass ? CheckCircle2 : XCircle;
     const iconColor = na ? "var(--signal-hold)" : pass ? "var(--signal-strong-buy)" : "var(--signal-avoid)";
     const textColor = na ? "var(--signal-hold)" : pass ? "var(--text-secondary)" : "var(--signal-avoid)";
@@ -105,7 +105,12 @@ function CheckItem({ pass, label, na, tip }: { pass: boolean; label: string; na?
     return (
         <div className="flex items-start gap-2 py-1" style={{ opacity: na ? 0.92 : 1 }}>
             <Icon size={14} className="mt-0.5 shrink-0" style={{ color: iconColor }} />
-            {tip ? <Tooltip content={tip}>{labelNode}</Tooltip> : labelNode}
+            <div className="flex-1 min-w-0 flex items-start justify-between gap-2">
+                {tip ? <Tooltip content={tip}>{labelNode}</Tooltip> : labelNode}
+                {!na && value !== undefined && (
+                    <span className="text-[11px] font-mono font-bold shrink-0" style={{ color: iconColor }}>{value}</span>
+                )}
+            </div>
         </div>
     );
 }
@@ -214,6 +219,25 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                 {/* ── Paired Rows: Section + Insight Card aligned ── */}
                 <div className="px-6 py-5 space-y-6">
 
+                    {/* ── Intro: what the company is / does (highlighted) ── */}
+                    {company.description && (
+                        <div className="rounded-2xl p-5" style={{
+                            background: "linear-gradient(135deg, rgba(34,211,238,0.06), rgba(167,139,250,0.05))",
+                            border: "1px solid var(--border-active)",
+                        }}>
+                            <div className="flex items-center gap-2 mb-2">
+                                <Building2 size={15} style={{ color: "var(--accent-cyan)" }} />
+                                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--accent-cyan)" }}>
+                                    {t("aboutTitle")}
+                                </span>
+                                <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>· {company.sector}</span>
+                            </div>
+                            <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                                {company.description}
+                            </p>
+                        </div>
+                    )}
+
                     {/* ── Row 1: Score Breakdown + Score Interpretation ── */}
                     <div className="flex flex-col lg:flex-row gap-5 items-stretch">
                         <section className="glass-card p-4 flex-1 min-w-0">
@@ -240,12 +264,12 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                                 <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
                                     {t("insightScoreDesc")}
                                 </p>
-                                <CheckItem pass={score.totalScore >= 70} label={t("checkScoreHigh")} tip={t("checkScoreHighTip")} />
-                                <CheckItem pass={score.totalScore >= 40} label={t("checkScoreMid")} tip={t("checkScoreMidTip")} />
+                                <CheckItem pass={score.totalScore >= 70} label={t("checkScoreHigh")} tip={t("checkScoreHighTip")} value={`${score.totalScore}`} />
+                                <CheckItem pass={score.totalScore >= 40} label={t("checkScoreMid")} tip={t("checkScoreMidTip")} value={`${score.totalScore}`} />
                                 <CheckItem pass={score.passesHardFilters} label={t("checkPassesFilters")} tip={t("checkPassesFiltersTip")} />
-                                <CheckItem pass={score.valuationScore >= 50} label={t("checkValuationAbove50")} tip={t("checkValuationAbove50Tip")} />
-                                <CheckItem pass={score.trendScore >= 50} label={t("checkTrendAbove50")} tip={t("checkTrendAbove50Tip")} />
-                                <CheckItem pass={score.timingScore >= 50} label={t("checkTimingAbove50")} tip={t("checkTimingAbove50Tip")} />
+                                <CheckItem pass={score.valuationScore >= 50} label={t("checkValuationAbove50")} tip={t("checkValuationAbove50Tip")} value={`${score.valuationScore}`} />
+                                <CheckItem pass={score.trendScore >= 50} label={t("checkTrendAbove50")} tip={t("checkTrendAbove50Tip")} value={`${score.trendScore}`} />
+                                <CheckItem pass={score.timingScore >= 50} label={t("checkTimingAbove50")} tip={t("checkTimingAbove50Tip")} value={`${score.timingScore}`} />
                             </InsightCard>
                         </div>
                     </div>
@@ -280,8 +304,8 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                                 <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
                                     {t("insightFiltersDesc")}
                                 </p>
-                                <CheckItem pass={passEquity} label={t("checkEquityPositive")} tip={t("checkEquityPositiveTip")} />
-                                <CheckItem pass={passOperating} label={t("checkOperatingPositive")} tip={t("checkOperatingPositiveTip")} />
+                                <CheckItem pass={passEquity} label={t("checkEquityPositive")} tip={t("checkEquityPositiveTip")} value={fmtMoneyM(m.totalEquity)} />
+                                <CheckItem pass={passOperating} label={t("checkOperatingPositive")} tip={t("checkOperatingPositiveTip")} value={fmtMoneyM(m.operatingProfit)} />
                                 {score.hardFilterReasons.length > 0 && (
                                     <div className="mt-1 px-2 py-1.5 rounded-md text-[10px]" style={{
                                         background: "rgba(251, 113, 133, 0.06)",
@@ -372,12 +396,12 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                                 <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
                                     {t("insightValuationDesc")}
                                 </p>
-                                <CheckItem pass={(m.evFcfYield ?? 0) >= 0.04} label={t("checkEvFcf")} na={!dq.solvency || m.evFcfYield === undefined} tip={t("checkEvFcfTip")} />
-                                <CheckItem pass={passFcfYield} label={t("checkFcfAbove5")} tip={t("checkFcfAbove5Tip")} />
-                                <CheckItem pass={(m.tangibleBookToMarket ?? -1) > 0} label={t("checkTangibleBook")} na={m.tangibleBookToMarket === undefined} tip={t("checkTangibleBookTip")} />
-                                <CheckItem pass={(m.netDebtToEbitda ?? 99) < 3} label={t("checkLeverageOk")} na={!dq.solvency || m.netDebtToEbitda === undefined} tip={t("checkLeverageOkTip")} />
-                                <CheckItem pass={(m.interestCoverage ?? 0) > 2} label={t("checkCoverageOk")} na={!dq.solvency || m.interestCoverage === undefined} tip={t("checkCoverageOkTip")} />
-                                <CheckItem pass={m.fcfYield > 0} label={t("checkFcfPositive")} tip={t("checkFcfPositiveTip")} />
+                                <CheckItem pass={(m.evFcfYield ?? 0) >= 0.04} label={t("checkEvFcf")} na={!dq.solvency || m.evFcfYield === undefined} tip={t("checkEvFcfTip")} value={m.evFcfYield !== undefined ? formatPercent(m.evFcfYield) : undefined} />
+                                <CheckItem pass={passFcfYield} label={t("checkFcfAbove5")} tip={t("checkFcfAbove5Tip")} value={formatPercent(m.fcfYield)} />
+                                <CheckItem pass={(m.tangibleBookToMarket ?? -1) > 0} label={t("checkTangibleBook")} na={m.tangibleBookToMarket === undefined} tip={t("checkTangibleBookTip")} value={m.tangibleBookToMarket !== undefined ? m.tangibleBookToMarket.toFixed(2) : undefined} />
+                                <CheckItem pass={(m.netDebtToEbitda ?? 99) < 3} label={t("checkLeverageOk")} na={!dq.solvency || m.netDebtToEbitda === undefined} tip={t("checkLeverageOkTip")} value={m.netDebtToEbitda !== undefined ? `${m.netDebtToEbitda.toFixed(1)}×` : undefined} />
+                                <CheckItem pass={(m.interestCoverage ?? 0) > 2} label={t("checkCoverageOk")} na={!dq.solvency || m.interestCoverage === undefined} tip={t("checkCoverageOkTip")} value={m.interestCoverage !== undefined ? `${m.interestCoverage.toFixed(1)}×` : undefined} />
+                                <CheckItem pass={m.fcfYield > 0} label={t("checkFcfPositive")} tip={t("checkFcfPositiveTip")} value={formatPercent(m.fcfYield)} />
                             </InsightCard>
                         </div>
                     </div>
@@ -507,17 +531,17 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                                 <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
                                     {t("insightTrendDesc")}
                                 </p>
-                                <CheckItem pass={passEbitMargin} label={t("checkEbitAbove10")} tip={t("checkEbitAbove10Tip")} />
-                                <CheckItem pass={passGrossMargin} label={t("checkGrossAbove30")} tip={t("checkGrossAbove30Tip")} />
-                                <CheckItem pass={passRoe} label={t("checkRoeAbove10")} tip={t("checkRoeAbove10Tip")} />
-                                <CheckItem pass={passRoc} label={t("checkRocAbove10")} na={!dq.roc} tip={t("checkRocAbove10Tip")} />
-                                <CheckItem pass={passEbitDelta} label={t("checkEbitImproving")} na={!dq.deltas} tip={t("checkEbitImprovingTip")} />
-                                <CheckItem pass={passGrossDelta} label={t("checkGrossImproving")} na={!dq.deltas} tip={t("checkGrossImprovingTip")} />
-                                <CheckItem pass={passRoeDelta} label={t("checkRoeImproving")} na={!dq.deltas} tip={t("checkRoeImprovingTip")} />
-                                <CheckItem pass={passRocDelta} label={t("checkRocImproving")} na={!dq.deltas} tip={t("checkRocImprovingTip")} />
-                                <CheckItem pass={passEbitdaEfficiency} label={t("checkEbitdaEfficiency")} na={!dq.growth} tip={t("checkEbitdaEfficiencyTip")} />
-                                <CheckItem pass={(m.sharesDilution ?? 1) <= 0.005} label={t("checkNoDilution")} na={!dq.dilution || m.sharesDilution === undefined} tip={t("checkNoDilutionTip")} />
-                                <CheckItem pass={(m.accrualRatio ?? 1) <= 0.03} label={t("checkCleanAccruals")} na={!dq.accruals || m.accrualRatio === undefined} tip={t("checkCleanAccrualsTip")} />
+                                <CheckItem pass={passEbitMargin} label={t("checkEbitAbove10")} tip={t("checkEbitAbove10Tip")} value={formatPercent(m.ebitMargin)} />
+                                <CheckItem pass={passGrossMargin} label={t("checkGrossAbove30")} tip={t("checkGrossAbove30Tip")} value={formatPercent(m.grossMargin)} />
+                                <CheckItem pass={passRoe} label={t("checkRoeAbove10")} tip={t("checkRoeAbove10Tip")} value={formatPercent(m.roe)} />
+                                <CheckItem pass={passRoc} label={t("checkRocAbove10")} na={!dq.roc} tip={t("checkRocAbove10Tip")} value={formatPercent(m.roc)} />
+                                <CheckItem pass={passEbitDelta} label={t("checkEbitImproving")} na={!dq.deltas} tip={t("checkEbitImprovingTip")} value={formatPercent(m.ebitMarginDelta)} />
+                                <CheckItem pass={passGrossDelta} label={t("checkGrossImproving")} na={!dq.deltas} tip={t("checkGrossImprovingTip")} value={formatPercent(m.grossMarginDelta)} />
+                                <CheckItem pass={passRoeDelta} label={t("checkRoeImproving")} na={!dq.deltas} tip={t("checkRoeImprovingTip")} value={formatPercent(m.roeDelta)} />
+                                <CheckItem pass={passRocDelta} label={t("checkRocImproving")} na={!dq.deltas} tip={t("checkRocImprovingTip")} value={formatPercent(m.rocDelta)} />
+                                <CheckItem pass={passEbitdaEfficiency} label={t("checkEbitdaEfficiency")} na={!dq.growth} tip={t("checkEbitdaEfficiencyTip")} value={formatPercent(m.ebitdaGrowth)} />
+                                <CheckItem pass={(m.sharesDilution ?? 1) <= 0.005} label={t("checkNoDilution")} na={!dq.dilution || m.sharesDilution === undefined} tip={t("checkNoDilutionTip")} value={m.sharesDilution !== undefined ? formatPercent(m.sharesDilution) : undefined} />
+                                <CheckItem pass={(m.accrualRatio ?? 1) <= 0.03} label={t("checkCleanAccruals")} na={!dq.accruals || m.accrualRatio === undefined} tip={t("checkCleanAccrualsTip")} value={m.accrualRatio !== undefined ? formatPercent(m.accrualRatio) : undefined} />
                             </InsightCard>
                         </div>
                     </div>
@@ -556,10 +580,10 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                                 <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
                                     {t("insightTimingDesc")}
                                 </p>
-                                <CheckItem pass={pass1M} label={t("check1MPositive")} tip={t("check1MPositiveTip")} />
-                                <CheckItem pass={pass3M} label={t("check3MPositive")} tip={t("check3MPositiveTip")} />
-                                <CheckItem pass={passNoEuphoria} label={t("checkNoEuphoria")} tip={t("checkNoEuphoriaTip")} />
-                                <CheckItem pass={priceNear52Low} label={t("checkNear52Low")} tip={t("checkNear52LowTip")} />
+                                <CheckItem pass={pass1M} label={t("check1MPositive")} tip={t("check1MPositiveTip")} value={formatPercent(m.oneMonthReturn)} />
+                                <CheckItem pass={pass3M} label={t("check3MPositive")} tip={t("check3MPositiveTip")} value={formatPercent(m.threeMonthReturn)} />
+                                <CheckItem pass={passNoEuphoria} label={t("checkNoEuphoria")} tip={t("checkNoEuphoriaTip")} value={formatPercent(m.sixMonthReturn)} />
+                                <CheckItem pass={priceNear52Low} label={t("checkNear52Low")} tip={t("checkNear52LowTip")} value={`$${m.currentPrice.toFixed(2)}`} />
                             </InsightCard>
                         </div>
                     </div>
@@ -617,24 +641,28 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                                     label={t("checkRevisionsUp")}
                                     na={!dq.revisions}
                                     tip={t("checkRevisionsUpTip")}
+                                    value={`↑${m.epsRevisionsUp30d ?? 0} ↓${m.epsRevisionsDown30d ?? 0}`}
                                 />
                                 <CheckItem
                                     pass={(m.epsTrend30d ?? 0) >= -0.01}
                                     label={t("checkEstimateStable")}
                                     na={!dq.revisions || m.epsTrend30d === undefined}
                                     tip={t("checkEstimateStableTip")}
+                                    value={m.epsTrend30d !== undefined ? formatPercent(m.epsTrend30d) : undefined}
                                 />
                                 <CheckItem
                                     pass={(m.insiderBuyCount6m ?? 0) >= 3 && (m.insiderBuyCount6m ?? 0) > (m.insiderSellCount6m ?? 0)}
                                     label={t("checkClusterBuying")}
                                     na={!dq.insiders}
                                     tip={t("checkClusterBuyingTip")}
+                                    value={`${m.insiderBuyCount6m ?? 0}/${m.insiderSellCount6m ?? 0}`}
                                 />
                                 <CheckItem
                                     pass={(m.shortPctFloat ?? 0) <= 0.10}
                                     label={t("checkLowShort")}
                                     na={m.shortPctFloat === undefined}
                                     tip={t("checkLowShortTip")}
+                                    value={m.shortPctFloat !== undefined ? formatPercent(m.shortPctFloat) : undefined}
                                 />
                             </InsightCard>
                         </div>
@@ -645,14 +673,9 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                         <AiAnalysisSection ticker={company.ticker} />
                     </div>
 
-                    {/* ── Row 6: Description + Verdict ── */}
-                    <div className="flex flex-col lg:flex-row gap-5 items-stretch">
-                        <section className="glass-card p-4 flex-1 min-w-0">
-                            <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                                {company.description}
-                            </p>
-                        </section>
-                        <div className="w-full lg:w-[340px] shrink-0">
+                    {/* ── Row 6: Verdict ── */}
+                    <div className="flex">
+                        <div className="w-full">
                             <div
                                 className="rounded-xl p-4 h-full"
                                 style={{
