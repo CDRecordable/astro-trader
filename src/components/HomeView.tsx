@@ -70,20 +70,29 @@ export default function HomeView() {
         setNextTransit(PLANETARY_TRANSITS.find((tr) => new Date(tr.date).getTime() > now) ?? null);
     }, []);
 
-    // Load watchlist, then score each item live (in parallel)
+    // Load watchlist — hydrate scores from the saved snapshot cache (instant),
+    // only scoring the items WITHOUT a snapshot, then persisting those.
     useEffect(() => {
         let active = true;
         (async () => {
             try {
-                const res = await fetch("/api/watchlist");
-                const data = await res.json() as { items: WatchlistItem[] };
+                const [wData, cData] = await Promise.all([
+                    fetch("/api/watchlist").then((r) => r.json()),
+                    fetch("/api/watchlist-cache").then((r) => (r.ok ? r.json() : { items: {} })).catch(() => ({ items: {} })),
+                ]);
                 if (!active) return;
-                const base: Row[] = data.items.map((i) => ({ ...i, symbol: i.symbol ?? i.ticker, loading: true }));
+                const items = (wData.items ?? []) as WatchlistItem[];
+                const cache = (cData.items ?? {}) as Record<string, { company: Company; score: Row["score"] }>;
+                const base: Row[] = items.map((i) => {
+                    const snap = cache[i.ticker.toLowerCase()];
+                    return { ...i, symbol: i.symbol ?? i.ticker, company: snap?.company, score: snap?.score, loading: !snap };
+                });
                 setRows(base);
                 setLoading(false);
 
                 const macro = getDefaultMacroContext();
-                await Promise.allSettled(base.map(async (item) => {
+                // Only score the rows that had no cached snapshot.
+                await Promise.allSettled(base.filter((b) => b.loading).map(async (item) => {
                     try {
                         let company: Company;
                         let score: Row["score"];
@@ -101,6 +110,11 @@ export default function HomeView() {
                             score = evaluateAll([company], macro, 5_000_000)[0];
                         }
                         if (active) setRows((prev) => prev.map((x) => x.ticker === item.ticker ? { ...x, company, score, loading: false } : x));
+                        // Persist so the next open is instant (shared with the watchlist).
+                        fetch("/api/watchlist-cache", {
+                            method: "POST", headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ ticker: item.ticker, company, score }),
+                        }).catch(() => { });
                     } catch {
                         if (active) setRows((prev) => prev.map((x) => x.ticker === item.ticker ? { ...x, loading: false } : x));
                     }
