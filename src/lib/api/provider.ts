@@ -4,7 +4,7 @@
 // Layer 1: yahoo-finance2 (bulk scan + detail, free, no limits)
 // Layer 2: Neon PostgreSQL (daily cache via Drizzle)
 
-import { db } from "@/db";
+import { db, hasDb, withDbRetry } from "@/db";
 import { companies, scanLog } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { scanTickers, fetchCompanyFromYahoo, fetchYahooHistoricalPrices } from "./yahoo-client";
@@ -119,23 +119,26 @@ export async function getScreenerCompanies(tickers?: string[]): Promise<{
     companies: Company[];
     fromCache: boolean;
 }> {
-    // Check when last scan happened
-    const lastScan = await db
-        .select()
-        .from(scanLog)
-        .where(eq(scanLog.scanType, "yahoo_bulk"))
-        .orderBy(desc(scanLog.createdAt))
-        .limit(1);
+    // No database configured → always fetch live (no cache layer).
+    if (hasDb && db) {
+        // Check when last scan happened
+        const lastScan = await withDbRetry(() => db!
+            .select()
+            .from(scanLog)
+            .where(eq(scanLog.scanType, "yahoo_bulk"))
+            .orderBy(desc(scanLog.createdAt))
+            .limit(1));
 
-    // Only use cache if no specific tickers were requested
-    if (!tickers && lastScan.length > 0 && isCacheFresh(lastScan[0].createdAt)) {
-        // Return from Neon cache
-        const cachedRows = await db.select().from(companies);
-        if (cachedRows.length > 0) {
-            return {
-                companies: cachedRows.map(dbRowToCompany),
-                fromCache: true,
-            };
+        // Only use cache if no specific tickers were requested
+        if (!tickers && lastScan.length > 0 && isCacheFresh(lastScan[0].createdAt)) {
+            // Return from Neon cache
+            const cachedRows = await withDbRetry(() => db!.select().from(companies));
+            if (cachedRows.length > 0) {
+                return {
+                    companies: cachedRows.map(dbRowToCompany),
+                    fromCache: true,
+                };
+            }
         }
     }
 
@@ -143,8 +146,8 @@ export async function getScreenerCompanies(tickers?: string[]): Promise<{
     console.log(`[Provider] Scanning ${tickers ? tickers.length + " tickers" : "all tickers"} with Yahoo Finance...`);
     const scanned = await scanTickers(tickers);
 
-    // Only cache and log if we actually got results
-    if (scanned.length > 0) {
+    // Only cache and log if we actually got results AND a DB is configured
+    if (scanned.length > 0 && hasDb && db) {
         // Upsert into Neon
         for (const c of scanned) {
             const values = companyToDbValues(c);
@@ -163,7 +166,7 @@ export async function getScreenerCompanies(tickers?: string[]): Promise<{
             companiesCount: scanned.length,
             status: "completed",
         });
-    } else {
+    } else if (scanned.length === 0) {
         console.warn("[Provider] Yahoo scan returned 0 companies — not caching");
     }
 
@@ -179,23 +182,26 @@ export async function getCompanyDetail(ticker: string, force = false): Promise<{
 }> {
     let apiCalls = 0;
 
-    // Check Neon cache first
-    const cachedRows = await db
-        .select()
-        .from(companies)
-        .where(eq(companies.ticker, ticker))
-        .limit(1);
-
-    const cached = cachedRows[0];
-    if (!force && cached?.lastScannedAt && isCacheFresh(cached.lastScannedAt)) {
-        const company = dbRowToCompany(cached);
-        // Backfill historicalData with metric interpolation if needed
-        backfillHistoricalMetrics(company);
-        return {
-            company,
-            enriched: true,
-            apiCalls: 0,
-        };
+    // Check Neon cache first (retry transient serverless-HTTP hiccups).
+    // No DB configured → skip the cache layer and always fetch live.
+    let cached: typeof companies.$inferSelect | undefined;
+    if (hasDb && db) {
+        const cachedRows = await withDbRetry(() => db!
+            .select()
+            .from(companies)
+            .where(eq(companies.ticker, ticker))
+            .limit(1));
+        cached = cachedRows[0];
+        if (!force && cached?.lastScannedAt && isCacheFresh(cached.lastScannedAt)) {
+            const company = dbRowToCompany(cached);
+            // Backfill historicalData with metric interpolation if needed
+            backfillHistoricalMetrics(company);
+            return {
+                company,
+                enriched: true,
+                apiCalls: 0,
+            };
+        }
     }
 
     // Fetch fresh detail from Yahoo
@@ -216,22 +222,24 @@ export async function getCompanyDetail(ticker: string, force = false): Promise<{
     // --- Backfill Historical Data for Charts ---
     backfillHistoricalMetrics(company);
 
-    // Save data to Neon
-    const values = companyToDbValues(company);
-    await db
-        .insert(companies)
-        .values(values)
-        .onConflictDoUpdate({
-            target: companies.ticker,
-            set: values,
-        });
+    // Save data to Neon (only if a DB is configured)
+    if (hasDb && db) {
+        const values = companyToDbValues(company);
+        await db
+            .insert(companies)
+            .values(values)
+            .onConflictDoUpdate({
+                target: companies.ticker,
+                set: values,
+            });
 
-    // Log enrichment
-    await db.insert(scanLog).values({
-        scanType: "yahoo_detail",
-        companiesCount: 1,
-        status: "completed",
-    });
+        // Log enrichment
+        await db.insert(scanLog).values({
+            scanType: "yahoo_detail",
+            companiesCount: 1,
+            status: "completed",
+        });
+    }
 
     return { company, enriched: true, apiCalls };
 }
