@@ -4,7 +4,7 @@
 // Layer 1: yahoo-finance2 (bulk scan + detail, free, no limits)
 // Layer 2: Neon PostgreSQL (daily cache via Drizzle)
 
-import { db } from "@/db";
+import { db, withDbRetry } from "@/db";
 import { companies, scanLog } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { scanTickers, fetchCompanyFromYahoo, fetchYahooHistoricalPrices } from "./yahoo-client";
@@ -120,17 +120,17 @@ export async function getScreenerCompanies(tickers?: string[]): Promise<{
     fromCache: boolean;
 }> {
     // Check when last scan happened
-    const lastScan = await db
+    const lastScan = await withDbRetry(() => db
         .select()
         .from(scanLog)
         .where(eq(scanLog.scanType, "yahoo_bulk"))
         .orderBy(desc(scanLog.createdAt))
-        .limit(1);
+        .limit(1));
 
     // Only use cache if no specific tickers were requested
     if (!tickers && lastScan.length > 0 && isCacheFresh(lastScan[0].createdAt)) {
         // Return from Neon cache
-        const cachedRows = await db.select().from(companies);
+        const cachedRows = await withDbRetry(() => db.select().from(companies));
         if (cachedRows.length > 0) {
             return {
                 companies: cachedRows.map(dbRowToCompany),
@@ -179,12 +179,12 @@ export async function getCompanyDetail(ticker: string, force = false): Promise<{
 }> {
     let apiCalls = 0;
 
-    // Check Neon cache first
-    const cachedRows = await db
+    // Check Neon cache first (retry transient serverless-HTTP hiccups)
+    const cachedRows = await withDbRetry(() => db
         .select()
         .from(companies)
         .where(eq(companies.ticker, ticker))
-        .limit(1);
+        .limit(1));
 
     const cached = cachedRows[0];
     if (!force && cached?.lastScannedAt && isCacheFresh(cached.lastScannedAt)) {
