@@ -6,9 +6,16 @@ import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import * as schema from "./schema";
 
-const sql = neon(process.env.DATABASE_URL!);
+const url = process.env.DATABASE_URL;
 
-export const db = drizzle(sql, { schema });
+/**
+ * Whether a database is configured. When false the app runs in "no-cache"
+ * mode: data is fetched live on every request and nothing is persisted.
+ * This lets the project run with just an LLM key (or even none) — no DB setup.
+ */
+export const hasDb = Boolean(url);
+
+export const db = url ? drizzle(neon(url), { schema }) : null;
 
 /**
  * Retry a DB operation a few times with small backoff. The Neon serverless

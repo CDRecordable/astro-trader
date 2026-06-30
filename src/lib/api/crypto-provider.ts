@@ -2,7 +2,7 @@
 // Crypto Provider - Orchestrator for API & Neon DB Caching
 // ============================================================
 
-import { db } from "@/db";
+import { db, hasDb } from "@/db";
 import { cryptoAssets } from "@/db/schema";
 import { fetchCryptoMarkets, type CoinGeckoMarketData } from "./coingecko-client";
 import { calculateCryptoScore } from "./crypto-algorithm";
@@ -66,7 +66,8 @@ export async function getCryptoScreenerData(category?: string): Promise<Company[
     // 2. Map and score
     const companies: Company[] = rawData.map(mapCryptoToCompany);
 
-    // 3. Cache into DB asynchronously (fire-and-forget for performance)
+    // 3. Cache into DB (skip entirely when no DB is configured)
+    if (!hasDb || !db) return companies;
     try {
         const values = rawData.map((asset) => ({
             symbol: asset.symbol.toUpperCase(),
