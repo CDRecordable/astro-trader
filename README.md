@@ -112,6 +112,12 @@ src/
 
 ---
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a human-readable history of what changed in
+each version. The git history is the detailed source of truth (Conventional
+Commits with an explanatory body; feature branches merged with `--no-ff`).
+
 ## Privacy
 
 Everything personal lives under `user-data/` (watchlist, discards, your API keys, cached AI analyses, on-chain history) and `.env` — **both are gitignored and never committed**. Only `.env.example` is tracked, as a template.
