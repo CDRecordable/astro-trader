@@ -65,6 +65,17 @@
         "cfgNoPrice": "no se pudo obtener el precio",
         "cfgError": "No se pudo aplicar la configuración."
     },
+    "update": {
+        "title": "Actualización disponible",
+        "summary": "{count} cambios nuevos en GitHub",
+        "update": "Actualizar ahora",
+        "updating": "Actualizando…",
+        "updatingHint": "Descargando cambios e instalando. No cierres el programa.",
+        "doneTitle": "¡Actualizado!",
+        "doneHint": "Cierra y vuelve a abrir el programa para aplicar los cambios.",
+        "errorTitle": "No se pudo actualizar",
+        "errorHint": "Prueba a ejecutar Actualizar.bat, o revisa tu conexión."
+    },
     "macroNav": {
         "title": "Análisis Macro",
         "overview": "Visión general",
