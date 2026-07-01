@@ -43,18 +43,21 @@ Next.js (App Router) · React · TypeScript · Tailwind CSS · Framer Motion · 
 
 ## Getting started
 
+The database is **optional** — you can run either way:
+
+**Quick start (no database).** Everything works; analyses are fetched live on every request and nothing is cached server-side. Your watchlist, portfolio and saved AI analyses still persist locally under `user-data/`.
+
 ```bash
-# 1. Install dependencies
 npm install
+npm run dev          # no .env needed
+```
 
-# 2. Configure the database connection
-cp .env.example .env
-#   then set DATABASE_URL to your Neon/PostgreSQL connection string
+**With a database (recommended).** Scanned companies/crypto are cached in Postgres, so repeat visits are instant and cheaper on the upstream APIs.
 
-# 3. Apply the database schema
-npx drizzle-kit push
-
-# 4. Run the dev server
+```bash
+npm install
+cp .env.example .env         # then set DATABASE_URL (Neon / PostgreSQL)
+npx drizzle-kit push         # create the tables
 npm run dev
 ```
 
@@ -62,11 +65,13 @@ Open <http://localhost:3000>.
 
 On Windows you can also double-click **`Astro Trader.bat`**, which installs dependencies on first run, starts the server and opens the browser for you.
 
+To unlock the qualitative **AI layer**, add an LLM key in-app under **Settings** (works with or without a database).
+
 ### Environment variables (`.env`)
 
-| Variable       | Required | Purpose                             |
-| -------------- | -------- | ----------------------------------- |
-| `DATABASE_URL` | yes      | Neon / PostgreSQL connection string |
+| Variable       | Required | Purpose                                                                 |
+| -------------- | -------- | ----------------------------------------------------------------------- |
+| `DATABASE_URL` | no       | Neon / PostgreSQL connection string. Omit to run in live, no-cache mode |
 
 ### Optional API keys (set in-app, under **Settings**)
 
