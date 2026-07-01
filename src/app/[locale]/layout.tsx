@@ -4,6 +4,7 @@ import { getMessages, getTranslations } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { notFound } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
+import UpdateNotice from "@/components/UpdateNotice";
 
 const inter = Inter({
     variable: "--font-inter",
@@ -57,6 +58,7 @@ export default async function LocaleLayout({
                 <NextIntlClientProvider messages={messages}>
                     <Sidebar />
                     {children}
+                    <UpdateNotice />
                 </NextIntlClientProvider>
             </body>
         </html>

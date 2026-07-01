@@ -65,6 +65,17 @@
         "cfgNoPrice": "could not fetch price",
         "cfgError": "Could not apply the configuration."
     },
+    "update": {
+        "title": "Update available",
+        "summary": "{count} new changes on GitHub",
+        "update": "Update now",
+        "updating": "Updating…",
+        "updatingHint": "Downloading changes and installing. Don't close the app.",
+        "doneTitle": "Updated!",
+        "doneHint": "Close and reopen the app to apply the changes.",
+        "errorTitle": "Update failed",
+        "errorHint": "Try running Actualizar.bat, or check your connection."
+    },
     "macroNav": {
         "title": "Macro Analysis",
         "overview": "Overview",
