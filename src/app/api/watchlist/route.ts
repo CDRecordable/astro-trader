@@ -37,6 +37,7 @@ function readWatchlist(): WatchlistFile {
 }
 
 function writeWatchlist(data: WatchlistFile): void {
+    fs.mkdirSync(path.dirname(DATA_PATH), { recursive: true });
     fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 2), "utf-8");
 }
 
