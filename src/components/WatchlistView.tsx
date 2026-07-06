@@ -11,7 +11,7 @@ import { useRouter } from "@/i18n/navigation";
 import {
     Star, Trash2, RefreshCw, Search, TrendingUp, TrendingDown,
     Building2, Bitcoin, AlertCircle, Loader2, Sparkles, BookmarkX, X,
-    Ban, RotateCcw, Activity, ChevronUp, ChevronDown,
+    Ban, RotateCcw, Activity, ChevronUp, ChevronDown, StickyNote, Check,
 } from "lucide-react";
 import { reinforcementLevel } from "./ReinforcementBadge";
 import type { WatchlistItem } from "@/app/api/watchlist/route";
@@ -105,6 +105,115 @@ function scoreRingColor(score: number) {
     if (score >= 55) return "var(--signal-buy)";
     if (score >= 40) return "var(--signal-hold)";
     return "var(--signal-avoid)";
+}
+
+// ── Note editor ───────────────────────────────────────────────
+// Inline free-text note for a saved / discarded asset. Lives inside a row
+// whose parent has an onClick — every interaction stops propagation so the
+// row's "open detail" action never fires while you're writing.
+
+function NoteEditor({ note, placeholder, onSave }: {
+    note: string;
+    placeholder: string;
+    onSave: (note: string) => void | Promise<void>;
+}) {
+    const t = useTranslations("watchlist");
+    const [editing, setEditing] = useState(false);
+    const [draft, setDraft] = useState(note);
+    const [saving, setSaving] = useState(false);
+    const areaRef = useRef<HTMLTextAreaElement>(null);
+
+    // Keep the local draft in sync if the note changes underneath us.
+    useEffect(() => { if (!editing) setDraft(note); }, [note, editing]);
+
+    const stop = (e: React.MouseEvent) => e.stopPropagation();
+
+    const open = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setDraft(note);
+        setEditing(true);
+        // focus after the textarea mounts
+        requestAnimationFrame(() => areaRef.current?.focus());
+    };
+
+    const commit = async () => {
+        const next = draft.trim();
+        setSaving(true);
+        try { await onSave(next); } finally { setSaving(false); setEditing(false); }
+    };
+
+    const cancel = () => { setDraft(note); setEditing(false); };
+
+    if (editing) {
+        return (
+            <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--border-subtle)" }} onClick={stop}>
+                <textarea
+                    ref={areaRef}
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === "Escape") { e.preventDefault(); cancel(); }
+                        if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); commit(); }
+                    }}
+                    placeholder={placeholder}
+                    rows={3}
+                    className="w-full text-xs rounded-lg px-3 py-2 outline-none resize-y"
+                    style={{
+                        background: "var(--bg-tertiary)",
+                        border: "1px solid var(--border-subtle)",
+                        color: "var(--text-primary)",
+                        caretColor: "var(--accent-cyan)",
+                    }}
+                    spellCheck={false}
+                />
+                <div className="flex items-center justify-end gap-2 mt-2">
+                    <button
+                        onClick={cancel}
+                        disabled={saving}
+                        className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg cursor-pointer transition-all"
+                        style={{ color: "var(--text-muted)", background: "var(--bg-tertiary)", border: "1px solid var(--border-subtle)" }}
+                    >
+                        <X size={12} /> {t("noteCancel")}
+                    </button>
+                    <button
+                        onClick={commit}
+                        disabled={saving}
+                        className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg cursor-pointer transition-all font-medium"
+                        style={{ color: "white", background: "var(--accent-cyan-dim)", border: "1px solid var(--border-subtle)" }}
+                    >
+                        {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} {t("noteSave")}
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Collapsed: show the note as an editable line, or a subtle "add note" prompt.
+    if (note) {
+        return (
+            <button
+                onClick={open}
+                title={t("noteEdit")}
+                className="mt-3 pt-3 w-full text-left flex items-start gap-2 cursor-pointer group/note"
+                style={{ borderTop: "1px solid var(--border-subtle)" }}
+            >
+                <StickyNote size={13} className="flex-shrink-0 mt-0.5" style={{ color: "var(--accent-amber)" }} />
+                <span className="text-xs leading-relaxed whitespace-pre-wrap break-words" style={{ color: "var(--text-secondary)" }}>
+                    {note}
+                </span>
+            </button>
+        );
+    }
+
+    return (
+        <button
+            onClick={open}
+            className="mt-2 flex items-center gap-1.5 text-[11px] cursor-pointer transition-opacity opacity-60 hover:opacity-100"
+            style={{ color: "var(--text-muted)" }}
+        >
+            <StickyNote size={12} /> {t("noteAdd")}
+        </button>
+    );
 }
 
 // ── Component ─────────────────────────────────────────────────
@@ -257,6 +366,26 @@ export default function WatchlistView() {
         rows.forEach((r) => { if (!r.score && !r.loading) refreshRow(r.ticker, r.assetType); });
     }, [loadingAll, rows, refreshRow]);
 
+    // ── Save a note on a watchlist row ────────────────────────
+    const saveNote = useCallback(async (ticker: string, note: string) => {
+        setRows((prev) => prev.map((r) => r.ticker === ticker ? { ...r, note } : r));
+        await fetch("/api/watchlist", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ticker, note }),
+        }).catch(() => { });
+    }, []);
+
+    // ── Save a note/reason on a discard ───────────────────────
+    const saveDiscardNote = useCallback(async (ticker: string, reason: string) => {
+        setDiscards((prev) => prev.map((d) => d.ticker === ticker ? { ...d, reason } : d));
+        await fetch("/api/discards", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ticker, reason }),
+        }).catch(() => { });
+    }, []);
+
     // ── Remove from watchlist ─────────────────────────────────
     const removeItem = useCallback(async (ticker: string) => {
         fetch(`/api/watchlist-cache?ticker=${encodeURIComponent(ticker)}`, { method: "DELETE" }).catch(() => { });
@@ -357,7 +486,7 @@ export default function WatchlistView() {
 
                 {/* Discards tab */}
                 {tab === "discards" && (
-                    <DiscardsTab discards={discards} onOpen={openDetail} onRestore={restoreDiscard} />
+                    <DiscardsTab discards={discards} onOpen={openDetail} onRestore={restoreDiscard} onSaveNote={saveDiscardNote} />
                 )}
 
                 {/* AI analyses tab */}
@@ -496,6 +625,7 @@ export default function WatchlistView() {
                             onOpen={() => openDetail(row.assetType, row.ticker)}
                             onRefresh={() => refreshRow(row.ticker, row.assetType)}
                             onRemove={() => removeItem(row.ticker)}
+                            onSaveNote={(note) => saveNote(row.ticker, note)}
                         />
                     ))}
                 </AnimatePresence>
@@ -515,6 +645,7 @@ function WatchlistRowItem({
     onOpen,
     onRefresh,
     onRemove,
+    onSaveNote,
 }: {
     row: WatchlistRow;
     aiDate: string | null;
@@ -522,6 +653,7 @@ function WatchlistRowItem({
     onOpen: () => void;
     onRefresh: () => void;
     onRemove: () => void;
+    onSaveNote: (note: string) => void | Promise<void>;
 }) {
     const t = useTranslations("watchlist");
     const isCrypto = row.assetType === "c";
@@ -539,12 +671,13 @@ function WatchlistRowItem({
             transition={{ type: "spring", stiffness: 380, damping: 30 }}
             onClick={onOpen}
             title={t("openDetail")}
-            className="mb-3 p-4 rounded-2xl flex items-center gap-4 group cursor-pointer transition-colors hover:brightness-110"
+            className="mb-3 p-4 rounded-2xl flex flex-col group cursor-pointer transition-colors hover:brightness-110"
             style={{
                 background: "var(--bg-card)",
                 border: "1px solid var(--border-subtle)",
             }}
         >
+            <div className="flex items-center gap-4 w-full">
             {/* Asset type icon */}
             <div
                 className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -698,16 +831,21 @@ function WatchlistRowItem({
                     <Trash2 size={13} />
                 </button>
             </div>
+            </div>
+
+            {/* Note */}
+            <NoteEditor note={row.note ?? ""} placeholder={t("notePlaceholder")} onSave={onSaveNote} />
         </motion.div>
     );
 }
 
 // ── Discards tab ──────────────────────────────────────────────
 
-function DiscardsTab({ discards, onOpen, onRestore }: {
+function DiscardsTab({ discards, onOpen, onRestore, onSaveNote }: {
     discards: DiscardItem[];
     onOpen: (assetType: "s" | "c", ticker: string) => void;
     onRestore: (ticker: string) => void;
+    onSaveNote: (ticker: string, reason: string) => void | Promise<void>;
 }) {
     const t = useTranslations("watchlist");
     if (discards.length === 0) {
@@ -732,9 +870,10 @@ function DiscardsTab({ discards, onOpen, onRestore }: {
                         layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
                         onClick={() => onOpen(d.assetType, d.ticker)}
                         title={t("openDetail")}
-                        className="mb-3 p-4 rounded-2xl flex items-center gap-4 group cursor-pointer transition-colors hover:brightness-110"
+                        className="mb-3 p-4 rounded-2xl flex flex-col group cursor-pointer transition-colors hover:brightness-110"
                         style={{ background: "var(--bg-card)", border: "1px solid rgba(251,113,133,0.18)" }}
                     >
+                        <div className="flex items-center gap-4 w-full">
                         <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: isCrypto ? "rgba(251,191,36,0.1)" : "rgba(34,211,238,0.1)" }}>
                             {isCrypto ? <Bitcoin size={16} style={{ color: "var(--accent-amber)" }} /> : <Building2 size={16} style={{ color: "var(--accent-cyan)" }} />}
                         </div>
@@ -754,6 +893,10 @@ function DiscardsTab({ discards, onOpen, onRestore }: {
                         >
                             <RotateCcw size={12} /> {t("restore")}
                         </button>
+                        </div>
+
+                        {/* Note / reason */}
+                        <NoteEditor note={d.reason ?? ""} placeholder={t("noteDiscardPlaceholder")} onSave={(reason) => onSaveNote(d.ticker, reason)} />
                     </motion.div>
                 );
             })}

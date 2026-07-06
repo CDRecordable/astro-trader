@@ -13,6 +13,34 @@ any line, the git history is the source of truth: commits use
 ## [Unreleased]
 
 ### Added
+- **Country macro dashboard ("Economía")** — top-down read of the **US, Eurozone
+  and Spain**: job market, inflation and activity indicators, each bucketed
+  (low/normal/high) and mapped to the **implied central-bank stance**
+  (expansionary/neutral/contractionary), with an aggregate "economy reading +
+  policy bias" dial. Free data from **FRED, Eurostat and the ECB** (via
+  DBnomics), no key; per-indicator graceful degradation to N/D.
+- **Cross-metric scatter in the Screener** — plot a whole scanned universe on
+  any two metrics (e.g. EBITDA growth vs P/E) as a **regression** (OLS trend
+  line + R², biggest outliers labelled) or a **quadrant / buy-box** (median
+  split, bubble size = market cap), colored by recommendation. Sector filter,
+  plus small-sample and mixed-sector caveats.
+- **Peer positioning on the stock detail** — where a stock sits against its
+  **sector peers**, with the group's regression line and each name's deviation
+  (cheap/expensive for its profile). Peers are pulled **on demand** from a
+  region-matched universe when not already loaded.
+- **Market-sensitivity (beta) chart** — regress an asset's daily returns against
+  its benchmark (stocks → **S&P 500**, crypto → **Bitcoin**) for beta + R²
+  (systematic vs idiosyncratic risk), with a plain-language reading.
+- **Crypto peer map + beta vs BTC** — a size × momentum positioning within the
+  coin's category, and the beta chart above, on the crypto detail.
+- **Value-aware metric readings** — every valuation/solvency tooltip on the
+  stock detail adds an *"in this case"* line interpreting the actual number, so a
+  bare `−33×` interest coverage reads as *operating losses*, not *low coverage*.
+- **Notes on watchlist & discards** — add/edit a free-text note on any saved or
+  discarded asset to remember *why* you kept or set it aside.
+- **Grouped sidebar navigation** — "Explorador" (individual stocks / Screener)
+  and "Macro" (VIX / Economía) now open a flyout sub-menu instead of taking a
+  slot each.
 - **Simulated portfolio ("Cartera")** — paper-trade any stock or crypto with
   Buy/Sell buttons on its detail card (orders by dollar amount, fractional
   units), tracked against a starting cash balance with live P&L, positions and
@@ -42,6 +70,10 @@ any line, the git history is the source of truth: commits use
 - Portfolio starting cash set to **100,000**.
 
 ### Fixed
+- Crypto **dev commits / active contributors** of `0` now show **N/D** instead
+  of a misleading red `0`: CoinGecko often doesn't track a project's real GitHub
+  repo (Hedera, Bitcoin… report 0 while being very active), matching how the
+  score already treats it as unavailable rather than a penalty.
 - Home no longer re-scans the whole watchlist from scratch on every open.
 - Retry transient Neon serverless-HTTP query failures (no more stray
   "Failed query" errors when opening a brand-new ticker).

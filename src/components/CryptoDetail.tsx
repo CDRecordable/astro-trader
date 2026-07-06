@@ -7,17 +7,20 @@
 
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import type { Company, AlgorithmScore } from "@/lib/types";
 import type { CryptoFundamentals } from "@/lib/crypto-fundamentals";
 import type { CryptoQualitative } from "@/lib/api/llm-client";
 import { useTranslations } from "next-intl";
+import { useAppStore } from "@/lib/store";
 import ScoreRing from "./ScoreRing";
+import MetricScatter from "./MetricScatter";
 import WatchlistButton from "./WatchlistButton";
 import DiscardButton from "./DiscardButton";
 import TradeButtons from "./TradeButtons";
 import CryptoAiSection from "./CryptoAiSection";
+import CryptoBetaAnalysis from "./CryptoBetaAnalysis";
 import { reinforcementLevel } from "./ReinforcementBadge";
 import {
     X, Coins, Network, ActivitySquare, Calendar,
@@ -146,6 +149,48 @@ export default function CryptoDetail({ company, score: initialScore, onClose }: 
 
     const f = fundamentals;
 
+    // ── Category peers (size × momentum map) ──────────────────
+    // Bulk crypto data only exposes market cap + returns, so this is a
+    // size-vs-momentum positioning, not valuation. Reuse the store's scanned
+    // category if present; otherwise pull the global top-250 on demand.
+    const MIN_PEERS = 5;
+    const storeCompanies = useAppStore((s) => s.companies);
+    const storePeers = useMemo(() => {
+        const rows = storeCompanies
+            .filter((c) => c.id.startsWith("cg_") && isFinite(c.metrics?.marketCap))
+            .map((c) => ({ company: c }));
+        if (!rows.some((r) => r.company.id === company.id)) rows.push({ company });
+        return rows;
+    }, [storeCompanies, company]);
+
+    const [fetchedPeers, setFetchedPeers] = useState<{ company: Company }[] | null>(null);
+    const [peersLoading, setPeersLoading] = useState(false);
+
+    useEffect(() => {
+        // peerRows ignores fetched peers when the store already has enough, so
+        // no reset needed here — just skip the fetch (avoids sync setState).
+        if (storePeers.length >= MIN_PEERS) return;
+        let active = true;
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- reset to loading when the coin changes
+        setPeersLoading(true);
+        // No category param → global top-250 (a "vs the crypto market" benchmark).
+        fetch(`/api/crypto-screener`)
+            .then((r) => (r.ok ? r.json() : { companies: [] }))
+            .then((d: { companies?: Company[] }) => {
+                if (!active) return;
+                const rows = (d.companies ?? [])
+                    .filter((c) => isFinite(c.metrics?.marketCap))
+                    .map((c) => ({ company: c }));
+                if (!rows.some((r) => r.company.id === company.id)) rows.push({ company });
+                setFetchedPeers(rows);
+            })
+            .catch(() => { if (active) setFetchedPeers([]); })
+            .finally(() => { if (active) setPeersLoading(false); });
+        return () => { active = false; };
+    }, [company, storePeers.length]);
+
+    const peerRows = storePeers.length >= MIN_PEERS ? storePeers : (fetchedPeers ?? []);
+
     return (
         <AnimatePresence>
             <div className="w-full max-w-4xl mx-auto" style={{ background: "var(--bg-secondary)" }}>
@@ -272,8 +317,11 @@ export default function CryptoDetail({ company, score: initialScore, onClose }: 
                             {/* Pillar 2 — Network / On-chain */}
                             <section className="glass-card p-4">
                                 <PillarHeader icon={Network} title={t("pillarNetwork")} score={score.trendScore} color="var(--accent-cyan)" />
-                                <Row label={t("devCommits")} value={intStr(f.devCommits4w)} tone={f.devCommits4w == null ? "na" : f.devCommits4w >= 40 ? "good" : f.devCommits4w >= 3 ? "warn" : "bad"} tooltip={t("devCommitsTip")} />
-                                <Row label={t("devContributors")} value={intStr(f.devContributors)} tone={f.devContributors == null ? "na" : f.devContributors >= 8 ? "good" : "warn"} />
+                                {/* A CoinGecko dev count of 0 almost always means it isn't tracking the
+                                    project's real GitHub repo (Hedera, Bitcoin… report 0 while being very
+                                    active) — so we show N/D, mirroring how the score ignores it. */}
+                                <Row label={t("devCommits")} value={f.devCommits4w ? intStr(f.devCommits4w) : "N/D"} tone={!f.devCommits4w ? "na" : f.devCommits4w >= 40 ? "good" : f.devCommits4w >= 3 ? "warn" : "bad"} tooltip={t("devCommitsTip")} />
+                                <Row label={t("devContributors")} value={f.devContributors ? intStr(f.devContributors) : "N/D"} tone={!f.devContributors ? "na" : f.devContributors >= 8 ? "good" : "warn"} tooltip={t("devContributorsTip")} />
                                 <Row label={t("tvlTrend")} value={pctStr(f.tvlChange7d, true)} tone={f.tvlChange7d == null ? "na" : f.tvlChange7d > 0 ? "good" : f.tvlChange7d > -10 ? "warn" : "bad"} tooltip={t("tvlTrendTip")} />
                                 <Row label={t("holders")} value={intStr(f.holderCount)} tone={f.holderCount == null ? "na" : f.holderCount >= 20000 ? "good" : f.holderCount >= 1000 ? "warn" : "bad"} tooltip={t("holdersTip")} />
                                 <Row label={t("concentration")} value={pctStr(f.top10ConcentrationPct)} tone={f.top10ConcentrationPct == null ? "na" : f.top10ConcentrationPct < 40 ? "good" : f.top10ConcentrationPct < 70 ? "warn" : "bad"} tooltip={t("concentrationTip")} />
@@ -331,6 +379,35 @@ export default function CryptoDetail({ company, score: initialScore, onClose }: 
                                 <Row label={t("change30d")} value={pctStr(f.change30d, true)} tone={f.change30d == null ? "na" : f.change30d > 0 ? "good" : "warn"} />
                                 <Row label={t("change1y")} value={pctStr(f.change1y, true)} tone={f.change1y == null ? "na" : f.change1y > 0 ? "good" : "warn"} />
                             </section>
+
+                            {/* Market sensitivity vs Bitcoin (beta) */}
+                            <section className="glass-card p-4">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <Gauge size={14} style={{ color: "var(--accent-cyan)" }} />
+                                    <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>{t("betaTitle")}</h3>
+                                </div>
+                                <CryptoBetaAnalysis geckoId={geckoId} symbol={company.ticker} />
+                            </section>
+
+                            {/* Peer positioning — size × momentum */}
+                            {(peersLoading || peerRows.length >= 5) && (
+                                <section className="glass-card p-4">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <Network size={14} style={{ color: "var(--accent-violet)" }} />
+                                        <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>{t("peerTitle")}</h3>
+                                    </div>
+                                    {peersLoading && peerRows.length < 5 ? (
+                                        <div className="flex items-center gap-2 py-10 justify-center text-xs" style={{ color: "var(--text-muted)" }}>
+                                            <Loader2 size={16} className="animate-spin" style={{ color: "var(--accent-cyan)" }} /> {t("peerLoading")}
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <p className="text-[11px] mb-3" style={{ color: "var(--text-muted)" }}>{t("peerDesc", { n: peerRows.length })}</p>
+                                            <MetricScatter rows={peerRows} preset="crypto" highlightId={company.id} hideSectorFilter />
+                                        </>
+                                    )}
+                                </section>
+                            )}
 
                             {/* On-chain catalysts */}
                             {f.catalysts.length > 0 && (
