@@ -4,13 +4,19 @@
 
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import type { Company, AlgorithmScore } from "@/lib/types";
 import type { QualitativeAnalysis } from "@/lib/api/llm-client";
+import { useAppStore } from "@/lib/store";
+import { evaluateAll } from "@/lib/algorithm";
+import { getDefaultMacroContext } from "@/lib/mock-data";
+import type { MarketGroupId } from "@/lib/market-groups";
 import { reinforcementLevel } from "./ReinforcementBadge";
 import { formatMarketCap, formatPercent, formatCurrency } from "@/lib/utils";
 import { PriceChart, MarginChart, ReturnChart, ScoreBreakdownChart } from "./FinancialCharts";
+import MetricScatter from "./MetricScatter";
+import BetaAnalysis from "./BetaAnalysis";
 import ScoreRing from "./ScoreRing";
 import AiAnalysisSection from "./AiAnalysisSection";
 import WatchlistButton from "./WatchlistButton";
@@ -21,7 +27,7 @@ import {
     X, ArrowUpRight, ArrowDownRight,
     Shield, Target, Activity, BarChart3, Globe,
     HelpCircle, CheckCircle2, XCircle, MinusCircle, Info, TrendingUp, Building2,
-    ChevronUp, ChevronDown, Sparkles
+    ChevronUp, ChevronDown, Sparkles, Users, Loader2,
 } from "lucide-react";
 
 interface CompanyDetailProps {
@@ -31,12 +37,19 @@ interface CompanyDetailProps {
 }
 
 /* ── Tooltip ───────────────────────────────────────────────── */
-function Tooltip({ children, content }: { children: React.ReactNode; content: string }) {
+function Tooltip({ children, content, reading }: { children: React.ReactNode; content: string; reading?: string }) {
+    const t = useTranslations("companyDetail");
     return (
         <div className="group relative flex items-center">
             {children}
             <div className="absolute bottom-full left-0 mb-2 w-max max-w-xs p-2.5 bg-zinc-900 border border-zinc-700 text-xs text-zinc-300 rounded-lg shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 text-left">
                 {content}
+                {reading && (
+                    <div className="mt-2 pt-2 border-t border-zinc-700 leading-relaxed text-zinc-100">
+                        <span className="font-semibold" style={{ color: "var(--accent-cyan)" }}>{t("inThisCase")} </span>
+                        {reading}
+                    </div>
+                )}
                 <div className="absolute top-full left-6 border-4 border-transparent border-t-zinc-800" />
             </div>
         </div>
@@ -44,9 +57,9 @@ function Tooltip({ children, content }: { children: React.ReactNode; content: st
 }
 
 /* ── MetricRow ─────────────────────────────────────────────── */
-function MetricRow({ label, value, color, tooltip }: { label: string; value: string | React.ReactNode; color?: string; tooltip?: string }) {
+function MetricRow({ label, value, color, tooltip, reading }: { label: string; value: string | React.ReactNode; color?: string; tooltip?: string; reading?: string }) {
     const labelNode = tooltip ? (
-        <Tooltip content={tooltip}>
+        <Tooltip content={tooltip} reading={reading}>
             <span className="text-xs flex items-center gap-1 cursor-help border-b border-dashed border-zinc-600 pb-0.5" style={{ color: "var(--text-muted)" }}>
                 {label}
                 <HelpCircle size={12} className="opacity-50" />
@@ -89,7 +102,7 @@ function SectionHeader({ icon: Icon, title }: { icon: React.ElementType; title: 
 /** Three states: pass (green ✓), fail (red ✗), or `na` = data not available,
  *  rendered NEUTRAL in amber with an "N/D" tag — never as a failure.
  *  `tip` adds a dashed-underline hover tooltip explaining the concept. */
-function CheckItem({ pass, label, na, tip, value }: { pass: boolean; label: string; na?: boolean; tip?: string; value?: string }) {
+function CheckItem({ pass, label, na, tip, value, reading }: { pass: boolean; label: string; na?: boolean; tip?: string; value?: string; reading?: string }) {
     const Icon = na ? MinusCircle : pass ? CheckCircle2 : XCircle;
     const iconColor = na ? "var(--signal-hold)" : pass ? "var(--signal-strong-buy)" : "var(--signal-avoid)";
     const textColor = na ? "var(--signal-hold)" : pass ? "var(--text-secondary)" : "var(--signal-avoid)";
@@ -110,7 +123,7 @@ function CheckItem({ pass, label, na, tip, value }: { pass: boolean; label: stri
         <div className="flex items-start gap-2 py-1" style={{ opacity: na ? 0.92 : 1 }}>
             <Icon size={14} className="mt-0.5 shrink-0" style={{ color: iconColor }} />
             <div className="flex-1 min-w-0 flex items-start justify-between gap-2">
-                {tip ? <Tooltip content={tip}>{labelNode}</Tooltip> : labelNode}
+                {tip ? <Tooltip content={tip} reading={reading}>{labelNode}</Tooltip> : labelNode}
                 {!na && value !== undefined && (
                     <span className="text-[11px] font-mono font-bold shrink-0" style={{ color: iconColor }}>{value}</span>
                 )}
@@ -156,6 +169,99 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
 
     // Data availability — legacy rows without flags are assumed complete.
     const dq = m.dataQuality ?? { deltas: true, roc: true, growth: true };
+
+    // ── Sector peers (for the relative-valuation scatter) ─────
+    // First reuse whatever universe is already in the store (free — populated
+    // when the user scanned a screener). If that yields too few same-sector
+    // names (direct search, or a small index like the IBEX), fetch a broad
+    // region-matched universe on demand and filter it. Same-sector only —
+    // multiples aren't comparable across sectors.
+    const storeCompanies = useAppStore((s) => s.companies);
+    const storeScores = useAppStore((s) => s.scores);
+    const MIN_PEERS = 5;
+
+    const storePeers = useMemo(() => {
+        if (!company.sector) return [];
+        const scoreById = new Map(storeScores.map((s) => [s.companyId, s]));
+        const rows = storeCompanies
+            .filter((c) => c.sector === company.sector)
+            .flatMap((c) => { const sc = scoreById.get(c.id); return sc ? [{ company: c, score: sc }] : []; });
+        if (!rows.some((r) => r.company.id === company.id)) rows.push({ company, score });
+        return rows;
+    }, [storeCompanies, storeScores, company, score]);
+
+    const [fetchedPeers, setFetchedPeers] = useState<{ company: Company; score: AlgorithmScore }[] | null>(null);
+    const [peersLoading, setPeersLoading] = useState(false);
+
+    useEffect(() => {
+        // Enough peers already in memory (or no sector) → skip the fetch.
+        // peerRows falls back to storePeers, so no state reset is needed here.
+        if (!company.sector || storePeers.length >= MIN_PEERS) return;
+        // Non-US tickers carry an exchange suffix (".MC", ".PA"…) → European
+        // sector benchmark; otherwise the US large-cap universe.
+        const market: MarketGroupId = /\.[A-Za-z]{1,3}$/.test(company.ticker) ? "eu_major" : "us_large";
+        let active = true;
+        setPeersLoading(true);
+        fetch(`/api/screener?market=${market}`)
+            .then((r) => (r.ok ? r.json() : { companies: [] }))
+            .then((d: { companies?: Company[] }) => {
+                if (!active) return;
+                const comps = (d.companies ?? []).filter((c) => c.sector === company.sector);
+                const scores = evaluateAll(comps, getDefaultMacroContext(), 5_000_000);
+                const scoreById = new Map(scores.map((s) => [s.companyId, s]));
+                const rows = comps.flatMap((c) => { const sc = scoreById.get(c.id); return sc ? [{ company: c, score: sc }] : []; });
+                if (!rows.some((r) => r.company.id === company.id)) rows.push({ company, score });
+                setFetchedPeers(rows);
+            })
+            .catch(() => { if (active) setFetchedPeers([]); })
+            .finally(() => { if (active) setPeersLoading(false); });
+        return () => { active = false; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [company.ticker, company.sector, storePeers.length]);
+
+    const peerRows = storePeers.length >= MIN_PEERS ? storePeers : (fetchedPeers ?? []);
+
+    // ── Value-aware readings ──────────────────────────────────
+    // Interpret the ACTUAL collected number (sign / threshold) so a bare
+    // "-33.0×" reads as "operating losses", not "low coverage". Shown in the
+    // "En este caso" block of each metric tooltip.
+    const pctStr = (v: number) => `${(v * 100).toFixed(1)}%`;
+
+    const readPe = (v?: number) =>
+        v === undefined ? undefined
+            : v < 0 ? t("readPeNeg")
+                : v < 25 ? t("readPeCheap", { v: v.toFixed(1) })
+                    : v < 40 ? t("readPeFair", { v: v.toFixed(1) })
+                        : t("readPeRich", { v: v.toFixed(1) });
+
+    // target is a fraction (0.04, 0.05); shown to the user as a %.
+    const readYield = (v: number, target: number) =>
+        v < 0 ? t("readYieldNeg")
+            : v >= target ? t("readYieldOk", { v: pctStr(v), target: (target * 100).toFixed(0) })
+                : t("readYieldLow", { v: pctStr(v), target: (target * 100).toFixed(0) });
+
+    const readBtm = (v: number) =>
+        v <= 0 ? t("readBtmNeg")
+            : v >= 1 ? t("readBtmHigh", { pctv: (v * 100).toFixed(0) })
+                : t("readBtmLow", { pctv: (v * 100).toFixed(0) });
+
+    const readTangible = (v?: number) =>
+        v === undefined ? undefined
+            : v <= 0 ? t("readTangibleNeg", { v: v.toFixed(2) })
+                : v > 0.2 ? t("readTangibleGood")
+                    : t("readTangibleThin");
+
+    const readNetDebt = (v?: number) =>
+        v === undefined ? undefined
+            : v < 0 ? t("readNetDebtNegative")
+                : v < 3 ? t("readNetDebtOk", { v: v.toFixed(1) })
+                    : t("readNetDebtHigh", { v: v.toFixed(1) });
+
+    const readCoverage = (v?: number) =>
+        v === undefined ? undefined
+            : v < 0 ? t("readCoverageNeg", { v: v.toFixed(1) })
+                : v > 2 ? t("readCoverageOk", { v: v.toFixed(1) })
+                    : t("readCoverageLow", { v: v.toFixed(1) });
 
     const deltaColor = (val: number) =>
         val >= 0 ? "var(--signal-strong-buy)" : "var(--signal-avoid)";
@@ -413,6 +519,7 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                                     : m.peRatio > 0 && m.peRatio < 25 ? "var(--signal-strong-buy)"
                                         : m.peRatio < 40 ? "var(--signal-hold)" : "var(--signal-avoid)"}
                                 tooltip={t("peRatioTip")}
+                                reading={readPe(m.peRatio)}
                             />
                             {dq.solvency && m.evFcfYield !== undefined && (
                                 <MetricRow
@@ -420,6 +527,7 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                                     value={formatPercent(m.evFcfYield)}
                                     color={m.evFcfYield >= 0.04 ? "var(--signal-strong-buy)" : "var(--signal-hold)"}
                                     tooltip={t("evFcfYieldTip")}
+                                    reading={readYield(m.evFcfYield, 0.04)}
                                 />
                             )}
                             <MetricRow
@@ -427,12 +535,14 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                                 value={formatPercent(m.fcfYield)}
                                 color={passFcfYield ? "var(--signal-strong-buy)" : "var(--signal-hold)"}
                                 tooltip={t("fcfYieldTip")}
+                                reading={readYield(m.fcfYield, 0.05)}
                             />
                             <MetricRow
                                 label={t("bookToMarket")}
                                 value={m.bookToMarket.toFixed(2)}
                                 color={passBookToMarket ? "var(--signal-strong-buy)" : "var(--signal-hold)"}
                                 tooltip={t("bookToMarketTip")}
+                                reading={readBtm(m.bookToMarket)}
                             />
                             {m.tangibleBookToMarket !== undefined && (
                                 <MetricRow
@@ -440,6 +550,7 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                                     value={m.tangibleBookToMarket.toFixed(2)}
                                     color={m.tangibleBookToMarket > 0.2 ? "var(--signal-strong-buy)" : m.tangibleBookToMarket > 0 ? "var(--signal-hold)" : "var(--signal-avoid)"}
                                     tooltip={t("tangibleBtmTip")}
+                                    reading={readTangible(m.tangibleBookToMarket)}
                                 />
                             )}
 
@@ -461,6 +572,7 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                                             value={`${m.netDebtToEbitda.toFixed(1)}×`}
                                             color={m.netDebtToEbitda < 1.5 ? "var(--signal-strong-buy)" : m.netDebtToEbitda < 3 ? "var(--signal-hold)" : "var(--signal-avoid)"}
                                             tooltip={t("netDebtEbitdaTip")}
+                                            reading={readNetDebt(m.netDebtToEbitda)}
                                         />
                                     )}
                                     {m.interestCoverage !== undefined && (
@@ -469,6 +581,7 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                                             value={`${m.interestCoverage.toFixed(1)}×`}
                                             color={m.interestCoverage > 4 ? "var(--signal-strong-buy)" : m.interestCoverage > 2 ? "var(--signal-hold)" : "var(--signal-avoid)"}
                                             tooltip={t("interestCoverageTip")}
+                                            reading={readCoverage(m.interestCoverage)}
                                         />
                                     )}
                                 </>
@@ -479,15 +592,36 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                                 <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
                                     {t("insightValuationDesc")}
                                 </p>
-                                <CheckItem pass={(m.evFcfYield ?? 0) >= 0.04} label={t("checkEvFcf")} na={!dq.solvency || m.evFcfYield === undefined} tip={t("checkEvFcfTip")} value={m.evFcfYield !== undefined ? formatPercent(m.evFcfYield) : undefined} />
-                                <CheckItem pass={passFcfYield} label={t("checkFcfAbove5")} tip={t("checkFcfAbove5Tip")} value={formatPercent(m.fcfYield)} />
-                                <CheckItem pass={(m.tangibleBookToMarket ?? -1) > 0} label={t("checkTangibleBook")} na={m.tangibleBookToMarket === undefined} tip={t("checkTangibleBookTip")} value={m.tangibleBookToMarket !== undefined ? m.tangibleBookToMarket.toFixed(2) : undefined} />
-                                <CheckItem pass={(m.netDebtToEbitda ?? 99) < 3} label={t("checkLeverageOk")} na={!dq.solvency || m.netDebtToEbitda === undefined} tip={t("checkLeverageOkTip")} value={m.netDebtToEbitda !== undefined ? `${m.netDebtToEbitda.toFixed(1)}×` : undefined} />
-                                <CheckItem pass={(m.interestCoverage ?? 0) > 2} label={t("checkCoverageOk")} na={!dq.solvency || m.interestCoverage === undefined} tip={t("checkCoverageOkTip")} value={m.interestCoverage !== undefined ? `${m.interestCoverage.toFixed(1)}×` : undefined} />
-                                <CheckItem pass={m.fcfYield > 0} label={t("checkFcfPositive")} tip={t("checkFcfPositiveTip")} value={formatPercent(m.fcfYield)} />
+                                <CheckItem pass={(m.evFcfYield ?? 0) >= 0.04} label={t("checkEvFcf")} na={!dq.solvency || m.evFcfYield === undefined} tip={t("checkEvFcfTip")} value={m.evFcfYield !== undefined ? formatPercent(m.evFcfYield) : undefined} reading={m.evFcfYield !== undefined ? readYield(m.evFcfYield, 0.04) : undefined} />
+                                <CheckItem pass={passFcfYield} label={t("checkFcfAbove5")} tip={t("checkFcfAbove5Tip")} value={formatPercent(m.fcfYield)} reading={readYield(m.fcfYield, 0.05)} />
+                                <CheckItem pass={(m.tangibleBookToMarket ?? -1) > 0} label={t("checkTangibleBook")} na={m.tangibleBookToMarket === undefined} tip={t("checkTangibleBookTip")} value={m.tangibleBookToMarket !== undefined ? m.tangibleBookToMarket.toFixed(2) : undefined} reading={readTangible(m.tangibleBookToMarket)} />
+                                <CheckItem pass={(m.netDebtToEbitda ?? 99) < 3} label={t("checkLeverageOk")} na={!dq.solvency || m.netDebtToEbitda === undefined} tip={t("checkLeverageOkTip")} value={m.netDebtToEbitda !== undefined ? `${m.netDebtToEbitda.toFixed(1)}×` : undefined} reading={readNetDebt(m.netDebtToEbitda)} />
+                                <CheckItem pass={(m.interestCoverage ?? 0) > 2} label={t("checkCoverageOk")} na={!dq.solvency || m.interestCoverage === undefined} tip={t("checkCoverageOkTip")} value={m.interestCoverage !== undefined ? `${m.interestCoverage.toFixed(1)}×` : undefined} reading={readCoverage(m.interestCoverage)} />
+                                <CheckItem pass={m.fcfYield > 0} label={t("checkFcfPositive")} tip={t("checkFcfPositiveTip")} value={formatPercent(m.fcfYield)} reading={readYield(m.fcfYield, 0.05)} />
                             </InsightCard>
                         </div>
                     </div>
+
+                    {/* ── Row 3.5: Peer positioning (relative valuation) ── */}
+                    {(peersLoading || peerRows.length >= 5) && (
+                        <div id="sec-peers" className="scroll-mt-24">
+                            <section className="glass-card p-4">
+                                <SectionHeader icon={Users} title={t("peerTitle")} />
+                                {peersLoading && peerRows.length < 5 ? (
+                                    <div className="flex items-center gap-2 py-10 justify-center text-xs" style={{ color: "var(--text-muted)" }}>
+                                        <Loader2 size={16} className="animate-spin" style={{ color: "var(--accent-cyan)" }} /> {t("peerLoading")}
+                                    </div>
+                                ) : (
+                                    <>
+                                        <p className="text-[11px] mb-3" style={{ color: "var(--text-muted)" }}>
+                                            {t("peerDesc", { n: peerRows.length, sector: company.sector })}
+                                        </p>
+                                        <MetricScatter rows={peerRows} highlightId={company.id} hideSectorFilter />
+                                    </>
+                                )}
+                            </section>
+                        </div>
+                    )}
 
                     {/* ── Row 4: Trend & Quality + Quality & Trend Check ── */}
                     <div id="sec-trend" className="flex flex-col lg:flex-row gap-5 items-start scroll-mt-24">
@@ -640,6 +774,11 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                             </div>
 
                             <div>
+                                <p className="text-[10px] uppercase tracking-wider text-amber-500 mb-2 font-semibold">{t("betaTitle")}</p>
+                                <BetaAnalysis ticker={company.ticker} />
+                            </div>
+
+                            <div>
                                 <p className="text-[10px] uppercase tracking-wider text-amber-500 mb-2 font-semibold">{t("momentumIndicators")}</p>
                                 <MetricRow label={t("currentPrice")} value={`$${m.currentPrice.toFixed(2)}`} />
                                 <MetricRow label={t("week52Low")} value={`$${m.fiftyTwoWeekLow.toFixed(2)}`} tooltip={t("week52LowTip")} />
@@ -678,7 +817,6 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                             {m.nextEarningsDate && (
                                 <MetricRow
                                     label={t("nextEarnings")}
-                                    // eslint-disable-next-line react-hooks/purity -- "days until" countdown reads the clock for display
                                     value={`${new Date(m.nextEarningsDate).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })} (${Math.max(0, Math.ceil((new Date(m.nextEarningsDate).getTime() - Date.now()) / 86400000))}d)`}
                                     color="var(--accent-cyan)"
                                     tooltip={t("nextEarningsTip")}

@@ -17,27 +17,39 @@ The app has two instances:
 - Renormalized fundamental score across three pillars — **Valuation (40%) · Quality & Trend (30%) · Timing (30%)**.
 - **Missing data scores NEUTRAL, never as a failure** (shown as amber "N/D"), so small-caps with thin data aren't unfairly penalized.
 - Enterprise-value valuation (FCF/EV), net debt/EBITDA & interest-coverage hard filters, share dilution, accruals, consensus revisions and insider cluster-buying.
+- **Value-aware readings** — every valuation/solvency tooltip interprets the *actual* number ("in this case…"), so a bare `−33×` interest coverage reads as *operating losses*, not *low coverage*.
+- **Peer positioning** — see where the stock sits against its **sector peers** on any two metrics, with the group's regression line + R² and each name's deviation (relative cheap/expensive). Peers are fetched on demand from a region-matched universe.
+- **Market sensitivity (beta)** — daily returns regressed against the **S&P 500** for beta + R² (systematic vs idiosyncratic risk).
 - Live Yahoo search — any listed stock is findable, not just a curated list.
 
 ### Crypto analyzer
 - Three renormalized pillars — **Tokenomics & Value · Network/On-chain · Momentum** — adjusted by the crypto Fear & Greed index.
 - **"Crypto P/S"** (market cap ÷ annualized protocol fees), TVL & MC/TVL, supply dilution, FDV/MC overhang.
 - On-chain **holders & whale concentration** (no key), **whale accumulation** built from local snapshots over repeat visits.
+- **Beta vs Bitcoin** (BTC is the crypto "index") and a **size × momentum peer map** within the coin's category.
 - Chain-specific enrichment (e.g. **Hedera**: live TPS, on-chain supply, new accounts/day, transaction mix).
+
+### Screener
+- Scan a market universe (US large/mid/small, Europe, IBEX, S&P 500 top) and rank/filter it by score.
+- **Cross-metric scatter** — switch from the table to a 2-D view: plot the whole universe on any two metrics as a **regression** (OLS trend line + R², biggest outliers labelled — who's mispriced vs the peer trend) or a **quadrant / buy-box** (median split, bubble size = market cap), colored by recommendation.
+
+### Country macro ("Economía")
+- Top-down read of the **US, Eurozone and Spain**: job market, inflation and activity indicators, each bucketed **low / normal / high** and mapped to the **implied central-bank stance** (expansionary / neutral / contractionary), with an aggregate "economy reading + policy bias" dial.
+- Free data from **FRED, Eurostat and the ECB** (via DBnomics) — no key; a dead series degrades to N/D without breaking the dashboard.
 
 ### Qualitative AI layer (optional, your own key)
 - Grounded on the quantitative pillars, the model adds the qualitative layer APIs can't compute: pharma pipelines & catalysts for stocks; technology, roadmap, unlock/centralization risks and moat for crypto. It is explicitly forbidden from giving price opinions.
 
 ### Workspace
 - Welcome **Home** with a live-scored watchlist summary and a macro "cosmic climate" snapshot.
-- Local **watchlist** and a **discard pile** (remembers *when* you discarded something, so stale decisions are flagged on return).
+- Local **watchlist** and a **discard pile** (remembers *when* you discarded something, so stale decisions are flagged on return), each with an editable **free-text note** to record *why* you kept or set an asset aside.
 - Full **ES/EN** localization.
 
 ---
 
 ## Tech stack
 
-Next.js (App Router) · React · TypeScript · Tailwind CSS · Framer Motion · ECharts · Zustand · Neon (PostgreSQL) + Drizzle ORM · next-intl · `yahoo-finance2` · CoinGecko · `astronomy-engine`.
+Next.js (App Router) · React · TypeScript · Tailwind CSS · Framer Motion · ECharts · Zustand · Neon (PostgreSQL) + Drizzle ORM · next-intl · `yahoo-finance2` · CoinGecko · FRED / Eurostat / ECB (via DBnomics) · `astronomy-engine`.
 
 ---
 
@@ -90,7 +102,7 @@ On-chain data (holders, concentration, Hedera stats), TVL/fees and Fear & Greed 
 
 ```
 src/
-├── app/            # Next.js routes (explorer, screener, macro, crypto, api/*)
+├── app/            # Next.js routes (explorer, screener, economy, macro, crypto, api/*)
 ├── components/     # React components (detail views, charts, macro modules)
 ├── lib/
 │   ├── api/        # Data clients: Yahoo, CoinGecko, DeFiLlama, Blockscout, Hedera…

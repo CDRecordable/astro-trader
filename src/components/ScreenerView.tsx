@@ -12,11 +12,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { useAppStore } from "@/lib/store";
 import CompanyDetail from "./CompanyDetail";
+import MetricScatter from "./MetricScatter";
 import { MARKET_GROUPS, type MarketGroupId } from "@/lib/market-groups";
 import type { Company, AlgorithmScore } from "@/lib/types";
 import {
     Telescope, Loader2, ArrowLeft, ArrowUp, ArrowDown, Filter,
-    ShieldCheck, Sparkles, AlertTriangle,
+    ShieldCheck, Sparkles, AlertTriangle, Table2, ScatterChart,
 } from "lucide-react";
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -68,6 +69,7 @@ export default function ScreenerView() {
     const [sortKey, setSortKey] = useState<SortKey>("total");
     const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
     const [detailId, setDetailId] = useState<string | null>(null);
+    const [view, setView] = useState<"table" | "chart">("table");
 
     // ── Scan a universe ──
     const scan = useCallback(async (id: MarketGroupId) => {
@@ -215,6 +217,20 @@ export default function ScreenerView() {
                             {stats && <span>· {t("opportunities")} <strong style={{ color: "var(--signal-buy)" }}>{stats.opps}</strong></span>}
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
+                            {/* View toggle: table ↔ scatter */}
+                            <div className="flex items-center gap-1 mr-1">
+                                {([["table", Table2, t("viewTable")], ["chart", ScatterChart, t("viewChart")]] as const).map(([id, Icon, label]) => (
+                                    <button key={id} onClick={() => setView(id)}
+                                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium cursor-pointer transition-all"
+                                        style={{
+                                            background: view === id ? "var(--accent-cyan-dim)" : "var(--bg-tertiary)",
+                                            color: view === id ? "white" : "var(--text-muted)",
+                                            border: "1px solid var(--border-subtle)",
+                                        }}>
+                                        <Icon size={13} /> {label}
+                                    </button>
+                                ))}
+                            </div>
                             <Filter size={13} style={{ color: "var(--text-muted)" }} />
                             {/* Recommendation filter */}
                             {(["all", "buy", "strongbuy"] as RecFilter[]).map((r) => (
@@ -249,7 +265,13 @@ export default function ScreenerView() {
                         </div>
                     </div>
 
+                    {/* Chart view — cross-metric scatter / quadrant */}
+                    {view === "chart" && (
+                        <MetricScatter rows={filtered} onSelect={setDetailId} />
+                    )}
+
                     {/* Table */}
+                    {view === "table" && (
                     <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid var(--border-subtle)" }}>
                         {/* Head */}
                         <div className="grid items-center gap-2 px-4 py-2.5"
@@ -298,6 +320,7 @@ export default function ScreenerView() {
                             </div>
                         )}
                     </div>
+                    )}
                 </>
             )}
         </div>

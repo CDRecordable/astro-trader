@@ -313,6 +313,31 @@ export function formatPValue(p: number): string {
     return `p = ${p.toFixed(2)}`;
 }
 
+/** Ordinary-least-squares fit of y = slope·x + intercept, with R² (goodness of
+ *  fit) and the Pearson r. Returns null when there are fewer than 3 points or the
+ *  x-values have no spread (a vertical cloud has no meaningful line). */
+export function linearRegression(x: number[], y: number[]): {
+    slope: number; intercept: number; r2: number; r: number; n: number;
+} | null {
+    const n = Math.min(x.length, y.length);
+    if (n < 3) return null;
+    const mx = mean(x.slice(0, n));
+    const my = mean(y.slice(0, n));
+    let sxx = 0, sxy = 0, syy = 0;
+    for (let i = 0; i < n; i++) {
+        const dx = x[i] - mx;
+        const dy = y[i] - my;
+        sxx += dx * dx;
+        sxy += dx * dy;
+        syy += dy * dy;
+    }
+    if (sxx === 0) return null;              // no horizontal spread → undefined slope
+    const slope = sxy / sxx;
+    const intercept = my - slope * mx;
+    const r = syy === 0 ? 0 : sxy / Math.sqrt(sxx * syy);
+    return { slope, intercept, r2: r * r, r, n };
+}
+
 /** Pearson correlation (mirrors the helper in macro-algorithm, kept here for reuse). */
 export function pearson(x: number[], y: number[]): number {
     const n = Math.min(x.length, y.length);

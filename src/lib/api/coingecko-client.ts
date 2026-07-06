@@ -31,6 +31,29 @@ export interface CoinGeckoMarketData {
 
 const COINGECKO_BASE_URL = "https://api.coingecko.com/api/v3";
 
+/** Daily price history for a coin (for beta vs BTC). Free tier caps at ~365d.
+ *  Returns oldest → newest {date (ISO), price}. Empty array on error. */
+export async function fetchCoinMarketChart(
+    coingeckoId: string,
+    days: number = 365,
+): Promise<Array<{ date: string; price: number }>> {
+    try {
+        const url = new URL(`${COINGECKO_BASE_URL}/coins/${encodeURIComponent(coingeckoId.toLowerCase())}/market_chart`);
+        url.searchParams.append("vs_currency", "usd");
+        url.searchParams.append("days", String(days));
+        url.searchParams.append("interval", "daily");
+        const res = await fetch(url.toString(), { next: { revalidate: 21_600 } }); // 6h
+        if (!res.ok) throw new Error(`CoinGecko market_chart ${res.status}`);
+        const d = await res.json() as { prices?: Array<[number, number]> };
+        return (d.prices ?? [])
+            .filter(([ts, price]) => isFinite(ts) && isFinite(price))
+            .map(([ts, price]) => ({ date: new Date(ts).toISOString().slice(0, 10), price }));
+    } catch (error) {
+        console.error(`[CoinGecko market_chart] ${coingeckoId}:`, error);
+        return [];
+    }
+}
+
 // ── Rich single-coin detail (/coins/{id}) ────────────────────
 // Free, no key. Gives the data /coins/markets omits: developer activity,
 // community size, on-chain contract addresses, TVL, multi-timeframe price

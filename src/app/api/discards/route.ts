@@ -5,6 +5,7 @@
 // so on return you see the signal + how stale the decision is.
 // GET    → all items
 // POST   → add { ticker, symbol, name, assetType, reason? }
+// PATCH  → update a reason/note { ticker, reason }
 // DELETE → remove ?ticker=AAPL
 // ============================================================
 
@@ -65,6 +66,24 @@ export async function POST(req: NextRequest) {
     data.items.unshift(item);
     writeDiscards(data);
     return NextResponse.json({ item }, { status: 201 });
+}
+
+// Update the free-text reason/note on an existing discard.
+export async function PATCH(req: NextRequest) {
+    const body = await req.json() as { ticker?: string; reason?: string };
+    if (!body.ticker || typeof body.reason !== "string") {
+        return NextResponse.json({ error: "ticker and reason are required" }, { status: 400 });
+    }
+
+    const data = readDiscards();
+    const item = data.items.find((i) => i.ticker.toLowerCase() === body.ticker!.toLowerCase());
+    if (!item) {
+        return NextResponse.json({ error: "Ticker not in discards" }, { status: 404 });
+    }
+
+    item.reason = body.reason;
+    writeDiscards(data);
+    return NextResponse.json({ item });
 }
 
 export async function DELETE(req: NextRequest) {

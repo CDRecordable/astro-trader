@@ -2,7 +2,11 @@
     "nav": {
         "macro": "Macro",
         "explorer": "Explorador",
+        "explorerGroup": "Explorador",
+        "explorerSingle": "Acciones individuales",
         "screener": "Screener",
+        "macroIndicators": "Macro",
+        "macroIndicatorsFull": "Macro Indicadores",
         "watchlist": "Watchlist",
         "portfolio": "Cartera",
         "wiki": "Wiki",
@@ -12,7 +16,8 @@
         "esoteric": "Esotérico",
         "serious": "Análisis",
         "vix": "VIX",
-        "home": "Inicio"
+        "home": "Inicio",
+        "economy": "Economía"
     },
     "portfolio": {
         "title": "Mi Cartera",
@@ -155,6 +160,10 @@
         "portfolio": {
             "title": "Mi Cartera — Astro Trader Insights",
             "description": "Cartera simulada de paper-trading: compra y vende a precios reales para validar tus análisis."
+        },
+        "economy": {
+            "title": "Macro por país — Astro Trader Insights",
+            "description": "Empleo, inflación y actividad por país con lectura del sesgo del banco central."
         }
     },
     "macroOverview": {
@@ -665,7 +674,41 @@
         "checkLowShort": "Interés en corto ≤ 10% del float",
         "buys": "compras",
         "sells": "ventas",
-        "financialSectorNote": "Sector financiero: deuda/EBITDA y cobertura de intereses no aplican (los depósitos cuentan como deuda y el interés es su materia prima). Se valora por FCF sobre capitalización y libro/mercado. Para solvencia bancaria real: CET1 y morosidad."
+        "financialSectorNote": "Sector financiero: deuda/EBITDA y cobertura de intereses no aplican (los depósitos cuentan como deuda y el interés es su materia prima). Se valora por FCF sobre capitalización y libro/mercado. Para solvencia bancaria real: CET1 y morosidad.",
+        "inThisCase": "En este caso:",
+        "readPeNeg": "PER negativo: la empresa tiene pérdidas (beneficio neto negativo), así que este múltiplo no es interpretable.",
+        "readPeCheap": "Pagas {v}× el beneficio anual. Por debajo de 25× se considera una valoración contenida.",
+        "readPeFair": "Pagas {v}× el beneficio anual: valoración intermedia (25–40×).",
+        "readPeRich": "Pagas {v}× el beneficio anual: caro; el mercado descuenta mucho crecimiento futuro.",
+        "readYieldNeg": "Rendimiento negativo: la empresa quema caja (flujo de caja libre negativo).",
+        "readYieldOk": "Genera un {v} de caja libre, por encima del {target}% que buscamos: caja abundante para lo que cuesta.",
+        "readYieldLow": "Solo genera un {v} de caja libre, por debajo del {target}% deseable: caja escasa frente a su precio.",
+        "readBtmNeg": "Patrimonio contable negativo: sus pasivos superan a sus activos en libros.",
+        "readBtmHigh": "El valor en libros es el {pctv}% de su capitalización (ratio ≥ 1): cotiza igual o por debajo de su valor contable, señal value.",
+        "readBtmLow": "El valor en libros es solo el {pctv}% de su capitalización: cotiza muy por encima de sus libros (cuanto más alto el ratio, más barata sobre libros).",
+        "readTangibleNeg": "Negativo ({v}): descontando fondo de comercio e intangibles, el patrimonio tangible es negativo. No hay colchón de activos físicos; el valor en libros es casi todo humo contable.",
+        "readTangibleGood": "Positivo y holgado: buena parte de su valor en libros son activos tangibles reales, no fondo de comercio.",
+        "readTangibleThin": "Positivo pero ajustado: hay algo de respaldo tangible, pero fino.",
+        "readNetDebtNegative": "Deuda neta negativa: tiene más caja que deuda (posición de caja neta). Balance muy sólido.",
+        "readNetDebtOk": "Debe {v}× su EBITDA anual: apalancamiento manejable (por debajo de 3×).",
+        "readNetDebtHigh": "Debe {v}× su EBITDA anual: apalancamiento elevado (por encima de 3×), más riesgo financiero.",
+        "readCoverageNeg": "Negativa ({v}×): el beneficio operativo (EBIT) es negativo. La empresa pierde dinero en su operativa y no cubre ni sus intereses; el signo negativo mide el tamaño de la pérdida frente a los intereses, no una cobertura baja.",
+        "readCoverageOk": "Su EBIT cubre {v}× los intereses de la deuda: margen cómodo (por encima de 2×).",
+        "readCoverageLow": "Su EBIT solo cubre {v}× los intereses: margen ajustado (por debajo de 2×).",
+        "peerTitle": "Posición vs pares",
+        "peerDesc": "{n} comparables del sector {sector}. La recta es la valoración media del grupo; el punto resaltado es esta acción — por debajo de la recta = barata para su perfil frente a sus pares, por encima = cara.",
+        "betaTitle": "Sensibilidad al mercado (beta)",
+        "betaAxisMarket": "Retorno diario {bench}",
+        "betaAxisStock": "Retorno diario {ticker}",
+        "betaSample": "{n} días",
+        "betaUnavailable": "No hay suficiente histórico de precios para calcular la beta.",
+        "betaHigh": "Amplifica el mercado: se mueve ~{pct}% más en cada movimiento (más cíclica y volátil).",
+        "betaLow": "Defensiva: amortigua el mercado, se mueve ~{pct}% menos en cada movimiento.",
+        "betaMarket": "Se mueve prácticamente en línea con el mercado (beta ≈ 1).",
+        "betaInverse": "Se mueve en sentido contrario al mercado (beta negativa): cobertura natural.",
+        "betaR2": "El mercado explica el {r2}% de sus movimientos; el resto es idiosincrásico (propio de la empresa).",
+        "betaNeutral": "Apenas se mueve con el mercado: su comportamiento es casi independiente (beta ≈ 0).",
+        "peerLoading": "Buscando comparables del sector…"
     },
     "watchlist": {
         "title": "Mi Watchlist",
@@ -700,7 +743,13 @@
         "oneMonth": "1M",
         "alreadyAdded": "{symbol} ya está en tu watchlist",
         "emptyTitle": "Tu watchlist está vacía",
-        "emptySubtitle": "Analiza un activo en el Explorador y guárdalo con la ⭐ desde su ficha"
+        "emptySubtitle": "Analiza un activo en el Explorador y guárdalo con la ⭐ desde su ficha",
+        "noteAdd": "Añadir nota",
+        "noteEdit": "Editar nota",
+        "notePlaceholder": "¿Por qué la guardaste? Escribe una nota…",
+        "noteDiscardPlaceholder": "¿Por qué la descartaste? Escribe una nota…",
+        "noteSave": "Guardar",
+        "noteCancel": "Cancelar"
     },
     "settings": {
         "title": "Ajustes",
@@ -743,7 +792,46 @@
         "colQual": "Calidad",
         "colTiming": "Timing",
         "colRec": "Rec.",
-        "back": "Volver al screener"
+        "back": "Volver al screener",
+        "viewTable": "Tabla",
+        "viewChart": "Gráfico",
+        "axisX": "Eje X",
+        "axisY": "Eje Y",
+        "allSectors": "Todos los sectores",
+        "modeRegression": "Regresión",
+        "modeQuadrant": "Cuadrantes",
+        "plotted": "{n} empresas representadas",
+        "residual": "Desviación de la recta",
+        "scatterEmpty": "Sin datos suficientes para el gráfico",
+        "scatterEmptyDesc": "Ninguna empresa del universo tiene ambas métricas disponibles. Prueba con otras métricas o quita el filtro de sector.",
+        "regressionHint": "La recta es cómo el grupo valora de media el eje Y según el eje X. Los puntos por debajo de la recta se desvían a la baja de esa tendencia (más baratos de lo que predice el grupo); por encima, a la alza. Se etiquetan los 3 mayores atípicos. Un R² alto = la relación explica bien la nube; bajo = poca relación.",
+        "quadrantHint": "Líneas discontinuas = mediana de cada eje. El tamaño de cada burbuja es proporcional a la capitalización. La esquina marcada con ★ es donde ambos ejes apuntan en la dirección favorable (value investing).",
+        "quadrantBuy": "Zona atractiva",
+        "quadrantAvoid": "Zona a evitar",
+        "quadrantMixed": "Zona mixta",
+        "mixedSectorsNote": "Estás mezclando sectores: filtra por sector para una comparación más limpia (los múltiplos no son comparables entre sectores).",
+        "smallSampleNote": "Muestra pequeña ({n}): la recta y el R² son poco fiables con tan pocos puntos.",
+        "metrics": {
+            "pe": "PER",
+            "fcfYield": "Rend. FCF",
+            "evFcfYield": "Rend. FCF/EV",
+            "bookToMarket": "Libro/Mercado",
+            "ebitdaGrowth": "Crec. EBITDA",
+            "niGrowth": "Crec. Bº neto (CAGR)",
+            "ebitMargin": "Margen EBIT",
+            "grossMargin": "Margen bruto",
+            "roe": "ROE",
+            "roc": "ROC",
+            "netDebtToEbitda": "Deuda neta/EBITDA",
+            "marketCap": "Capitalización",
+            "totalScore": "Score total",
+            "valuationScore": "Score valoración",
+            "trendScore": "Score calidad",
+            "timingScore": "Score timing",
+            "cRet1m": "Retorno 1M",
+            "cRet3m": "Retorno 3M",
+            "cRet6m": "Retorno 6M"
+        }
     },
     "aiAnalysis": {
         "title": "Análisis Cualitativo · IA",
@@ -811,7 +899,7 @@
         "annualFees": "Ingresos anualizados",
         "annualFeesTip": "Fees del protocolo de los últimos 30 días, anualizados. Ingresos reales que genera (DeFiLlama).",
         "devCommits": "Commits dev (4 sem)",
-        "devCommitsTip": "Commits al repositorio en las últimas 4 semanas. Mide si el proyecto se desarrolla activamente.",
+        "devCommitsTip": "Commits al repositorio en las últimas 4 semanas (dato de CoinGecko). Mide si el proyecto se desarrolla activamente. N/D significa que CoinGecko no tiene enlazado el repositorio principal del proyecto (le ocurre a Hedera, Bitcoin y otros muy activos): no implica que el desarrollo esté parado.",
         "devContributors": "Contribuidores activos",
         "tvlTrend": "Tendencia TVL (7d)",
         "tvlTrendTip": "Cambio del TVL en 7 días. Capital entrando o saliendo del protocolo.",
@@ -838,7 +926,13 @@
         "onchainCirculating": "Supply circulante (on-chain)",
         "onchainTotal": "Supply total (on-chain)",
         "onchainSupplyTip": "Supply real leído directamente del Mirror Node de Hedera, no de un agregador. Fuente autoritativa.",
-        "txMix": "Mezcla de transacciones (reciente)"
+        "txMix": "Mezcla de transacciones (reciente)",
+        "devContributorsTip": "Número de desarrolladores que han contribuido recientemente (dato de CoinGecko). N/D suele significar que CoinGecko no rastrea el repositorio real del proyecto, no que no haya contribuidores.",
+        "betaTitle": "Sensibilidad al mercado (beta vs BTC)",
+        "betaIsBenchmark": "Es el propio Bitcoin: es la referencia del mercado cripto, así que su beta es 1 por definición.",
+        "peerTitle": "Posición vs pares",
+        "peerDesc": "{n} monedas comparables por tamaño y momentum. La moneda resaltada es esta; el tamaño de burbuja es su capitalización. Es un mapa tamaño/momentum, no de valoración (los datos ricos no están disponibles en bloque).",
+        "peerLoading": "Buscando monedas comparables…"
     },
     "home": {
         "openDetail": "Ver ficha de {symbol}",
@@ -866,5 +960,80 @@
         "macroLunar": "Luna",
         "macroMercury": "Mercurio",
         "macroNextTransit": "Próximo tránsito mayor"
+    },
+    "economy": {
+        "title": "Macro por país",
+        "subtitle": "Empleo, inflación y actividad: la capa por encima de la acción o el índice",
+        "loading": "Cargando indicadores (FRED · Eurostat · BCE)…",
+        "error": "No se pudieron cargar los indicadores. Reintenta en unos segundos.",
+        "country": {
+            "us": "EE. UU.",
+            "ea": "Eurozona",
+            "es": "España"
+        },
+        "category": {
+            "jobs": "Mercado laboral",
+            "inflation": "Inflación",
+            "activity": "Actividad económica"
+        },
+        "aggEconomy": "Lectura de la economía",
+        "aggBias": "Sesgo implícito del banco central",
+        "econRead": {
+            "strong": "Economía fuerte",
+            "ok": "Economía OK",
+            "weak": "Economía débil"
+        },
+        "inflationBand": {
+            "low": "Inflación baja",
+            "normal": "En objetivo",
+            "high": "Inflación alta"
+        },
+        "stance": {
+            "expansionary": "Expansiva",
+            "neutral": "Neutral",
+            "contractionary": "Contractiva"
+        },
+        "bandThresholds": "Umbrales: por debajo de {lo} · normal entre {lo} y {hi} · por encima de {hi}.",
+        "readEquity": {
+            "strong": "Los datos de crecimiento vienen fuertes: soporte para beneficios cíclicos, pero vigila que no fuerce subidas de tipos.",
+            "ok": "Crecimiento en zona templada: ni impulso ni lastre claro para los beneficios.",
+            "weak": "Los datos de crecimiento apuntan a una economía débil: presión sobre beneficios cíclicos y small caps."
+        },
+        "biasEquity": {
+            "expansionary": "El conjunto empuja al banco central hacia recortes/QE: viento de cola para múltiplos y activos de larga duración.",
+            "neutral": "Sin presión clara sobre el banco central: los tipos no deberían ser el driver dominante ahora mismo.",
+            "contractionary": "El conjunto empuja hacia subidas/QT: presión sobre múltiplos, favorece value y balances sólidos."
+        },
+        "ind": {
+            "unemployment": "Tasa de paro",
+            "unemploymentTip": "Porcentaje de la población activa sin empleo. Paro bajo = economía fuerte (y presión salarial); paro alto = economía débil.",
+            "joblessClaims": "Peticiones semanales de paro",
+            "joblessClaimsTip": "Nuevas solicitudes de subsidio por desempleo cada semana (EE. UU.). Termómetro semanal del mercado laboral: más peticiones = enfriamiento.",
+            "payrolls": "Nóminas no agrícolas (Δ mes)",
+            "payrollsTip": "Empleos netos creados en el mes (nonfarm payrolls). Creación fuerte = economía caliente; débil o negativa = enfriamiento.",
+            "cpi": "IPC (interanual)",
+            "cpiTip": "Inflación general interanual. El objetivo de la Fed/BCE es ~2%: por encima presiona a subir tipos, por debajo permite bajarlos.",
+            "coreCpi": "IPC subyacente (interanual)",
+            "coreCpiTip": "Inflación sin energía ni alimentos: la señal persistente que más pesa en las decisiones del banco central.",
+            "ppi": "IPP (mensual)",
+            "ppiTip": "Precios de producción, variación mensual. Sube antes que el IPC: es el termómetro adelantado de presiones de costes.",
+            "indProduction": "Producción industrial (interanual)",
+            "indProductionTip": "Variación interanual de la producción industrial. Proxy de actividad real: en negativo suele acompañar a las recesiones.",
+            "consumerSentiment": "Confianza del consumidor",
+            "consumerSentimentTip": "Índice de la Universidad de Michigan. El consumo es ~2/3 del PIB de EE. UU.: confianza baja anticipa menor gasto.",
+            "hicp": "IPCA (interanual)",
+            "hicpTip": "Inflación armonizada interanual (medida oficial del BCE). Objetivo ~2%.",
+            "coreHicp": "IPCA subyacente (interanual)",
+            "coreHicpTip": "IPCA sin energía ni alimentos: la señal persistente que guía al BCE.",
+            "esi": "Sentimiento económico (ESI)",
+            "esiTip": "Indicador compuesto de sentimiento de la Comisión Europea (media histórica = 100). Proxy amplio de actividad al no disponer de PMI gratuito.",
+            "policyRate": "Tipo de interés oficial",
+            "policyRateTip": "Tipo de referencia del banco central (Fed funds / facilidad de depósito del BCE)."
+        },
+        "legendTitle": "Leyenda:",
+        "legendExpansionary": "el dato empuja a bajar tipos / QE",
+        "legendNeutral": "el dato no pide cambios",
+        "legendContractionary": "el dato empuja a subir tipos / QT",
+        "legendSources": "Fuentes: FRED (EE. UU.), Eurostat y BCE vía DBnomics. Los umbrales son orientativos y adaptados a cada país (p. ej. el paro estructural español). Esto es una lectura mecánica, no un pronóstico del banco central."
     }
 }

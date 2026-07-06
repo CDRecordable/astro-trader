@@ -2,7 +2,11 @@
     "nav": {
         "macro": "Macro",
         "explorer": "Explorer",
+        "explorerGroup": "Explorer",
+        "explorerSingle": "Individual stocks",
         "screener": "Screener",
+        "macroIndicators": "Macro",
+        "macroIndicatorsFull": "Macro Indicators",
         "watchlist": "Watchlist",
         "portfolio": "Portfolio",
         "wiki": "Wiki",
@@ -12,7 +16,8 @@
         "esoteric": "Esoteric",
         "serious": "Analysis",
         "vix": "VIX",
-        "home": "Home"
+        "home": "Home",
+        "economy": "Economy"
     },
     "portfolio": {
         "title": "My Portfolio",
@@ -155,6 +160,10 @@
         "portfolio": {
             "title": "My Portfolio — Astro Trader Insights",
             "description": "Simulated paper-trading portfolio: buy and sell at real prices to validate your analyses."
+        },
+        "economy": {
+            "title": "Country Macro — Astro Trader Insights",
+            "description": "Jobs, inflation and activity per country with an implied central-bank bias reading."
         }
     },
     "macroOverview": {
@@ -665,7 +674,41 @@
         "checkLowShort": "Short interest ≤ 10% of float",
         "buys": "buys",
         "sells": "sells",
-        "financialSectorNote": "Financial sector: debt/EBITDA and interest coverage do not apply (deposits count as debt; interest is their raw material). Valued on FCF over market cap and book-to-market. For real bank solvency: CET1 and NPLs."
+        "financialSectorNote": "Financial sector: debt/EBITDA and interest coverage do not apply (deposits count as debt; interest is their raw material). Valued on FCF over market cap and book-to-market. For real bank solvency: CET1 and NPLs.",
+        "inThisCase": "In this case:",
+        "readPeNeg": "Negative P/E: the company is lossmaking (negative net income), so this multiple is not meaningful.",
+        "readPeCheap": "You pay {v}× annual earnings. Below 25× is considered a contained valuation.",
+        "readPeFair": "You pay {v}× annual earnings: mid-range valuation (25–40×).",
+        "readPeRich": "You pay {v}× annual earnings: expensive; the market is pricing in a lot of future growth.",
+        "readYieldNeg": "Negative yield: the company burns cash (negative free cash flow).",
+        "readYieldOk": "Generates a {v} free-cash-flow yield, above the {target}% we look for: plenty of cash for what it costs.",
+        "readYieldLow": "Only a {v} free-cash-flow yield, below the desirable {target}%: thin cash relative to its price.",
+        "readBtmNeg": "Negative book equity: liabilities exceed assets on the books.",
+        "readBtmHigh": "Book value is {pctv}% of its market cap (ratio ≥ 1): trades at or below book value, a value signal.",
+        "readBtmLow": "Book value is only {pctv}% of its market cap: trades well above book (the higher the ratio, the cheaper on book).",
+        "readTangibleNeg": "Negative ({v}): stripping out goodwill and intangibles, tangible equity is negative. No hard-asset cushion; the book value is almost all accounting air.",
+        "readTangibleGood": "Positive and comfortable: much of its book value is real tangible assets, not goodwill.",
+        "readTangibleThin": "Positive but thin: some tangible backing, but slim.",
+        "readNetDebtNegative": "Negative net debt: more cash than debt (net cash position). Very strong balance sheet.",
+        "readNetDebtOk": "Owes {v}× annual EBITDA: manageable leverage (below 3×).",
+        "readNetDebtHigh": "Owes {v}× annual EBITDA: high leverage (above 3×), more financial risk.",
+        "readCoverageNeg": "Negative ({v}×): operating profit (EBIT) is negative. The company loses money on operations and cannot cover its interest at all; the negative sign measures the size of the loss versus interest, not low coverage.",
+        "readCoverageOk": "EBIT covers interest {v}×: comfortable margin (above 2×).",
+        "readCoverageLow": "EBIT only covers interest {v}×: tight margin (below 2×).",
+        "peerTitle": "Peer positioning",
+        "peerDesc": "{n} peers in the {sector} sector. The line is the group’s average valuation; the highlighted point is this stock — below the line = cheap for its profile vs peers, above = expensive.",
+        "betaTitle": "Market sensitivity (beta)",
+        "betaAxisMarket": "{bench} daily return",
+        "betaAxisStock": "{ticker} daily return",
+        "betaSample": "{n} days",
+        "betaUnavailable": "Not enough price history to compute beta.",
+        "betaHigh": "Amplifies the market: moves ~{pct}% more on each swing (more cyclical and volatile).",
+        "betaLow": "Defensive: dampens the market, moves ~{pct}% less on each swing.",
+        "betaMarket": "Moves broadly in line with the market (beta ≈ 1).",
+        "betaInverse": "Moves opposite to the market (negative beta): a natural hedge.",
+        "betaR2": "The market explains {r2}% of its moves; the rest is idiosyncratic (company-specific).",
+        "betaNeutral": "Barely moves with the market: its behaviour is largely independent (beta ≈ 0).",
+        "peerLoading": "Finding sector peers…"
     },
     "watchlist": {
         "title": "My Watchlist",
@@ -700,7 +743,13 @@
         "oneMonth": "1M",
         "alreadyAdded": "{symbol} is already in your watchlist",
         "emptyTitle": "Your watchlist is empty",
-        "emptySubtitle": "Analyse an asset in the Explorer and save it with the ⭐ from its detail card"
+        "emptySubtitle": "Analyse an asset in the Explorer and save it with the ⭐ from its detail card",
+        "noteAdd": "Add note",
+        "noteEdit": "Edit note",
+        "notePlaceholder": "Why did you save it? Write a note…",
+        "noteDiscardPlaceholder": "Why did you discard it? Write a note…",
+        "noteSave": "Save",
+        "noteCancel": "Cancel"
     },
     "settings": {
         "title": "Settings",
@@ -743,7 +792,46 @@
         "colQual": "Quality",
         "colTiming": "Timing",
         "colRec": "Rec.",
-        "back": "Back to screener"
+        "back": "Back to screener",
+        "viewTable": "Table",
+        "viewChart": "Chart",
+        "axisX": "X axis",
+        "axisY": "Y axis",
+        "allSectors": "All sectors",
+        "modeRegression": "Regression",
+        "modeQuadrant": "Quadrants",
+        "plotted": "{n} companies plotted",
+        "residual": "Deviation from line",
+        "scatterEmpty": "Not enough data for the chart",
+        "scatterEmptyDesc": "No company in the universe has both metrics available. Try different metrics or remove the sector filter.",
+        "regressionHint": "The line is how the group prices the Y axis against the X axis on average. Points below the line deviate downward from that trend (cheaper than the group predicts); above it, upward. The 3 largest outliers are labelled. A high R² = the relationship explains the cloud well; low = little relationship.",
+        "quadrantHint": "Dashed lines = median of each axis. Bubble size is proportional to market cap. The corner marked with ★ is where both axes point the favourable way (value investing).",
+        "quadrantBuy": "Attractive zone",
+        "quadrantAvoid": "Avoid zone",
+        "quadrantMixed": "Mixed zone",
+        "mixedSectorsNote": "You are mixing sectors: filter by sector for a cleaner comparison (multiples are not comparable across sectors).",
+        "smallSampleNote": "Small sample ({n}): the line and R² are unreliable with so few points.",
+        "metrics": {
+            "pe": "P/E",
+            "fcfYield": "FCF yield",
+            "evFcfYield": "FCF/EV yield",
+            "bookToMarket": "Book/Market",
+            "ebitdaGrowth": "EBITDA growth",
+            "niGrowth": "Net income growth (CAGR)",
+            "ebitMargin": "EBIT margin",
+            "grossMargin": "Gross margin",
+            "roe": "ROE",
+            "roc": "ROC",
+            "netDebtToEbitda": "Net debt/EBITDA",
+            "marketCap": "Market cap",
+            "totalScore": "Total score",
+            "valuationScore": "Valuation score",
+            "trendScore": "Quality score",
+            "timingScore": "Timing score",
+            "cRet1m": "1M return",
+            "cRet3m": "3M return",
+            "cRet6m": "6M return"
+        }
     },
     "aiAnalysis": {
         "title": "Qualitative Analysis · AI",
@@ -811,7 +899,7 @@
         "annualFees": "Annualized revenue",
         "annualFeesTip": "Protocol fees over the last 30 days, annualized. Real revenue it generates (DeFiLlama).",
         "devCommits": "Dev commits (4w)",
-        "devCommitsTip": "Commits to the repository in the last 4 weeks. Measures whether the project is actively developed.",
+        "devCommitsTip": "Commits to the repository in the last 4 weeks (CoinGecko data). Gauges whether the project is under active development. N/D means CoinGecko has not linked the project main repository (this happens to Hedera, Bitcoin and other very active chains): it does not mean development has stopped.",
         "devContributors": "Active contributors",
         "tvlTrend": "TVL trend (7d)",
         "tvlTrendTip": "7-day TVL change. Capital flowing into or out of the protocol.",
@@ -838,7 +926,13 @@
         "onchainCirculating": "Circulating supply (on-chain)",
         "onchainTotal": "Total supply (on-chain)",
         "onchainSupplyTip": "Supply read straight from Hedera's Mirror Node, not an aggregator. Authoritative source.",
-        "txMix": "Transaction mix (recent)"
+        "txMix": "Transaction mix (recent)",
+        "devContributorsTip": "Number of developers who have contributed recently (CoinGecko data). N/D usually means CoinGecko is not tracking the project real repository, not that there are no contributors.",
+        "betaTitle": "Market sensitivity (beta vs BTC)",
+        "betaIsBenchmark": "This is Bitcoin itself: it is the crypto market benchmark, so its beta is 1 by definition.",
+        "peerTitle": "Peer positioning",
+        "peerDesc": "{n} comparable coins by size and momentum. The highlighted coin is this one; bubble size is its market cap. This is a size/momentum map, not valuation (rich metrics aren't available in bulk).",
+        "peerLoading": "Finding comparable coins…"
     },
     "home": {
         "openDetail": "View {symbol} detail",
@@ -866,5 +960,80 @@
         "macroLunar": "Lunar",
         "macroMercury": "Mercury",
         "macroNextTransit": "Next major transit"
+    },
+    "economy": {
+        "title": "Country macro",
+        "subtitle": "Jobs, inflation and activity: the layer above the stock or index",
+        "loading": "Loading indicators (FRED · Eurostat · ECB)…",
+        "error": "Could not load the indicators. Retry in a few seconds.",
+        "country": {
+            "us": "USA",
+            "ea": "Eurozone",
+            "es": "Spain"
+        },
+        "category": {
+            "jobs": "Job market",
+            "inflation": "Inflation",
+            "activity": "Economic activity"
+        },
+        "aggEconomy": "Economy reading",
+        "aggBias": "Implied central-bank bias",
+        "econRead": {
+            "strong": "Strong economy",
+            "ok": "OK economy",
+            "weak": "Weak economy"
+        },
+        "inflationBand": {
+            "low": "Low inflation",
+            "normal": "On target",
+            "high": "High inflation"
+        },
+        "stance": {
+            "expansionary": "Expansionary",
+            "neutral": "Neutral",
+            "contractionary": "Contractionary"
+        },
+        "bandThresholds": "Thresholds: below {lo} · normal between {lo} and {hi} · above {hi}.",
+        "readEquity": {
+            "strong": "Growth data is coming in strong: supportive for cyclical earnings, but watch that it does not force rate hikes.",
+            "ok": "Growth in the tepid zone: no clear push or drag on earnings.",
+            "weak": "Growth data points to a weak economy: pressure on cyclical earnings and small caps."
+        },
+        "biasEquity": {
+            "expansionary": "The mix pushes the central bank towards cuts/QE: a tailwind for multiples and long-duration assets.",
+            "neutral": "No clear pressure on the central bank: rates should not be the dominant driver right now.",
+            "contractionary": "The mix pushes towards hikes/QT: pressure on multiples, favours value and strong balance sheets."
+        },
+        "ind": {
+            "unemployment": "Unemployment rate",
+            "unemploymentTip": "Share of the labour force out of work. Low = strong economy (and wage pressure); high = weak economy.",
+            "joblessClaims": "Initial jobless claims",
+            "joblessClaimsTip": "New unemployment benefit filings each week (US). Weekly labour-market thermometer: more claims = cooling.",
+            "payrolls": "Nonfarm payrolls (Δ month)",
+            "payrollsTip": "Net jobs added in the month. Strong creation = hot economy; weak or negative = cooling.",
+            "cpi": "CPI (YoY)",
+            "cpiTip": "Headline inflation, year over year. The Fed/ECB target is ~2%: above it pressures hikes, below it allows cuts.",
+            "coreCpi": "Core CPI (YoY)",
+            "coreCpiTip": "Inflation excluding energy and food: the persistent signal central banks weigh most.",
+            "ppi": "PPI (MoM)",
+            "ppiTip": "Producer prices, monthly change. Moves before CPI: the leading gauge of cost pressures.",
+            "indProduction": "Industrial production (YoY)",
+            "indProductionTip": "Year-over-year change in industrial output. Real-activity proxy: negative readings usually accompany recessions.",
+            "consumerSentiment": "Consumer sentiment",
+            "consumerSentimentTip": "University of Michigan index. Consumption is ~2/3 of US GDP: low confidence precedes weaker spending.",
+            "hicp": "HICP (YoY)",
+            "hicpTip": "Harmonised inflation, year over year (the ECB official measure). Target ~2%.",
+            "coreHicp": "Core HICP (YoY)",
+            "coreHicpTip": "HICP excluding energy and food: the persistent signal guiding the ECB.",
+            "esi": "Economic sentiment (ESI)",
+            "esiTip": "European Commission composite sentiment indicator (long-run mean = 100). Broad activity proxy since no free PMI exists.",
+            "policyRate": "Policy rate",
+            "policyRateTip": "Central-bank reference rate (Fed funds / ECB deposit facility)."
+        },
+        "legendTitle": "Legend:",
+        "legendExpansionary": "the reading pushes towards rate cuts / QE",
+        "legendNeutral": "the reading calls for no change",
+        "legendContractionary": "the reading pushes towards hikes / QT",
+        "legendSources": "Sources: FRED (US), Eurostat and ECB via DBnomics. Thresholds are indicative and country-adjusted (e.g. Spain structural unemployment). This is a mechanical reading, not a central-bank forecast."
     }
 }

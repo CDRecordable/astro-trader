@@ -3,6 +3,7 @@
 // Stores user watchlist in /user-data/watchlist.json (local disk)
 // GET    → returns all items
 // POST   → adds item { ticker, name, assetType }
+// PATCH  → updates a note { ticker, note }
 // DELETE → removes item ?ticker=AAPL
 // ============================================================
 
@@ -77,6 +78,30 @@ export async function POST(req: NextRequest) {
     writeWatchlist(data);
 
     return NextResponse.json({ item: newItem }, { status: 201 });
+}
+
+// ── PATCH ─────────────────────────────────────────────────────
+// Update the free-text note on an existing watchlist item.
+export async function PATCH(req: NextRequest) {
+    const body = await req.json() as { ticker?: string; note?: string };
+
+    if (!body.ticker || typeof body.note !== "string") {
+        return NextResponse.json({ error: "ticker and note are required" }, { status: 400 });
+    }
+
+    const data = readWatchlist();
+    const item = data.items.find(
+        (i) => i.ticker.toLowerCase() === body.ticker!.toLowerCase()
+    );
+
+    if (!item) {
+        return NextResponse.json({ error: "Ticker not in watchlist" }, { status: 404 });
+    }
+
+    item.note = body.note;
+    writeWatchlist(data);
+
+    return NextResponse.json({ item });
 }
 
 // ── DELETE ────────────────────────────────────────────────────

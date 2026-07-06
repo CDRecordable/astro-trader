@@ -6,9 +6,10 @@
 
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { AnimatePresence, motion } from "framer-motion";
 import { Link } from "@/i18n/navigation";
 import { useAppStore } from "@/lib/store";
 import type { AppMode } from "@/lib/store";
@@ -26,28 +27,49 @@ import {
     Moon,
     LineChart,
     Wallet,
+    Landmark,
+    Activity,
+    ChevronRight,
+    Search,
 } from "lucide-react";
 
-type NavItem = { icon: typeof LayoutDashboard; tKey: string; href: string };
+type NavLink = { icon: typeof LayoutDashboard; tKey: string; href: string };
+/** A collapsible group whose children open in a right-hand flyout.
+ *  `fullKey` overrides the flyout header when the button label is abbreviated. */
+type NavGroup = { icon: typeof LayoutDashboard; tKey: string; fullKey?: string; children: NavLink[] };
+type NavEntry = NavLink | NavGroup;
 
-const ESOTERIC_NAV: NavItem[] = [
+const isGroup = (e: NavEntry): e is NavGroup => "children" in e;
+/** Section slug a link points at (href "/vix" → "vix"). */
+const sectionOf = (href: string) => href.replace(/^\//, "");
+
+const ESOTERIC_NAV: NavEntry[] = [
     { icon: Globe2, tKey: "macro", href: "/macro" },
     { icon: BookOpen, tKey: "wiki", href: "/wiki" },
     { icon: Settings, tKey: "settings", href: "/settings" },
 ];
 
-const SERIOUS_NAV: NavItem[] = [
-    { icon: LayoutDashboard, tKey: "explorer", href: "/explorer" },
-    { icon: Telescope, tKey: "screener", href: "/screener" },
+const SERIOUS_NAV: NavEntry[] = [
+    {
+        icon: Search, tKey: "explorerGroup", children: [
+            { icon: LayoutDashboard, tKey: "explorerSingle", href: "/explorer" },
+            { icon: Telescope, tKey: "screener", href: "/screener" },
+        ],
+    },
+    {
+        icon: Activity, tKey: "macroIndicators", fullKey: "macroIndicatorsFull", children: [
+            { icon: Gauge, tKey: "vix", href: "/vix" },
+            { icon: Landmark, tKey: "economy", href: "/economy" },
+        ],
+    },
     { icon: TrendingUp, tKey: "watchlist", href: "/watchlist" },
     { icon: Wallet, tKey: "portfolio", href: "/portfolio" },
-    { icon: Gauge, tKey: "vix", href: "/vix" },
     { icon: Settings, tKey: "settings", href: "/settings" },
 ];
 
 /** Which mode a route section belongs to (null = neutral, e.g. wiki/settings). */
 function sectionMode(section: string): AppMode | null {
-    if (["explorer", "screener", "watchlist", "portfolio", "vix"].includes(section)) return "serious";
+    if (["explorer", "screener", "economy", "watchlist", "portfolio", "vix"].includes(section)) return "serious";
     if (section === "macro") return "esoteric";
     return null;
 }
@@ -56,6 +78,9 @@ export default function Sidebar() {
     const pathname = usePathname();
     const t = useTranslations("nav");
     const { assetClass, setAssetClass, appMode, setAppMode } = useAppStore();
+
+    // Which nav group's flyout is open (hover/click). Only one at a time.
+    const [openGroup, setOpenGroup] = useState<string | null>(null);
 
     // Active section from pathname: /[locale]/[section]/...  ("" = home).
     const segments = pathname.split("/");
@@ -137,7 +162,97 @@ export default function Sidebar() {
             {/* Nav Items */}
             <nav className="flex flex-col gap-2 flex-1 w-full">
                 {navItems.map((item) => {
-                    const isActive = activeSection === item.tKey;
+                    // ── Grouped entry → button + right-hand flyout ──
+                    if (isGroup(item)) {
+                        const childSections = item.children.map((c) => sectionOf(c.href));
+                        const groupActive = childSections.includes(activeSection);
+                        const open = openGroup === item.tKey;
+                        return (
+                            <div
+                                key={item.tKey}
+                                className="relative w-full"
+                                onMouseEnter={() => setOpenGroup(item.tKey)}
+                                onMouseLeave={() => setOpenGroup(null)}
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() => setOpenGroup(open ? null : item.tKey)}
+                                    title={t(item.tKey)}
+                                    className="relative flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl transition-all duration-200 group w-full cursor-pointer"
+                                    style={{
+                                        background: groupActive || open ? "var(--glass-bg)" : "transparent",
+                                        border: groupActive ? "1px solid var(--border-active)" : "1px solid transparent",
+                                    }}
+                                >
+                                    <item.icon
+                                        size={20}
+                                        style={{ color: groupActive ? "var(--accent-cyan)" : "var(--text-muted)" }}
+                                        className="group-hover:scale-110 transition-transform duration-200"
+                                    />
+                                    <span
+                                        className="text-[10px] font-medium text-center leading-tight"
+                                        style={{ color: groupActive ? "var(--text-primary)" : "var(--text-muted)" }}
+                                    >
+                                        {t(item.tKey)}
+                                    </span>
+                                    <ChevronRight
+                                        size={11}
+                                        className="absolute right-0.5 top-1/2 -translate-y-1/2 transition-transform duration-200"
+                                        style={{ color: "var(--text-muted)", transform: open ? "translateY(-50%) rotate(90deg)" : "translateY(-50%)" }}
+                                    />
+                                </button>
+
+                                {/* Flyout mini-sidebar (nested inside the hover wrapper) */}
+                                <AnimatePresence>
+                                    {open && (
+                                        <motion.div
+                                            initial={{ opacity: 0, x: -6 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: -6 }}
+                                            transition={{ duration: 0.14 }}
+                                            className="absolute left-full top-0 pl-2 z-[60]"
+                                        >
+                                            <div
+                                                className="rounded-xl py-2 px-1.5 min-w-[168px]"
+                                                style={{
+                                                    background: "var(--bg-secondary)",
+                                                    border: "1px solid var(--border-subtle)",
+                                                    boxShadow: "0 10px 30px rgba(0,0,0,0.45)",
+                                                }}
+                                            >
+                                                <p className="px-2 pb-1.5 text-[9px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+                                                    {t(item.fullKey ?? item.tKey)}
+                                                </p>
+                                                {item.children.map((child) => {
+                                                    const childActive = activeSection === sectionOf(child.href);
+                                                    return (
+                                                        <Link
+                                                            key={child.tKey}
+                                                            href={child.href}
+                                                            onClick={() => setOpenGroup(null)}
+                                                            className="flex items-center gap-2.5 px-2 py-2 rounded-lg transition-colors group/child"
+                                                            style={{
+                                                                background: childActive ? "var(--glass-bg)" : "transparent",
+                                                                border: childActive ? "1px solid var(--border-active)" : "1px solid transparent",
+                                                            }}
+                                                        >
+                                                            <child.icon size={16} style={{ color: childActive ? "var(--accent-cyan)" : "var(--text-muted)" }} className="shrink-0 group-hover/child:scale-110 transition-transform" />
+                                                            <span className="text-xs font-medium" style={{ color: childActive ? "var(--text-primary)" : "var(--text-secondary)" }}>
+                                                                {t(child.tKey)}
+                                                            </span>
+                                                        </Link>
+                                                    );
+                                                })}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        );
+                    }
+
+                    // ── Plain link ──
+                    const isActive = activeSection === sectionOf(item.href);
                     return (
                         <Link
                             key={item.tKey}
