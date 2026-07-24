@@ -16,7 +16,7 @@ export interface DiscardItem {
     ticker: string;        // lookup key: CoinGecko id for crypto, symbol for stocks
     symbol: string;        // display symbol
     name: string;
-    assetType: "s" | "c";
+    assetType: "s" | "c" | "e";
     discardedAt: string;   // ISO string
     reason: string;
 }

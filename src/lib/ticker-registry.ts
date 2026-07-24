@@ -10,10 +10,10 @@ export interface TickerEntry {
     t: string;
     /** Company/token name */
     n: string;
-    /** Market (e.g. "S&P 500", "IBEX 35 & MC", "Russell 2000", "Crypto") */
+    /** Market (e.g. "S&P 500", "IBEX 35 & MC", "Russell 2000", "Crypto", "ETF") */
     m: string;
-    /** Asset type: "s" = stock, "c" = crypto */
-    y: "s" | "c";
+    /** Asset type: "s" = stock, "c" = crypto, "e" = ETF */
+    y: "s" | "c" | "e";
 }
 
 // @ts-expect-error — TS2590: generated data, union type too complex for literal inference
@@ -26,7 +26,7 @@ export const TICKER_REGISTRY: TickerEntry[] = [{"t":"MMM","n":"3M","m":"S&P 500"
  */
 export function searchTickers(
     query: string,
-    type: "s" | "c" | "all" = "all",
+    type: "s" | "c" | "e" | "all" = "all",
     limit: number = 8
 ): TickerEntry[] {
     if (!query || query.trim().length === 0) return [];

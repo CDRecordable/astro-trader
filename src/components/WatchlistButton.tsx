@@ -19,13 +19,13 @@ export default function WatchlistButton({
     assetType,
 }: {
     company: Company;
-    assetType: "s" | "c";
+    assetType: "s" | "c" | "e";
 }) {
     const t = useTranslations("companyDetail");
 
     // Watchlist lookup key: CoinGecko id for crypto, symbol for stocks.
     // Company.id is prefixed by the provider (cg_… / yf_…) — strip it.
-    const lookupKey = company.id.replace(/^(cg_|yf_|db_)/i, "");
+    const lookupKey = company.id.replace(/^(cg_|yf_|db_|etf_)/i, "");
 
     const [state, setState] = useState<State>("checking");
 

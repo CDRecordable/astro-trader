@@ -12,7 +12,8 @@
         "esoteric": "Esotérico",
         "serious": "Análisis",
         "vix": "VIX",
-        "home": "Inicio"
+        "home": "Inicio",
+        "etfs": "ETFs"
     },
     "portfolio": {
         "title": "Mi Cartera",
@@ -464,13 +465,20 @@
         "pillCryptoCount": "Top 500 cripto",
         "pillStockCount": "2.600+ acciones",
         "pillAnalysis": "Análisis algorítmico completo",
-        "pillRealtime": "Datos en tiempo real"
+        "pillRealtime": "Datos en tiempo real",
+        "etfTitle": "Analiza cualquier ETF",
+        "etfSubtitle": "Coste, cartera y momentum de más de 55 ETFs UCITS curados: economías, sectores, temáticos y oro. Puntuados con el mismo rigor que acciones y cripto.",
+        "pillEtfCount": "55+ ETFs UCITS",
+        "loadStepEtfFind": "Localizando el fondo…",
+        "loadStepEtfPortfolio": "Radiografiando la cartera y costes…",
+        "loadStepEtfPillars": "Calculando los 3 pilares…"
     },
     "tickerSearch": {
         "discarded": "Descartada",
         "placeholderCrypto": "Buscar cripto por nombre o símbolo...",
         "placeholderStocks": "Buscar acciones por ticker o nombre...",
-        "placeholderAll": "Buscar por ticker o nombre de empresa..."
+        "placeholderAll": "Buscar por ticker o nombre de empresa...",
+        "placeholderEtf": "Busca un ETF (ej. VWCE, S&P 500, India, oro)…"
     },
     "companyDetail": {
         "addToWatchlist": "Añadir a watchlist",
@@ -700,7 +708,8 @@
         "oneMonth": "1M",
         "alreadyAdded": "{symbol} ya está en tu watchlist",
         "emptyTitle": "Tu watchlist está vacía",
-        "emptySubtitle": "Analiza un activo en el Explorador y guárdalo con la ⭐ desde su ficha"
+        "emptySubtitle": "Analiza un activo en el Explorador y guárdalo con la ⭐ desde su ficha",
+        "filterEtf": "ETFs"
     },
     "settings": {
         "title": "Ajustes",
@@ -743,7 +752,12 @@
         "colQual": "Calidad",
         "colTiming": "Timing",
         "colRec": "Rec.",
-        "back": "Volver al screener"
+        "back": "Volver al screener",
+        "modeStocks": "Acciones",
+        "modeEtfs": "ETFs",
+        "colVehicle": "Vehículo",
+        "colPortfolio": "Cartera",
+        "colMomentum": "Momentum"
     },
     "aiAnalysis": {
         "title": "Análisis Cualitativo · IA",
@@ -783,7 +797,15 @@
         "cryptoUseCase": "Caso de uso real",
         "roadmap": "Roadmap y catalizadores",
         "competitors": "Competidores",
-        "disclaimerCrypto": "⚠ Generado por IA con conocimiento hasta su fecha de corte. No predice precio ni es asesoramiento financiero; verifica hitos y fechas. Cripto es un mercado altamente especulativo."
+        "disclaimerCrypto": "⚠ Generado por IA con conocimiento hasta su fecha de corte. No predice precio ni es asesoramiento financiero; verifica hitos y fechas. Cripto es un mercado altamente especulativo.",
+        "aiLoadEtfMetrics": "Compilando cartera y costes del fondo…",
+        "aiLoadEtfSynth": "Analizando la exposición y sus riesgos…",
+        "emptyHintEtf": "Genera la capa cualitativa: tesis de la temática/economía que compra este ETF, qué posees realmente, riesgos (concentración, divisa, valoración) y alternativas UCITS comparables. Sin opiniones de precio.",
+        "etfThesis": "Tesis de la exposición",
+        "etfWhatYouOwn": "Qué posees realmente",
+        "etfAlternatives": "Alternativas UCITS",
+        "etfFit": "Rol en cartera",
+        "disclaimerEtf": "Análisis generado por IA sobre la exposición del fondo; puede contener errores. No es asesoramiento financiero."
     },
     "cryptoDetail": {
         "aboutTitle": "Sobre el proyecto",
@@ -866,5 +888,55 @@
         "macroLunar": "Luna",
         "macroMercury": "Mercurio",
         "macroNextTransit": "Próximo tránsito mayor"
+    },
+    "etfDetail": {
+        "aboutTitle": "Sobre el ETF",
+        "aboutReplicates": "Replica el índice {index}.",
+        "aboutFamily": "Gestora: {family}.",
+        "aboutAcc": "Clase de acumulación: reinvierte los dividendos automáticamente (sin peaje fiscal anual en España).",
+        "aboutDist": "Clase de distribución: reparte dividendos periódicamente (tributan cada año).",
+        "aboutGeneric": "Fondo cotizado (ETF).",
+        "proxyNote": "Datos de cartera completados con su equivalente americano {proxy} (misma cesta subyacente).",
+        "disclaimer": "Análisis cuantitativo con datos de Yahoo Finance; el TER proviene del folleto (KID) del emisor. Ámbar = dato no disponible (neutro). No es asesoramiento financiero.",
+        "hardFilterFail": "No supera los filtros duros",
+        "scoreTitle": "Desglose de puntuación",
+        "pillarVehicle": "Coste y vehículo",
+        "pillarPortfolio": "Cartera y valoración",
+        "pillarMomentum": "Momentum y timing",
+        "priceTitle": "Precio",
+        "ter": "TER (comisión anual)",
+        "terTip": "Comisión total anual del fondo. Se descuenta del valor liquidativo cada día: al 0,20% pierdes un 2% por década solo en costes. <0,15% excelente · >0,60% caro.",
+        "aum": "Patrimonio (AUM)",
+        "aumTip": "Dinero total gestionado por el fondo. <100M implica riesgo real de cierre; >500M es sólido y líquido.",
+        "age": "Antigüedad",
+        "years": "años",
+        "turnover": "Rotación de cartera",
+        "turnoverTip": "Qué % de la cartera se compra/vende al año. Un indexado puro rota poco (<10%); rotación alta = costes ocultos.",
+        "policy": "Política de dividendos",
+        "policyAcc": "Acumulación",
+        "policyDist": "Distribución",
+        "policyTip": "Acumulación reinvierte los dividendos dentro del fondo (más eficiente fiscalmente en España); distribución los reparte y tributan cada año.",
+        "beta": "Beta (3 años)",
+        "betaTip": "Sensibilidad frente al mercado global: 1 = se mueve igual; >1 amplifica; <1 amortigua.",
+        "top10": "Peso del top-10",
+        "top10Tip": "Qué parte del fondo concentran sus 10 mayores posiciones. >50% = diversificación aparente: compras unas pocas empresas.",
+        "underlyingPE": "P/E de la cesta",
+        "underlyingPETip": "Precio/beneficio agregado de las empresas que hay dentro. Te dice si la economía/sector que compras está cara o barata.",
+        "underlyingPB": "P/B de la cesta",
+        "maxSector": "Sector dominante",
+        "maxSectorTip": "El sector con más peso en el fondo. En ETFs amplios, >45% en un solo sector es una apuesta encubierta.",
+        "yield": "Rentabilidad por dividendo",
+        "holdingsTitle": "Principales posiciones",
+        "sectorsTitle": "Distribución sectorial",
+        "vsSma200": "Precio vs media 200 sesiones",
+        "vsSma200Tip": "Distancia a la media móvil de 200 días. Ligeramente por encima = tendencia sana; muy por encima = extendido; muy por debajo = tendencia rota.",
+        "ret1m": "Retorno 1 mes",
+        "ret3m": "Retorno 3 meses",
+        "ret12m": "Retorno 12 meses",
+        "drawdown": "Caída desde máximo 52s",
+        "drawdownTip": "Distancia al máximo de 52 semanas. En un índice amplio, una caída moderada (5-15%) suele ser mejor punto de entrada que comprar en máximos.",
+        "vol": "Volatilidad anualizada",
+        "volTip": "Cuánto se mueve el precio en un año típico. <15% tranquilo · >25% prepárate para vaivenes.",
+        "range52": "Rango 52 semanas"
     }
 }

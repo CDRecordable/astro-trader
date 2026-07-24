@@ -12,7 +12,8 @@
         "esoteric": "Esoteric",
         "serious": "Analysis",
         "vix": "VIX",
-        "home": "Home"
+        "home": "Home",
+        "etfs": "ETFs"
     },
     "portfolio": {
         "title": "My Portfolio",
@@ -464,13 +465,20 @@
         "pillCryptoCount": "Top 500 crypto",
         "pillStockCount": "2,600+ stocks",
         "pillAnalysis": "Full algorithmic analysis",
-        "pillRealtime": "Real-time data"
+        "pillRealtime": "Real-time data",
+        "etfTitle": "Analyze any ETF",
+        "etfSubtitle": "Cost, portfolio and momentum for 55+ curated UCITS ETFs: economies, sectors, thematics and gold. Scored with the same rigor as stocks and crypto.",
+        "pillEtfCount": "55+ UCITS ETFs",
+        "loadStepEtfFind": "Locating the fund…",
+        "loadStepEtfPortfolio": "X-raying portfolio and costs…",
+        "loadStepEtfPillars": "Computing the 3 pillars…"
     },
     "tickerSearch": {
         "discarded": "Discarded",
         "placeholderCrypto": "Search crypto by name or symbol...",
         "placeholderStocks": "Search stocks by ticker or company name...",
-        "placeholderAll": "Search any ticker or company name..."
+        "placeholderAll": "Search any ticker or company name...",
+        "placeholderEtf": "Search an ETF (e.g. VWCE, S&P 500, India, gold)…"
     },
     "companyDetail": {
         "addToWatchlist": "Add to watchlist",
@@ -700,7 +708,8 @@
         "oneMonth": "1M",
         "alreadyAdded": "{symbol} is already in your watchlist",
         "emptyTitle": "Your watchlist is empty",
-        "emptySubtitle": "Analyse an asset in the Explorer and save it with the ⭐ from its detail card"
+        "emptySubtitle": "Analyse an asset in the Explorer and save it with the ⭐ from its detail card",
+        "filterEtf": "ETFs"
     },
     "settings": {
         "title": "Settings",
@@ -743,7 +752,12 @@
         "colQual": "Quality",
         "colTiming": "Timing",
         "colRec": "Rec.",
-        "back": "Back to screener"
+        "back": "Back to screener",
+        "modeStocks": "Stocks",
+        "modeEtfs": "ETFs",
+        "colVehicle": "Vehicle",
+        "colPortfolio": "Portfolio",
+        "colMomentum": "Momentum"
     },
     "aiAnalysis": {
         "title": "Qualitative Analysis · AI",
@@ -783,7 +797,15 @@
         "cryptoUseCase": "Real use case",
         "roadmap": "Roadmap & catalysts",
         "competitors": "Competitors",
-        "disclaimerCrypto": "⚠ AI-generated with knowledge up to its training cutoff. Does not predict price and is not financial advice; verify milestones and dates. Crypto is a highly speculative market."
+        "disclaimerCrypto": "⚠ AI-generated with knowledge up to its training cutoff. Does not predict price and is not financial advice; verify milestones and dates. Crypto is a highly speculative market.",
+        "aiLoadEtfMetrics": "Compiling fund portfolio and costs…",
+        "aiLoadEtfSynth": "Analyzing the exposure and its risks…",
+        "emptyHintEtf": "Generate the qualitative layer: thesis of the theme/economy this ETF buys, what you actually own, risks (concentration, currency, valuation) and comparable UCITS alternatives. No price opinions.",
+        "etfThesis": "Exposure thesis",
+        "etfWhatYouOwn": "What you actually own",
+        "etfAlternatives": "UCITS alternatives",
+        "etfFit": "Portfolio role",
+        "disclaimerEtf": "AI-generated analysis of the fund's exposure; may contain errors. Not financial advice."
     },
     "cryptoDetail": {
         "aboutTitle": "About the project",
@@ -866,5 +888,55 @@
         "macroLunar": "Lunar",
         "macroMercury": "Mercury",
         "macroNextTransit": "Next major transit"
+    },
+    "etfDetail": {
+        "aboutTitle": "About the ETF",
+        "aboutReplicates": "Tracks the {index} index.",
+        "aboutFamily": "Manager: {family}.",
+        "aboutAcc": "Accumulating class: dividends are reinvested automatically (no yearly dividend-tax drag in Spain).",
+        "aboutDist": "Distributing class: pays dividends periodically (taxed each year).",
+        "aboutGeneric": "Exchange-traded fund (ETF).",
+        "proxyNote": "Portfolio data filled in from its US equivalent {proxy} (same underlying basket).",
+        "disclaimer": "Quantitative analysis with Yahoo Finance data; TER comes from the issuer's KID. Amber = data unavailable (neutral). Not financial advice.",
+        "hardFilterFail": "Fails the hard filters",
+        "scoreTitle": "Score breakdown",
+        "pillarVehicle": "Cost & vehicle",
+        "pillarPortfolio": "Portfolio & valuation",
+        "pillarMomentum": "Momentum & timing",
+        "priceTitle": "Price",
+        "ter": "TER (annual fee)",
+        "terTip": "The fund's total annual fee, deducted from NAV daily: at 0.20% you lose 2% per decade to costs alone. <0.15% excellent · >0.60% expensive.",
+        "aum": "Assets (AUM)",
+        "aumTip": "Total money managed by the fund. <100M implies real closure risk; >500M is solid and liquid.",
+        "age": "Age",
+        "years": "years",
+        "turnover": "Holdings turnover",
+        "turnoverTip": "What % of the portfolio is traded per year. A pure index fund barely rotates (<10%); high turnover = hidden costs.",
+        "policy": "Dividend policy",
+        "policyAcc": "Accumulating",
+        "policyDist": "Distributing",
+        "policyTip": "Accumulating reinvests dividends inside the fund (more tax-efficient in Spain); distributing pays them out, taxed yearly.",
+        "beta": "Beta (3y)",
+        "betaTip": "Sensitivity to the global market: 1 = moves alike; >1 amplifies; <1 dampens.",
+        "top10": "Top-10 weight",
+        "top10Tip": "How much of the fund its 10 largest positions concentrate. >50% = apparent diversification: you're buying a few companies.",
+        "underlyingPE": "Basket P/E",
+        "underlyingPETip": "Aggregate price/earnings of the companies inside. Tells you whether the economy/sector you're buying is cheap or expensive.",
+        "underlyingPB": "Basket P/B",
+        "maxSector": "Dominant sector",
+        "maxSectorTip": "The heaviest sector in the fund. In broad ETFs, >45% in one sector is a hidden bet.",
+        "yield": "Dividend yield",
+        "holdingsTitle": "Top holdings",
+        "sectorsTitle": "Sector breakdown",
+        "vsSma200": "Price vs 200-day average",
+        "vsSma200Tip": "Distance to the 200-day moving average. Slightly above = healthy trend; far above = extended; far below = broken trend.",
+        "ret1m": "1-month return",
+        "ret3m": "3-month return",
+        "ret12m": "12-month return",
+        "drawdown": "Drop from 52w high",
+        "drawdownTip": "Distance to the 52-week high. In a broad index, a moderate dip (5-15%) is usually a better entry than buying at highs.",
+        "vol": "Annualized volatility",
+        "volTip": "How much the price moves in a typical year. <15% calm · >25% brace for swings.",
+        "range52": "52-week range"
     }
 }

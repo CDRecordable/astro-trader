@@ -11,7 +11,7 @@ import { useRouter } from "@/i18n/navigation";
 import {
     Star, Trash2, RefreshCw, Search, TrendingUp, TrendingDown,
     Building2, Bitcoin, AlertCircle, Loader2, Sparkles, BookmarkX, X,
-    Ban, RotateCcw, Activity, ChevronUp, ChevronDown,
+    Ban, RotateCcw, Activity, ChevronUp, ChevronDown, Layers,
 } from "lucide-react";
 import { reinforcementLevel } from "./ReinforcementBadge";
 import type { WatchlistItem } from "@/app/api/watchlist/route";
@@ -34,7 +34,7 @@ interface WatchlistRow extends WatchlistItem {
 /** A saved AI analysis, flattened for the badge map + aggregate view. */
 interface AiAgg {
     key: string;            // lowercased ticker/id (matches watchlist lookup)
-    assetType: "s" | "c";
+    assetType: "s" | "c" | "e";
     ticker: string;
     name: string;
     generatedAt: string;
@@ -53,25 +53,25 @@ function useOpenDetail() {
     const setAppMode = useAppStore((s) => s.setAppMode);
     const setAssetClass = useAppStore((s) => s.setAssetClass);
     const addCompanyByTicker = useAppStore((s) => s.addCompanyByTicker);
-    return useCallback((assetType: "s" | "c", ticker: string) => {
+    return useCallback((assetType: "s" | "c" | "e", ticker: string) => {
         setAppMode("serious");
-        setAssetClass(assetType === "c" ? "crypto" : "stocks");
+        setAssetClass(assetType === "c" ? "crypto" : assetType === "e" ? "etf" : "stocks");
         addCompanyByTicker(ticker, assetType);
         router.push("/explorer");
     }, [router, setAppMode, setAssetClass, addCompanyByTicker]);
 }
 
-/** Map a raw cached analysis (stock or crypto) into the flat aggregate shape. */
-function toAgg(raw: Record<string, unknown>): AiAgg | null {
+/** Map a raw cached analysis (stock/crypto/ETF) into the flat aggregate shape. */
+function toAgg(raw: Record<string, unknown>, forcedType?: "s" | "c" | "e"): AiAgg | null {
     const analysis = raw.analysis as Record<string, unknown> | undefined;
     if (!analysis) return null;
     const isCrypto = typeof raw.id === "string" && raw.ticker === undefined;
     const id = (raw.ticker ?? raw.id) as string | undefined;
     if (!id) return null;
-    const cats = (analysis.catalysts ?? analysis.roadmap) as unknown[] | undefined;
+    const cats = (analysis.catalysts ?? analysis.roadmap ?? analysis.risks) as unknown[] | undefined;
     return {
         key: id.toLowerCase(),
-        assetType: isCrypto ? "c" : "s",
+        assetType: forcedType ?? (isCrypto ? "c" : "s"),
         ticker: (raw.symbol as string) ?? id,
         name: (raw.name as string) ?? id,
         generatedAt: (raw.generatedAt as string) ?? "",
@@ -121,7 +121,7 @@ export default function WatchlistView() {
     const [query, setQuery] = useState("");
 
     // Filters
-    const [typeFilter, setTypeFilter] = useState<"all" | "s" | "c">("all");
+    const [typeFilter, setTypeFilter] = useState<"all" | "s" | "c" | "e">("all");
     const [sectorFilter, setSectorFilter] = useState<string>("all");
 
     // Tabs + cross-tab data
@@ -146,9 +146,14 @@ export default function WatchlistView() {
         Promise.all([
             fetch("/api/ai-analysis").then((r) => r.json()).catch(() => ({ items: [] })),
             fetch("/api/crypto-analysis").then((r) => r.json()).catch(() => ({ items: [] })),
-        ]).then(([s, c]: [{ items?: Record<string, unknown>[] }, { items?: Record<string, unknown>[] }]) => {
+            fetch("/api/etf-analysis").then((r) => r.json()).catch(() => ({ items: [] })),
+        ]).then(([s, c, e]: Array<{ items?: Record<string, unknown>[] }>) => {
             if (!active) return;
-            const all = [...(s.items ?? []), ...(c.items ?? [])].map(toAgg).filter((x): x is AiAgg => x !== null);
+            const all = [
+                ...(s.items ?? []).map((i) => toAgg(i)),
+                ...(c.items ?? []).map((i) => toAgg(i)),
+                ...(e.items ?? []).map((i) => toAgg(i, "e")),
+            ].filter((x): x is AiAgg => x !== null);
             all.sort((a, b) => (b.generatedAt > a.generatedAt ? 1 : -1));
             setAiItems(all);
         }).catch(() => { });
@@ -201,7 +206,7 @@ export default function WatchlistView() {
     useEffect(() => { loadWatchlist(); }, [loadWatchlist]);
 
     // ── Refresh live data for a single row ────────────────────
-    const refreshRow = useCallback(async (ticker: string, assetType: "s" | "c") => {
+    const refreshRow = useCallback(async (ticker: string, assetType: "s" | "c" | "e") => {
         setRows((prev) =>
             prev.map((r) => r.ticker === ticker ? { ...r, loading: true, error: undefined } : r)
         );
@@ -209,9 +214,10 @@ export default function WatchlistView() {
         try {
             let company: Company;
             let score: AlgorithmScore;
-            if (assetType === "c") {
-                // Crypto → dedicated fundamentals engine (tokenomics, on-chain…)
-                const res = await fetch(`/api/crypto/${encodeURIComponent(ticker)}`);
+            if (assetType === "c" || assetType === "e") {
+                // Crypto/ETF → their dedicated fundamentals engines
+                const endpoint = assetType === "c" ? "crypto" : "etf";
+                const res = await fetch(`/api/${endpoint}/${encodeURIComponent(ticker)}`);
                 if (!res.ok) { const err = await res.json(); throw new Error(err.error ?? "Failed to fetch"); }
                 const data = await res.json() as { company: Company; score: AlgorithmScore };
                 company = data.company;
@@ -286,7 +292,7 @@ export default function WatchlistView() {
     }, [rows, typeFilter, sectorFilter, query]);
 
     // Switch asset type and drop any sector filter that no longer applies.
-    const selectType = (tf: "all" | "s" | "c") => { setTypeFilter(tf); setSectorFilter("all"); };
+    const selectType = (tf: "all" | "s" | "c" | "e") => { setTypeFilter(tf); setSectorFilter("all"); };
 
     // ── Render ────────────────────────────────────────────────
 
@@ -403,7 +409,7 @@ export default function WatchlistView() {
                 {/* Filters: asset type + sector */}
                 {!loadingAll && rows.length > 0 && (
                     <div className="flex flex-wrap items-center gap-2 mb-5">
-                        {([["all", t("filterAll")], ["s", t("filterStocks")], ["c", t("filterCrypto")]] as const).map(([val, label]) => (
+                        {([["all", t("filterAll")], ["s", t("filterStocks")], ["c", t("filterCrypto")], ["e", t("filterEtf")]] as const).map(([val, label]) => (
                             <button
                                 key={val}
                                 onClick={() => selectType(val)}
@@ -525,6 +531,7 @@ function WatchlistRowItem({
 }) {
     const t = useTranslations("watchlist");
     const isCrypto = row.assetType === "c";
+    const isEtf = row.assetType === "e";
     const score = row.score;
     const company = row.company;
     const aiLevel = aiScore !== null ? reinforcementLevel(aiScore) : 0;
@@ -548,11 +555,13 @@ function WatchlistRowItem({
             {/* Asset type icon */}
             <div
                 className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: isCrypto ? "rgba(251,191,36,0.1)" : "rgba(34,211,238,0.1)" }}
+                style={{ background: isCrypto ? "rgba(251,191,36,0.1)" : isEtf ? "rgba(167,139,250,0.1)" : "rgba(34,211,238,0.1)" }}
             >
                 {isCrypto
                     ? <Bitcoin size={16} style={{ color: "var(--accent-amber)" }} />
-                    : <Building2 size={16} style={{ color: "var(--accent-cyan)" }} />
+                    : isEtf
+                        ? <Layers size={16} style={{ color: "var(--accent-violet)" }} />
+                        : <Building2 size={16} style={{ color: "var(--accent-cyan)" }} />
                 }
             </div>
 
@@ -706,7 +715,7 @@ function WatchlistRowItem({
 
 function DiscardsTab({ discards, onOpen, onRestore }: {
     discards: DiscardItem[];
-    onOpen: (assetType: "s" | "c", ticker: string) => void;
+    onOpen: (assetType: "s" | "c" | "e", ticker: string) => void;
     onRestore: (ticker: string) => void;
 }) {
     const t = useTranslations("watchlist");
@@ -736,7 +745,7 @@ function DiscardsTab({ discards, onOpen, onRestore }: {
                         style={{ background: "var(--bg-card)", border: "1px solid rgba(251,113,133,0.18)" }}
                     >
                         <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: isCrypto ? "rgba(251,191,36,0.1)" : "rgba(34,211,238,0.1)" }}>
-                            {isCrypto ? <Bitcoin size={16} style={{ color: "var(--accent-amber)" }} /> : <Building2 size={16} style={{ color: "var(--accent-cyan)" }} />}
+                            {isCrypto ? <Bitcoin size={16} style={{ color: "var(--accent-amber)" }} /> : d.assetType === "e" ? <Layers size={16} style={{ color: "var(--accent-violet)" }} /> : <Building2 size={16} style={{ color: "var(--accent-cyan)" }} />}
                         </div>
                         <div className="flex-1 min-w-0">
                             <div className="flex items-baseline gap-2">
@@ -765,7 +774,7 @@ function DiscardsTab({ discards, onOpen, onRestore }: {
 
 function AiAnalysesTab({ items, onOpen }: {
     items: AiAgg[];
-    onOpen: (assetType: "s" | "c", ticker: string) => void;
+    onOpen: (assetType: "s" | "c" | "e", ticker: string) => void;
 }) {
     const t = useTranslations("watchlist");
     if (items.length === 0) {

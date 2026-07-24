@@ -10,7 +10,7 @@ import type { MarketGroupId } from "./market-groups";
 
 export type DataSource = "mock" | "live";
 export type ActiveSection = "macro" | "explorer" | "screener" | "watchlist" | "wiki" | "settings";
-export type AssetClass = "stocks" | "crypto";
+export type AssetClass = "stocks" | "crypto" | "etf";
 /** Top-level app mode: esoteric (cosmic) vs serious (fundamental analysis). */
 export type AppMode = "esoteric" | "serious";
 export type MacroSubSection = "overview" | "turbulence" | "lunar" | "mercury" | "solar" | "backtest" | "sectors" | "fibonacci";
@@ -50,7 +50,7 @@ interface AppState {
     setSelectedMarket: (market: MarketGroupId | string | null) => void;
     fetchLiveData: (market?: MarketGroupId | string) => Promise<void>;
     fetchCompanyDetail: (ticker: string) => Promise<void>;
-    addCompanyByTicker: (ticker: string, assetType?: "s" | "c") => Promise<void>;
+    addCompanyByTicker: (ticker: string, assetType?: "s" | "c" | "e") => Promise<void>;
     setFilter: <K extends keyof ExplorerFilters>(key: K, value: ExplorerFilters[K]) => void;
     setMacro: (macro: Partial<MacroContext>) => void;
     selectCompany: (id: string | null) => void;
@@ -204,14 +204,16 @@ export const useAppStore = create<AppState>((set, get) => ({
         }
     },
 
-    addCompanyByTicker: async (ticker: string, assetType?: "s" | "c") => {
+    addCompanyByTicker: async (ticker: string, assetType?: "s" | "c" | "e") => {
         const isCrypto = assetType === "c";
+        const isEtf = assetType === "e";
         // Crypto tickers are CoinGecko IDs (lowercase, hyphens) — don't uppercase
         const lookupTicker = isCrypto ? ticker.trim() : ticker.toUpperCase().trim();
-        // For crypto, Company.ticker is the symbol (e.g. "HBAR"), not the CoinGecko ID,
-        // so we match by ID prefix instead.
+        // Crypto/ETF Company.ticker differs from the lookup id, so match by ID.
         const existing = get().companies.find((c) =>
-            isCrypto ? c.id === `cg_${lookupTicker}` : c.ticker === lookupTicker
+            isCrypto ? c.id === `cg_${lookupTicker}`
+                : isEtf ? c.id === `etf_${lookupTicker.toLowerCase()}`
+                    : c.ticker === lookupTicker
         );
         if (existing) {
             get().selectCompany(existing.id);
@@ -221,8 +223,10 @@ export const useAppStore = create<AppState>((set, get) => ({
         set({ isLoading: true, loadingTicker: lookupTicker, error: null });
 
         try {
-            const queryParam = isCrypto ? "?type=c" : "";
-            const res = await fetch(`/api/company/${encodeURIComponent(lookupTicker)}${queryParam}`);
+            const url = isEtf
+                ? `/api/etf/${encodeURIComponent(lookupTicker)}`
+                : `/api/company/${encodeURIComponent(lookupTicker)}${isCrypto ? "?type=c" : ""}`;
+            const res = await fetch(url);
             if (!res.ok) {
                 const errData = await res.json();
                 throw new Error(errData.error || `Ticker "${lookupTicker}" not found`);
@@ -274,7 +278,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     selectCompany: (id) => {
         const { dataSource, companies } = get();
 
-        if (id && dataSource === "live") {
+        // Only stock companies use the /api/company refetch; crypto and ETF
+        // details refetch their own richer endpoints internally.
+        if (id && dataSource === "live" && !/^(cg_|etf_)/.test(id)) {
             const company = companies.find((c) => c.id === id);
             if (company) {
                 get().fetchCompanyDetail(company.ticker);

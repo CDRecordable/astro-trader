@@ -26,6 +26,7 @@ import {
     Moon,
     LineChart,
     Wallet,
+    Layers,
 } from "lucide-react";
 
 type NavItem = { icon: typeof LayoutDashboard; tKey: string; href: string };
@@ -189,6 +190,18 @@ export default function Sidebar() {
                     >
                         <Bitcoin size={18} style={{ color: assetClass === "crypto" ? "var(--accent-orange, #f59e0b)" : "var(--text-muted)" }} className="group-hover:scale-110 transition-transform" />
                         <span className="text-[9px] font-medium" style={{ color: assetClass === "crypto" ? "var(--text-primary)" : "var(--text-muted)" }}>{t("crypto")}</span>
+                    </button>
+                    <div className="h-[1px] w-8 mx-auto" style={{ background: "var(--border-subtle)" }} />
+                    <button
+                        onClick={() => setAssetClass("etf")}
+                        className="flex flex-col items-center gap-1 py-2 rounded-xl transition-all group cursor-pointer"
+                        style={{
+                            background: assetClass === "etf" ? "var(--glass-bg)" : "transparent",
+                            border: assetClass === "etf" ? "1px solid var(--border-active)" : "1px solid transparent",
+                        }}
+                    >
+                        <Layers size={18} style={{ color: assetClass === "etf" ? "var(--accent-violet)" : "var(--text-muted)" }} className="group-hover:scale-110 transition-transform" />
+                        <span className="text-[9px] font-medium" style={{ color: assetClass === "etf" ? "var(--text-primary)" : "var(--text-muted)" }}>{t("etfs")}</span>
                     </button>
                 </div>
             )}

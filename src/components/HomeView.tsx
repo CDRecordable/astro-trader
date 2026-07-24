@@ -14,7 +14,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { useAppStore } from "@/lib/store";
 import {
     Rocket, Moon, LineChart, Star, TrendingUp, TrendingDown,
-    Building2, Bitcoin, Loader2, ArrowRight, Sparkles, BookmarkX,
+    Building2, Bitcoin, Layers, Loader2, ArrowRight, Sparkles, BookmarkX,
 } from "lucide-react";
 import type { WatchlistItem } from "@/app/api/watchlist/route";
 import type { Company, AlgorithmScore } from "@/lib/types";
@@ -53,7 +53,7 @@ export default function HomeView() {
     // Open a watchlist asset's full detail in the Explorer (serious mode).
     const openDetail = (row: Row) => {
         setAppMode("serious");
-        setAssetClass(row.assetType === "c" ? "crypto" : "stocks");
+        setAssetClass(row.assetType === "c" ? "crypto" : row.assetType === "e" ? "etf" : "stocks");
         addCompanyByTicker(row.ticker, row.assetType);
         router.push("/explorer");
     };
@@ -96,8 +96,9 @@ export default function HomeView() {
                     try {
                         let company: Company;
                         let score: Row["score"];
-                        if (item.assetType === "c") {
-                            const r = await fetch(`/api/crypto/${encodeURIComponent(item.ticker)}`);
+                        if (item.assetType === "c" || item.assetType === "e") {
+                            const endpoint = item.assetType === "c" ? "crypto" : "etf";
+                            const r = await fetch(`/api/${endpoint}/${encodeURIComponent(item.ticker)}`);
                             if (!r.ok) throw new Error();
                             const d = await r.json() as { company: Company; score: Row["score"] };
                             company = d.company;
@@ -279,8 +280,8 @@ export default function HomeView() {
                                 style={{ background: "var(--bg-card)", border: "1px solid var(--border-subtle)" }}
                                 title={t("openDetail", { symbol: row.symbol })}
                             >
-                                <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: row.assetType === "c" ? "rgba(251,191,36,0.1)" : "rgba(34,211,238,0.1)" }}>
-                                    {row.assetType === "c" ? <Bitcoin size={15} style={{ color: "var(--accent-amber)" }} /> : <Building2 size={15} style={{ color: "var(--accent-cyan)" }} />}
+                                <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: row.assetType === "c" ? "rgba(251,191,36,0.1)" : row.assetType === "e" ? "rgba(167,139,250,0.1)" : "rgba(34,211,238,0.1)" }}>
+                                    {row.assetType === "c" ? <Bitcoin size={15} style={{ color: "var(--accent-amber)" }} /> : row.assetType === "e" ? <Layers size={15} style={{ color: "var(--accent-violet)" }} /> : <Building2 size={15} style={{ color: "var(--accent-cyan)" }} />}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="text-sm font-bold font-mono" style={{ color: "var(--text-primary)" }}>{row.symbol}</div>

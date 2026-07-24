@@ -13,6 +13,19 @@ any line, the git history is the source of truth: commits use
 ## [Unreleased]
 
 ### Added
+- **ETF analyzer** — a third asset class with the same rigor as stocks and
+  crypto. Curated universe of 55+ **UCITS** ETFs (global, USA, Europe,
+  emerging, countries, sectors, thematics, factors and physical gold) with
+  issuer TERs, plus a hybrid data pipeline that fills UCITS data gaps from
+  each fund's US-listed equivalent (disclosed in the UI). Renormalized
+  scoring across three pillars — **Cost & Vehicle (30%) · Portfolio &
+  Valuation (40%) · Momentum & Timing (30%)** — with N/D-neutral metrics and
+  hard filters (tiny AUM, abusive TER). Full detail card: price chart with
+  timeframes, top holdings, sector breakdown, per-metric tooltips; an **AI
+  qualitative layer** (exposure thesis, what you actually own, risks, UCITS
+  alternatives, portfolio role, news-grounded narrative); ETF mode in the
+  **Screener** (rank a whole category by score); and full integration with
+  watchlist, discards, home and the simulated portfolio.
 - **Simulated portfolio ("Cartera")** — paper-trade any stock or crypto with
   Buy/Sell buttons on its detail card (orders by dollar amount, fractional
   units), tracked against a starting cash balance with live P&L, positions and

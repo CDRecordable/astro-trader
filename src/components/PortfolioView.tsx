@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import ReactECharts from "echarts-for-react";
 import {
-    Wallet, TrendingUp, TrendingDown, RotateCcw, Building2, Bitcoin,
+    Wallet, TrendingUp, TrendingDown, RotateCcw, Building2, Bitcoin, Layers,
     Loader2, ArrowUpRight, ArrowDownRight, Coins, SlidersHorizontal,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
@@ -26,9 +26,9 @@ function useOpenDetail() {
     const setAppMode = useAppStore((s) => s.setAppMode);
     const setAssetClass = useAppStore((s) => s.setAssetClass);
     const addCompanyByTicker = useAppStore((s) => s.addCompanyByTicker);
-    return useCallback((assetType: "s" | "c", ticker: string) => {
+    return useCallback((assetType: "s" | "c" | "e", ticker: string) => {
         setAppMode("serious");
-        setAssetClass(assetType === "c" ? "crypto" : "stocks");
+        setAssetClass(assetType === "c" ? "crypto" : assetType === "e" ? "etf" : "stocks");
         addCompanyByTicker(ticker, assetType);
         router.push("/explorer");
     }, [router, setAppMode, setAssetClass, addCompanyByTicker]);
@@ -66,7 +66,9 @@ export default function PortfolioView() {
                 try {
                     const url = h.assetType === "c"
                         ? `/api/crypto/${encodeURIComponent(h.ticker)}`
-                        : `/api/company/${encodeURIComponent(h.ticker)}`;
+                        : h.assetType === "e"
+                            ? `/api/etf/${encodeURIComponent(h.ticker)}`
+                            : `/api/company/${encodeURIComponent(h.ticker)}`;
                     const data = await fetch(url).then((r) => r.json()) as { company?: Company };
                     return [h.ticker.toLowerCase(), data.company?.metrics.currentPrice ?? 0] as const;
                 } catch { return [h.ticker.toLowerCase(), 0] as const; }
@@ -244,7 +246,7 @@ export default function PortfolioView() {
                                 {/* Asset */}
                                 <div className="col-span-4 flex items-center gap-2.5 min-w-0">
                                     <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "var(--bg-tertiary)" }}>
-                                        {p.assetType === "c" ? <Bitcoin size={15} style={{ color: "var(--accent-orange, #f59e0b)" }} /> : <Building2 size={15} style={{ color: "var(--accent-cyan)" }} />}
+                                        {p.assetType === "c" ? <Bitcoin size={15} style={{ color: "var(--accent-orange, #f59e0b)" }} /> : p.assetType === "e" ? <Layers size={15} style={{ color: "var(--accent-violet)" }} /> : <Building2 size={15} style={{ color: "var(--accent-cyan)" }} />}
                                     </div>
                                     <div className="min-w-0">
                                         <p className="text-sm font-bold truncate" style={{ color: "var(--text-primary)" }}>{p.symbol}</p>

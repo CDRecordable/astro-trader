@@ -12,11 +12,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { useAppStore } from "@/lib/store";
 import CompanyDetail from "./CompanyDetail";
+import EtfDetail from "./EtfDetail";
 import { MARKET_GROUPS, type MarketGroupId } from "@/lib/market-groups";
+import { ETF_REGISTRY, ETF_CATEGORY_META, type EtfCategory } from "@/lib/etf-registry";
 import type { Company, AlgorithmScore } from "@/lib/types";
 import {
     Telescope, Loader2, ArrowLeft, ArrowUp, ArrowDown, Filter,
-    ShieldCheck, Sparkles, AlertTriangle,
+    ShieldCheck, Sparkles, AlertTriangle, Building2, Layers,
 } from "lucide-react";
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -69,7 +71,14 @@ export default function ScreenerView() {
     const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
     const [detailId, setDetailId] = useState<string | null>(null);
 
-    // ── Scan a universe ──
+    // ── ETF mode (local: uses the curated UCITS registry + /api/etf) ──
+    const [mode, setMode] = useState<"stocks" | "etf">("stocks");
+    const [etfCat, setEtfCat] = useState<EtfCategory | null>(null);
+    const [etfRows, setEtfRows] = useState<Row[]>([]);
+    const [etfLoading, setEtfLoading] = useState(false);
+    const [etfProgress, setEtfProgress] = useState<{ done: number; total: number } | null>(null);
+
+    // ── Scan a stock universe ──
     const scan = useCallback(async (id: MarketGroupId) => {
         setUniverse(id);
         setDetailId(null);
@@ -77,8 +86,34 @@ export default function ScreenerView() {
         await fetchLiveData(id);
     }, [assetClass, setAssetClass, fetchLiveData]);
 
+    // ── Scan an ETF category (parallel, small batches) ──
+    const scanEtfs = useCallback(async (cat: EtfCategory) => {
+        setEtfCat(cat);
+        setDetailId(null);
+        setEtfLoading(true);
+        setEtfRows([]);
+        const entries = ETF_REGISTRY.filter((e) => e.category === cat);
+        setEtfProgress({ done: 0, total: entries.length });
+        const out: Row[] = [];
+        const BATCH = 4;
+        for (let i = 0; i < entries.length; i += BATCH) {
+            const batch = entries.slice(i, i + BATCH);
+            const results = await Promise.allSettled(batch.map(async (e) => {
+                const res = await fetch(`/api/etf/${encodeURIComponent(e.symbol)}`);
+                if (!res.ok) throw new Error();
+                return await res.json() as { company: Company; score: AlgorithmScore };
+            }));
+            for (const r of results) {
+                if (r.status === "fulfilled") out.push({ company: r.value.company, score: r.value.score });
+            }
+            setEtfProgress({ done: Math.min(i + BATCH, entries.length), total: entries.length });
+            setEtfRows([...out].sort((a, b) => b.score.totalScore - a.score.totalScore));
+        }
+        setEtfLoading(false);
+    }, []);
+
     // ── Join companies + scores ──
-    const rows: Row[] = useMemo(() => {
+    const stockRows: Row[] = useMemo(() => {
         return companies
             .map((c) => {
                 const score = scores.find((s) => s.companyId === c.id);
@@ -86,6 +121,9 @@ export default function ScreenerView() {
             })
             .filter((r): r is Row => r !== null);
     }, [companies, scores]);
+
+    const rows: Row[] = mode === "etf" ? etfRows : stockRows;
+    const scanning = mode === "etf" ? etfLoading : isLoading;
 
     // ── Filter + sort ──
     const filtered = useMemo(() => {
@@ -122,6 +160,7 @@ export default function ScreenerView() {
     // ── Detail view ──
     const detail = detailId ? rows.find((r) => r.company.id === detailId) : null;
     if (detail) {
+        const isEtfDetail = detail.company.id.startsWith("etf_");
         return (
             <div className="min-h-screen">
                 <div className="px-6 pt-4">
@@ -133,7 +172,11 @@ export default function ScreenerView() {
                         <ArrowLeft size={14} /> {t("back")}
                     </button>
                 </div>
-                <CompanyDetail company={detail.company} score={detail.score} onClose={() => setDetailId(null)} />
+                {isEtfDetail ? (
+                    <EtfDetail company={detail.company} score={detail.score} onClose={() => setDetailId(null)} />
+                ) : (
+                    <CompanyDetail company={detail.company} score={detail.score} onClose={() => setDetailId(null)} />
+                )}
             </div>
         );
     }
@@ -152,43 +195,88 @@ export default function ScreenerView() {
                 </div>
             </div>
 
+            {/* Mode toggle: stocks vs ETFs */}
+            <div className="flex items-center gap-2 mb-4">
+                {([["stocks", Building2, t("modeStocks")], ["etf", Layers, t("modeEtfs")]] as const).map(([m, Icon, label]) => (
+                    <button
+                        key={m}
+                        onClick={() => { setMode(m); setDetailId(null); }}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-all"
+                        style={{
+                            background: mode === m ? "var(--accent-cyan-dim)" : "var(--bg-tertiary)",
+                            color: mode === m ? "white" : "var(--text-muted)",
+                            border: "1px solid var(--border-subtle)",
+                        }}
+                    >
+                        <Icon size={14} /> {label}
+                    </button>
+                ))}
+            </div>
+
             {/* Universe picker */}
             <div className="mb-5">
                 <p className="text-[10px] uppercase tracking-widest mb-2 font-semibold" style={{ color: "var(--text-muted)" }}>{t("universe")}</p>
                 <div className="flex flex-wrap gap-2">
-                    {Object.values(MARKET_GROUPS).map((g) => {
-                        const active = universe === g.id;
-                        return (
-                            <button
-                                key={g.id}
-                                onClick={() => scan(g.id as MarketGroupId)}
-                                disabled={isLoading}
-                                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer disabled:opacity-50"
-                                style={{
-                                    background: active ? "var(--accent-cyan-dim)" : "var(--bg-tertiary)",
-                                    color: active ? "white" : "var(--text-secondary)",
-                                    border: `1px solid ${active ? "var(--accent-cyan)" : "var(--border-subtle)"}`,
-                                }}
-                                title={g.description}
-                            >
-                                <span>{g.flag}</span>{g.label}
-                                <span className="opacity-60">· {g.tickers.length}</span>
-                            </button>
-                        );
-                    })}
+                    {mode === "stocks" ? (
+                        Object.values(MARKET_GROUPS).map((g) => {
+                            const active = universe === g.id;
+                            return (
+                                <button
+                                    key={g.id}
+                                    onClick={() => scan(g.id as MarketGroupId)}
+                                    disabled={scanning}
+                                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer disabled:opacity-50"
+                                    style={{
+                                        background: active ? "var(--accent-cyan-dim)" : "var(--bg-tertiary)",
+                                        color: active ? "white" : "var(--text-secondary)",
+                                        border: `1px solid ${active ? "var(--accent-cyan)" : "var(--border-subtle)"}`,
+                                    }}
+                                    title={g.description}
+                                >
+                                    <span>{g.flag}</span>{g.label}
+                                    <span className="opacity-60">· {g.tickers.length}</span>
+                                </button>
+                            );
+                        })
+                    ) : (
+                        (Object.keys(ETF_CATEGORY_META) as EtfCategory[]).map((cat) => {
+                            const meta = ETF_CATEGORY_META[cat];
+                            const count = ETF_REGISTRY.filter((e) => e.category === cat).length;
+                            const active = etfCat === cat;
+                            return (
+                                <button
+                                    key={cat}
+                                    onClick={() => scanEtfs(cat)}
+                                    disabled={scanning}
+                                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer disabled:opacity-50"
+                                    style={{
+                                        background: active ? "var(--accent-violet-dim)" : "var(--bg-tertiary)",
+                                        color: active ? "white" : "var(--text-secondary)",
+                                        border: `1px solid ${active ? "var(--accent-violet)" : "var(--border-subtle)"}`,
+                                    }}
+                                >
+                                    <span>{meta.emoji}</span>{meta.label}
+                                    <span className="opacity-60">· {count}</span>
+                                </button>
+                            );
+                        })
+                    )}
                 </div>
             </div>
 
             {/* Loading */}
-            {isLoading && (
+            {scanning && (
                 <div className="flex flex-col items-center justify-center py-20 gap-3">
                     <Loader2 size={28} className="animate-spin" style={{ color: "var(--accent-cyan)" }} />
-                    <p className="text-xs" style={{ color: "var(--text-muted)" }}>{t("scanning")}</p>
+                    <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                        {t("scanning")}
+                        {mode === "etf" && etfProgress ? ` · ${etfProgress.done}/${etfProgress.total}` : ""}
+                    </p>
                     <p className="text-[10px] max-w-sm text-center" style={{ color: "var(--text-muted)" }}>{t("firstScanNote")}</p>
                 </div>
             )}
 
-            {error && !isLoading && (
+            {error && mode === "stocks" && !scanning && (
                 <div className="px-4 py-3 rounded-xl text-sm flex items-center gap-2 mb-4"
                     style={{ background: "rgba(251,113,133,0.06)", border: "1px solid rgba(251,113,133,0.2)", color: "var(--signal-avoid)" }}>
                     <AlertTriangle size={14} /> {error}
@@ -196,7 +284,7 @@ export default function ScreenerView() {
             )}
 
             {/* Empty state */}
-            {!isLoading && rows.length === 0 && !error && (
+            {!scanning && rows.length === 0 && !error && (
                 <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
                     <Telescope size={32} style={{ color: "var(--text-muted)" }} />
                     <p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>{t("emptyTitle")}</p>
@@ -205,7 +293,7 @@ export default function ScreenerView() {
             )}
 
             {/* Results */}
-            {!isLoading && rows.length > 0 && (
+            {!scanning && rows.length > 0 && (
                 <>
                     {/* Stats + filters */}
                     <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
@@ -256,9 +344,9 @@ export default function ScreenerView() {
                             style={{ gridTemplateColumns: "minmax(160px,2fr) 80px 70px 70px 70px 90px", background: "var(--bg-secondary)", borderBottom: "1px solid var(--border-subtle)" }}>
                             <SortHeader label={t("colCompany")} k="total" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
                             <div className="flex justify-end"><SortHeader label={t("colScore")} k="total" right sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} /></div>
-                            <div className="flex justify-end"><SortHeader label={t("colVal")} k="valuation" right sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} /></div>
-                            <div className="flex justify-end"><SortHeader label={t("colQual")} k="trend" right sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} /></div>
-                            <div className="flex justify-end"><SortHeader label={t("colTiming")} k="timing" right sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} /></div>
+                            <div className="flex justify-end"><SortHeader label={mode === "etf" ? t("colVehicle") : t("colVal")} k="valuation" right sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} /></div>
+                            <div className="flex justify-end"><SortHeader label={mode === "etf" ? t("colPortfolio") : t("colQual")} k="trend" right sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} /></div>
+                            <div className="flex justify-end"><SortHeader label={mode === "etf" ? t("colMomentum") : t("colTiming")} k="timing" right sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} /></div>
                             <span className="text-[10px] uppercase tracking-wider font-semibold text-right" style={{ color: "var(--text-muted)" }}>{t("colRec")}</span>
                         </div>
                         {/* Rows */}

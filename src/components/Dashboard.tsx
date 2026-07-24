@@ -9,6 +9,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useAppStore } from "@/lib/store";
 import CompanyDetail from "./CompanyDetail";
 import CryptoDetail from "./CryptoDetail";
+import EtfDetail from "./EtfDetail";
 import CompanyLoadingScreen from "./CompanyLoadingScreen";
 import Header from "./Header";
 import TickerSearch from "./TickerSearch";
@@ -17,10 +18,11 @@ import { useTranslations } from "next-intl";
 
 // ── Explorer: Search-first interface ────────────────────────
 
-function ExplorerLanding({ assetClass }: { assetClass: "stocks" | "crypto" }) {
+function ExplorerLanding({ assetClass }: { assetClass: "stocks" | "crypto" | "etf" }) {
     const t = useTranslations("explorerLanding");
     const isCrypto = assetClass === "crypto";
-    const assetType = isCrypto ? "c" as const : "s" as const;
+    const isEtf = assetClass === "etf";
+    const assetType = isCrypto ? "c" as const : isEtf ? "e" as const : "s" as const;
 
     return (
         <div className="flex flex-col items-center justify-center min-h-[75vh] px-5">
@@ -54,13 +56,13 @@ function ExplorerLanding({ assetClass }: { assetClass: "stocks" | "crypto" }) {
                         WebkitTextFillColor: "transparent",
                     }}
                 >
-                    {isCrypto ? t("cryptoTitle") : t("stocksTitle")}
+                    {isCrypto ? t("cryptoTitle") : isEtf ? t("etfTitle") : t("stocksTitle")}
                 </h1>
                 <p
                     className="text-sm max-w-md mx-auto leading-relaxed"
                     style={{ color: "var(--text-muted)" }}
                 >
-                    {isCrypto ? t("cryptoSubtitle") : t("stocksSubtitle")}
+                    {isCrypto ? t("cryptoSubtitle") : isEtf ? t("etfSubtitle") : t("stocksSubtitle")}
                 </p>
             </motion.div>
 
@@ -83,7 +85,7 @@ function ExplorerLanding({ assetClass }: { assetClass: "stocks" | "crypto" }) {
             >
                 {[
                     { icon: Zap, label: t("pillZeroCost"), color: "var(--accent-amber)" },
-                    { icon: Globe2, label: isCrypto ? t("pillCryptoCount") : t("pillStockCount"), color: "var(--accent-cyan)" },
+                    { icon: Globe2, label: isCrypto ? t("pillCryptoCount") : isEtf ? t("pillEtfCount") : t("pillStockCount"), color: "var(--accent-cyan)" },
                     { icon: Sparkles, label: t("pillAnalysis"), color: "var(--accent-violet)" },
                     { icon: TrendingUp, label: t("pillRealtime"), color: "var(--accent-emerald)" },
                 ].map(({ icon: Icon, label, color }, i) => (
@@ -128,6 +130,22 @@ function ExplorerLanding({ assetClass }: { assetClass: "stocks" | "crypto" }) {
                             </span>
                         ))}
                     </>
+                ) : isEtf ? (
+                    <>
+                        {["🌍 Global", "🇺🇸 S&P 500", "🇪🇺 Europa", "🌏 Emergentes", "🏭 Sectores", "🚀 Temáticos", "🥇 Oro"].map((name) => (
+                            <span
+                                key={name}
+                                className="text-[10px] px-2.5 py-1 rounded-full"
+                                style={{
+                                    background: "var(--bg-tertiary)",
+                                    color: "var(--text-muted)",
+                                    border: "1px solid var(--border-subtle)",
+                                }}
+                            >
+                                {name}
+                            </span>
+                        ))}
+                    </>
                 ) : (
                     <>
                         {["S&P 500", "Russell 2000", "IBEX 35", "Mercado Continuo"].map((name) => (
@@ -152,9 +170,8 @@ function ExplorerLanding({ assetClass }: { assetClass: "stocks" | "crypto" }) {
 
 // ── Inline Search Bar (shown above the detail view) ──────────
 
-function InlineSearchBar({ assetClass }: { assetClass: "stocks" | "crypto" }) {
-    const isCrypto = assetClass === "crypto";
-    const assetType = isCrypto ? "c" as const : "s" as const;
+function InlineSearchBar({ assetClass }: { assetClass: "stocks" | "crypto" | "etf" }) {
+    const assetType = assetClass === "crypto" ? "c" as const : assetClass === "etf" ? "e" as const : "s" as const;
 
     return (
         <div
@@ -225,7 +242,13 @@ export default function Dashboard() {
 
                         {/* Detail content */}
                         <div className="w-full">
-                            {assetClass === "crypto" ? (
+                            {selectedCompany.id.startsWith("etf_") ? (
+                                <EtfDetail
+                                    company={selectedCompany}
+                                    score={selectedScore}
+                                    onClose={() => selectCompany(null)}
+                                />
+                            ) : assetClass === "crypto" || selectedCompany.id.startsWith("cg_") ? (
                                 <CryptoDetail
                                     company={selectedCompany}
                                     score={selectedScore}
