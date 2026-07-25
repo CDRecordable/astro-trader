@@ -8,17 +8,29 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Loader2, X } from "lucide-react";
 import { searchTickers, searchTickersLive, mergeTickerResults, type TickerEntry } from "@/lib/ticker-registry";
+import { searchEtfs, ETF_CATEGORY_META } from "@/lib/etf-registry";
 import { useAppStore } from "@/lib/store";
 import { useTranslations } from "next-intl";
 
 interface TickerSearchProps {
-    assetType: "s" | "c" | "all";
+    assetType: "s" | "c" | "e" | "all";
     /** Compact mode: smaller padding, no shadow glow — used in inline bar */
     compact?: boolean;
 }
 
+/** Map curated ETF registry hits into the generic search-entry shape. */
+function searchEtfEntries(query: string, limit: number): TickerEntry[] {
+    return searchEtfs(query, limit).map((e) => ({
+        t: e.symbol,
+        n: e.name,
+        m: `${ETF_CATEGORY_META[e.category].emoji} ${ETF_CATEGORY_META[e.category].label}`,
+        y: "e" as const,
+    }));
+}
+
 function getMarketIcon(entry: TickerEntry): string {
     if (entry.y === "c") return "₿";
+    if (entry.y === "e") return "🧺";
     if (entry.m.includes("IBEX")) return "🇪🇸";
     if (entry.m.includes("Russell")) return "🇺🇸";
     if (entry.m.includes("S&P")) return "🇺🇸";
@@ -27,6 +39,7 @@ function getMarketIcon(entry: TickerEntry): string {
 
 function getMarketColor(entry: TickerEntry): string {
     if (entry.y === "c") return "var(--accent-amber)";
+    if (entry.y === "e") return "var(--accent-violet)";
     if (entry.m.includes("S&P")) return "var(--accent-cyan)";
     if (entry.m.includes("IBEX")) return "var(--accent-emerald)";
     if (entry.m.includes("Russell")) return "var(--accent-violet)";
@@ -64,13 +77,15 @@ export default function TickerSearch({ assetType, compact = false }: TickerSearc
             setIsOpen(false);
             return;
         }
-        const local = searchTickers(query, assetType, 10);
+        const local = assetType === "e"
+            ? searchEtfEntries(query, 10)
+            : searchTickers(query, assetType, 10);
         setResults(local);
         setIsOpen(local.length > 0);
         setHighlightIndex(-1);
         /* eslint-enable react-hooks/set-state-in-effect */
 
-        if (assetType === "c") return; // crypto stays registry-only
+        if (assetType === "c" || assetType === "e") return; // crypto & ETF stay registry-only
         const controller = new AbortController();
         const timer = setTimeout(async () => {
             const live = await searchTickersLive(query, controller.signal);
@@ -127,9 +142,11 @@ export default function TickerSearch({ assetType, compact = false }: TickerSearc
 
     const placeholderText = assetType === "c"
         ? t("placeholderCrypto")
-        : assetType === "s"
-            ? t("placeholderStocks")
-            : t("placeholderAll");
+        : assetType === "e"
+            ? t("placeholderEtf")
+            : assetType === "s"
+                ? t("placeholderStocks")
+                : t("placeholderAll");
 
     return (
         <div className="relative w-full max-w-2xl mx-auto">

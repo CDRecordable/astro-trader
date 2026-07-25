@@ -11,6 +11,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Search, X, Trash2, Loader2, Building2, Bitcoin, AlertCircle, Check } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { searchTickers, searchTickersLive, mergeTickerResults, type TickerEntry } from "@/lib/ticker-registry";
+import { searchEtfs, ETF_CATEGORY_META } from "@/lib/etf-registry";
 import type { Company } from "@/lib/types";
 
 interface Row { entry: TickerEntry; pct: string }
@@ -29,7 +30,11 @@ export default function PortfolioConfig({ startingCash, onClose, onApplied }: { 
     /* eslint-disable react-hooks/set-state-in-effect */
     useEffect(() => {
         if (query.trim().length < 1) { setResults([]); return; }
-        const local = searchTickers(query, "all", 8);
+        const etfHits: TickerEntry[] = searchEtfs(query, 4).map((e) => ({
+            t: e.symbol, n: e.name,
+            m: `${ETF_CATEGORY_META[e.category].emoji} ETF`, y: "e" as const,
+        }));
+        const local = [...searchTickers(query, "all", 6), ...etfHits];
         setResults(local);
         const controller = new AbortController();
         const timer = setTimeout(async () => {
@@ -71,7 +76,9 @@ export default function PortfolioConfig({ startingCash, onClose, onApplied }: { 
                 try {
                     const url = r.entry.y === "c"
                         ? `/api/crypto/${encodeURIComponent(r.entry.t)}`
-                        : `/api/company/${encodeURIComponent(r.entry.t)}`;
+                        : r.entry.y === "e"
+                            ? `/api/etf/${encodeURIComponent(r.entry.t)}`
+                            : `/api/company/${encodeURIComponent(r.entry.t)}`;
                     const data = await fetch(url).then((res) => res.json()) as { company?: Company; error?: string };
                     const price = data.company?.metrics.currentPrice;
                     if (!data.company || !price || price <= 0) { errs.push(`${r.entry.t}: ${t("cfgNoPrice")}`); continue; }

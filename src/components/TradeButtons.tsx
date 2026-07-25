@@ -11,9 +11,9 @@ import { TrendingUp, TrendingDown, Loader2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { Company } from "@/lib/types";
 
-export default function TradeButtons({ company, assetType }: { company: Company; assetType: "s" | "c" }) {
+export default function TradeButtons({ company, assetType }: { company: Company; assetType: "s" | "c" | "e" }) {
     const t = useTranslations("portfolio");
-    const lookupKey = company.id.replace(/^(cg_|yf_|db_)/i, "");
+    const lookupKey = company.id.replace(/^(cg_|yf_|db_|etf_)/i, "");
     const price = company.metrics.currentPrice;
 
     const [cash, setCash] = useState<number | null>(null);

@@ -10,21 +10,24 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import { Search, Building2, Bitcoin } from "lucide-react";
+import { Search, Building2, Bitcoin, Layers } from "lucide-react";
 
 export default function CompanyLoadingScreen({
     ticker,
     assetClass,
 }: {
     ticker: string | null;
-    assetClass: "stocks" | "crypto";
+    assetClass: "stocks" | "crypto" | "etf";
 }) {
     const t = useTranslations("explorerLanding");
     const isCrypto = assetClass === "crypto";
+    const isEtf = assetClass === "etf";
 
     const steps = isCrypto
         ? [t("loadStepCryptoFind"), t("loadStepCryptoOnchain"), t("loadStepCryptoPillars"), t("loadStepReady")]
-        : [t("loadStepMarket"), t("loadStepFundamentals"), t("loadStepValuation"), t("loadStepScoring"), t("loadStepReady")];
+        : isEtf
+            ? [t("loadStepEtfFind"), t("loadStepEtfPortfolio"), t("loadStepEtfPillars"), t("loadStepReady")]
+            : [t("loadStepMarket"), t("loadStepFundamentals"), t("loadStepValuation"), t("loadStepScoring"), t("loadStepReady")];
 
     const [progress, setProgress] = useState(8);
     const [step, setStep] = useState(0);
@@ -45,8 +48,8 @@ export default function CompanyLoadingScreen({
         return () => clearInterval(id);
     }, [steps.length]);
 
-    const Icon = isCrypto ? Bitcoin : Building2;
-    const accent = isCrypto ? "var(--accent-amber)" : "var(--accent-cyan)";
+    const Icon = isCrypto ? Bitcoin : isEtf ? Layers : Building2;
+    const accent = isCrypto ? "var(--accent-amber)" : isEtf ? "var(--accent-violet)" : "var(--accent-cyan)";
 
     return (
         <div className="flex flex-col items-center justify-center min-h-[70vh] px-5">

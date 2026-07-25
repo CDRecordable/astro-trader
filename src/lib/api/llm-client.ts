@@ -337,6 +337,106 @@ Devuelve EXCLUSIVAMENTE un JSON válido (sin texto fuera del JSON) con este esqu
 }`;
 }
 
+// ── ETF qualitative layer ────────────────────────────────────
+
+export interface EtfQualitative {
+    summary: string;             // thesis of the theme/economy the ETF buys
+    thesis: string;              // why (or why not) this exposure makes sense now
+    whatYouOwn: string;          // what the investor actually holds, plainly
+    risks: QualitativeRisk[];    // concentration, currency, valuation, structure
+    alternatives: string[];      // comparable ETFs worth checking (names/tickers)
+    fitProfile: string;          // what kind of portfolio/role this ETF fits
+    qualitativeScore: number;
+    verdict: string;
+
+    // Narrative layer — grounded on recent news headlines
+    narrativeScore: number;
+    narrativeShift: { from: string; to: string } | null;
+    baselineNarrative: string[];
+    recentNarrative: string[];
+}
+
+/** Parse the model's ETF JSON answer (tolerant, like the others). */
+export function parseEtfAnalysisJson(raw: string): EtfQualitative {
+    let s = raw.trim();
+    const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (fence) s = fence[1].trim();
+    const start = s.indexOf("{");
+    const end = s.lastIndexOf("}");
+    const candidate = start === -1 ? "" : end > start ? s.slice(start, end + 1) : s.slice(start);
+    if (!candidate) throw new Error("La respuesta del modelo no contiene JSON");
+    const obj = salvageJson(candidate) as EtfQualitative;
+    if (typeof obj.summary !== "string") throw new Error("JSON con esquema inesperado");
+    obj.thesis = typeof obj.thesis === "string" ? obj.thesis : "";
+    obj.whatYouOwn = typeof obj.whatYouOwn === "string" ? obj.whatYouOwn : "";
+    obj.risks = Array.isArray(obj.risks) ? obj.risks : [];
+    obj.alternatives = Array.isArray(obj.alternatives) ? obj.alternatives : [];
+    obj.fitProfile = typeof obj.fitProfile === "string" ? obj.fitProfile : "";
+    obj.qualitativeScore = Math.max(0, Math.min(100, Number(obj.qualitativeScore) || 0));
+    if (typeof obj.verdict !== "string") obj.verdict = "";
+    obj.narrativeScore = Math.max(0, Math.min(100, Number(obj.narrativeScore) || 0));
+    obj.narrativeShift = obj.narrativeShift && typeof obj.narrativeShift.from === "string" && typeof obj.narrativeShift.to === "string"
+        ? { from: obj.narrativeShift.from, to: obj.narrativeShift.to }
+        : null;
+    obj.baselineNarrative = Array.isArray(obj.baselineNarrative) ? obj.baselineNarrative : [];
+    obj.recentNarrative = Array.isArray(obj.recentNarrative) ? obj.recentNarrative : [];
+    return obj;
+}
+
+/** Build the grounded Spanish prompt for an ETF's qualitative layer. */
+export function buildEtfAnalysisPrompt(input: {
+    symbol: string;
+    name: string;
+    index: string;
+    category: string;
+    quantSummary: string;
+    news?: string;
+}): string {
+    const today = new Date().toISOString().split("T")[0];
+    const newsBlock = input.news && input.news.trim()
+        ? `\nTITULARES RECIENTES sobre la temática/región (úsalos para la NARRATIVA; no inventes otros):\n${input.news}\n`
+        : `\n(No hay titulares recientes disponibles — basa la narrativa en tu conocimiento y márcala como menos fiable.)\n`;
+
+    return `Eres un analista de fondos indexados escéptico y didáctico. Hoy es ${today}. Analizas VEHÍCULOS y EXPOSICIONES, no predices precio.
+
+ETF: ${input.name} (${input.symbol}) · Índice que replica: ${input.index} · Categoría: ${input.category}
+
+DATOS CUANTITATIVOS YA CALCULADOS (no los repitas, úsalos de contexto):
+${input.quantSummary}
+${newsBlock}
+El usuario es un inversor particular en ESPAÑA que empieza con ETFs y quiere entender QUÉ compra realmente y si esta exposición tiene sentido — no quiere opiniones de trader.
+
+REGLAS DE HONESTIDAD (críticas):
+- PROHIBIDO predecir precio o dar objetivos. Si lo haces, fallas.
+- NO inventes datos del fondo (TER, patrimonio…): ya los tiene. Tu valor es el ANÁLISIS de la exposición.
+- Si mencionas ETFs alternativos, que sean UCITS reales que conozcas con certeza; si dudas, no los inventes.
+- Marca lo incierto como incierto. Tu conocimiento tiene fecha de corte.
+
+Cubre:
+- TESIS de la temática/economía/sector que compra este ETF: motores estructurales reales, y qué tendría que ir bien.
+- QUÉ POSEE realmente el inversor (concentración de valores, sesgos de país/divisa, gigantes que dominan el índice).
+- RIESGOS específicos: valoración de la cesta, concentración, divisa (EUR/USD sin cubrir), riesgo regulatorio o de ciclo, estructura (sintético/físico si lo sabes).
+- ALTERNATIVAS UCITS comparables (mismo nicho, quizá más baratas o más diversificadas), solo si las conoces.
+- PERFIL: ¿a qué rol de cartera encaja? (núcleo/core, satélite, apuesta táctica…)
+- NARRATIVA dominante sobre la temática: qué se decía antes vs. ahora, giro y narrativeScore 0-100.
+
+Devuelve EXCLUSIVAMENTE un JSON válido (sin texto fuera del JSON) con este esquema:
+{
+  "summary": "tesis en 2-3 frases",
+  "thesis": "motores estructurales de la exposición y qué debe ir bien, 3-5 frases",
+  "whatYouOwn": "qué posee realmente el inversor, en claro, 2-4 frases",
+  "risks": [{"title": "...", "severity": "alto|medio|bajo"}],
+  "alternatives": ["Ticker/nombre UCITS comparable — por qué"],
+  "fitProfile": "rol en cartera (núcleo/satélite/táctico) y para qué perfil, 1-2 frases",
+  "qualitativeScore": 0-100,
+  "narrativeScore": 0-100,
+  "narrativeShift": {"from": "Neutral", "to": "Positiva"},
+  "baselineNarrative": ["qué se decía antes, 2-3 viñetas"],
+  "recentNarrative": ["qué se dice ahora, 2-3 viñetas"],
+  "verdict": "conclusión cualitativa, escéptica y accionable, SIN hablar de precio"
+}`;
+}
+
 /** Build the grounded Spanish prompt for a company's qualitative layer. */
 export function buildAnalysisPrompt(input: {
     ticker: string;

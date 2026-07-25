@@ -17,7 +17,7 @@ export interface WatchlistItem {
     /** Display symbol — e.g. "HBAR", "AAPL" */
     symbol: string;
     name: string;
-    assetType: "s" | "c"; // s=stock, c=crypto
+    assetType: "s" | "c" | "e"; // s=stock, c=crypto, e=ETF
     addedAt: string;       // ISO string
     note: string;
 }

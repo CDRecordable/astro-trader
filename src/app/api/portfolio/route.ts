@@ -18,7 +18,7 @@ export interface Holding {
     ticker: string;      // lookup key (symbol for stocks, CoinGecko id for crypto)
     symbol: string;
     name: string;
-    assetType: "s" | "c";
+    assetType: "s" | "c" | "e";
     qty: number;
     avgCost: number;     // average cost per unit
 }
@@ -26,7 +26,7 @@ export interface Transaction {
     ticker: string;
     symbol: string;
     name: string;
-    assetType: "s" | "c";
+    assetType: "s" | "c" | "e";
     type: "buy" | "sell";
     qty: number;
     price: number;
@@ -73,7 +73,7 @@ export async function DELETE() {
 
 export async function POST(req: NextRequest) {
     const b = await req.json() as {
-        ticker?: string; symbol?: string; name?: string; assetType?: "s" | "c";
+        ticker?: string; symbol?: string; name?: string; assetType?: "s" | "c" | "e";
         type?: "buy" | "sell"; amount?: number; price?: number;
     };
     if (!b.ticker || !b.type || !b.price || b.price <= 0 || !b.amount || b.amount <= 0) {
