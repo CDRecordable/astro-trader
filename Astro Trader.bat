@@ -8,11 +8,11 @@ echo      ASTRO TRADER INSIGHTS
 echo   ===============================================
 echo.
 
-rem --- Is the server already listening on port 3000? ---
-netstat -ano | findstr /r /c:"TCP.*:3000 .*LISTENING" >nul 2>&1
+rem --- Is the server already listening on port 3100? ---
+netstat -ano | findstr /r /c:"TCP.*:3100 .*LISTENING" >nul 2>&1
 if %errorlevel%==0 (
     echo   El servidor ya estaba en marcha. Abriendo el navegador...
-    start "" http://localhost:3000
+    start "" http://localhost:3100
     timeout /t 2 >nul
     exit /b
 )
@@ -32,7 +32,7 @@ echo   ^>^>  Cierrala (o pulsa Ctrl+C) para APAGAR el servidor.
 echo.
 
 rem --- Open the browser as soon as the server responds (background poller) ---
-start "" /b powershell -NoProfile -WindowStyle Hidden -Command "for($i=0;$i -lt 90;$i++){try{$r=Invoke-WebRequest 'http://localhost:3000' -UseBasicParsing -TimeoutSec 2; if([int]$r.StatusCode -ge 200){Start-Process 'http://localhost:3000'; break}}catch{Start-Sleep -Milliseconds 700}}"
+start "" /b powershell -NoProfile -WindowStyle Hidden -Command "for($i=0;$i -lt 90;$i++){try{$r=Invoke-WebRequest 'http://localhost:3100' -UseBasicParsing -TimeoutSec 2; if([int]$r.StatusCode -ge 200){Start-Process 'http://localhost:3100'; break}}catch{Start-Sleep -Milliseconds 700}}"
 
 rem --- Run the dev server in THIS window (closing it stops the app) ---
 call npm run dev

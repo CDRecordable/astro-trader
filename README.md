@@ -73,7 +73,7 @@ npx drizzle-kit push         # create the tables
 npm run dev
 ```
 
-Open <http://localhost:3000>.
+Open <http://localhost:3100>.
 
 On Windows you can also double-click **`Astro Trader.bat`**, which installs dependencies on first run, starts the server and opens the browser for you.
 
@@ -115,12 +115,16 @@ src/
 
 ## Scripts
 
-| Command         | Action                |
-| --------------- | --------------------- |
-| `npm run dev`   | Development server    |
-| `npm run build` | Production build      |
-| `npm run start` | Serve production build|
-| `npm run lint`  | ESLint                |
+| Command         | Action                              |
+| --------------- | ----------------------------------- |
+| `npm run dev`   | Development server (port **3100**)  |
+| `npm run build` | Production build                    |
+| `npm run start` | Serve production build (port 3100)  |
+| `npm run lint`  | ESLint                              |
+
+The app runs on **port 3100** (not Next.js's default 3000) so it can coexist
+with another dev server. To change it, edit the `-p` flag in `package.json`
+and the port in `Astro Trader.bat`.
 
 ---
 
