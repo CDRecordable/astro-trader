@@ -12,6 +12,11 @@ any line, the git history is the source of truth: commits use
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-07-28
+
+First release with a real installer: the app is now downloadable and installs
+like any other program, with a public website and a lifetime AI licence.
+
 ### Added
 - **Public landing site** (`landing/`) — a standalone, fully static marketing
   app deployable to Railway on its own. It never calls a market API: the

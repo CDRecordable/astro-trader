@@ -322,7 +322,7 @@ export default function Sidebar() {
             )}
 
             {/* Version */}
-            <span className="text-[9px] mt-3" style={{ color: "var(--text-muted)" }}>v0.5</span>
+            <span className="text-[9px] mt-3" style={{ color: "var(--text-muted)" }}>v0.6</span>
         </aside>
     );
 }
