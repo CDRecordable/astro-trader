@@ -893,7 +893,8 @@
         "etfWhatYouOwn": "What you actually own",
         "etfAlternatives": "UCITS alternatives",
         "etfFit": "Portfolio role",
-        "disclaimerEtf": "AI-generated analysis of the fund's exposure; may contain errors. Not financial advice."
+        "disclaimerEtf": "AI-generated analysis of the fund's exposure; may contain errors. Not financial advice.",
+        "noLicense": "This is part of the AI layer. Unlock it with your licence (single 9.90 € payment) and use your own API key."
     },
     "cryptoDetail": {
         "aboutTitle": "About the project",
@@ -1107,5 +1108,17 @@
         "vol": "Annualized volatility",
         "volTip": "How much the price moves in a typical year. <15% calm · >25% brace for swings.",
         "range52": "52-week range"
+    },
+    "license": {
+        "title": "AI layer · Licence",
+        "lockedIntro": "The heuristic analysis is free forever. The qualitative AI layer unlocks with a single 9.90 € payment and runs on your own API key: we never broker or charge for tokens.",
+        "activate": "Activate",
+        "activeTitle": "AI layer active",
+        "activeMeta": "Lifetime licence · {email} · issued {date}",
+        "activeNote": "The licence is verified on your own machine, without contacting any server. It keeps working offline.",
+        "invalid": "Invalid key. Copy it in full, including the ATI1 prefix.",
+        "buy": "Buy a licence (9.90 €)",
+        "recover": "I lost my key",
+        "deactivate": "Deactivate on this machine"
     }
 }

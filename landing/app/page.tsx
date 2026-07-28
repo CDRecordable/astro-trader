@@ -1,4 +1,6 @@
+import Link from "next/link";
 import Demo from "@/components/Demo";
+import BuyButton from "@/components/BuyButton";
 import {
     VoxelScene, STOCK_VOXELS, CRYPTO_VOXELS, ETF_VOXELS,
     KEY_VOXELS, LOCAL_VOXELS, SCORE_VOXELS,
@@ -265,6 +267,7 @@ export default function Home() {
                                     Tu clave se guarda solo en tu disco.
                                 </p>
                             </div>
+                            <BuyButton />
                         </div>
                     </div>
                 </div>
@@ -333,6 +336,7 @@ export default function Home() {
                             <a href={GITHUB} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">GitHub</a>
                             <a href="#demo" className="hover:text-white transition-colors">Demo</a>
                             <a href="#precio" className="hover:text-white transition-colors">Precio</a>
+                            <Link href="/licencia" className="hover:text-white transition-colors">Mi licencia</Link>
                         </div>
                     </div>
                     <p className="text-[11px] leading-relaxed mb-3" style={{ color: "var(--text-mute)" }}>

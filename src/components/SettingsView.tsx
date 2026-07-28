@@ -12,6 +12,7 @@ import {
     AlertCircle, Loader2, Brain, Cpu, Zap, Info,
 } from "lucide-react";
 import type { UserSettings } from "@/app/api/settings/route";
+import LicenseSection from "./LicenseSection";
 
 // ── LLM Provider config ───────────────────────────────────────
 
@@ -187,6 +188,9 @@ export default function SettingsView() {
                         </p>
                     </div>
                 </div>
+
+                {/* ── AI layer licence ─────────────────────────── */}
+                <LicenseSection />
 
                 {/* ── LLM Keys section ─────────────────────────── */}
                 <section className="mb-8">
