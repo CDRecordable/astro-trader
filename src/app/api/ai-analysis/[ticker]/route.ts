@@ -17,10 +17,12 @@ import {
     callLLM, buildAnalysisPrompt, parseAnalysisJson,
     type LLMProvider, type QualitativeAnalysis,
 } from "@/lib/api/llm-client";
+import { isLicensed } from "@/lib/license";
 import { fetchTickerNews, type NewsItem } from "@/lib/api/news-client";
+import { userDataPath } from "@/lib/paths";
 
-const CACHE_DIR = path.join(process.cwd(), "user-data", "ai-analysis");
-const SETTINGS_PATH = path.join(process.cwd(), "user-data", "settings.json");
+const CACHE_DIR = userDataPath("ai-analysis");
+const SETTINGS_PATH = userDataPath("settings.json");
 
 interface CachedAnalysis {
     ticker: string;
@@ -80,6 +82,15 @@ export async function POST(
 ) {
     const { ticker: rawTicker } = await params;
     const ticker = rawTicker.toUpperCase();
+
+    // The AI layer is the paid feature: verify the licence (offline, against the
+    // embedded public key) before spending the user's tokens.
+    if (!isLicensed()) {
+        return NextResponse.json(
+            { error: "no_license", message: "Desbloquea la capa de IA con tu licencia en Ajustes." },
+            { status: 402 }
+        );
+    }
 
     const { provider, apiKey } = readSettings();
     if (provider === "none" || !apiKey) {

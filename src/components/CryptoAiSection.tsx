@@ -139,13 +139,19 @@ export default function CryptoAiSection({ fundamentals, description, onResult }:
                 </button>
             </div>
 
+            {err?.code === "no_license" && (
+                <div className="px-3 py-2.5 rounded-lg text-[11px]" style={{ background: "rgba(167,139,250,0.07)", border: "1px solid rgba(167,139,250,0.2)", color: "var(--text-secondary)" }}>
+                    {t("noLicense")}{" "}
+                    <Link href="/settings" className="underline font-semibold" style={{ color: "var(--accent-violet)" }}>{t("goToSettings")}</Link>
+                </div>
+            )}
             {err?.code === "no_api_key" && (
                 <div className="px-3 py-2.5 rounded-lg text-[11px]" style={{ background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.15)", color: "var(--signal-hold)" }}>
                     {t("noKey")}{" "}
                     <Link href="/settings" className="underline font-semibold" style={{ color: "var(--accent-cyan)" }}>{t("goToSettings")}</Link>
                 </div>
             )}
-            {err && err.code !== "no_api_key" && (
+            {err && err.code !== "no_api_key" && err.code !== "no_license" && (
                 <div className="px-3 py-2.5 rounded-lg text-[11px]" style={{ background: "rgba(251,113,133,0.06)", border: "1px solid rgba(251,113,133,0.15)", color: "var(--signal-avoid)" }}>
                     ⚠ {err.message}
                 </div>

@@ -12,6 +12,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { userDataPath } from "@/lib/paths";
 
 export interface DiscardItem {
     ticker: string;        // lookup key: CoinGecko id for crypto, symbol for stocks
@@ -24,7 +25,7 @@ export interface DiscardItem {
 
 interface DiscardFile { items: DiscardItem[] }
 
-const DATA_PATH = path.join(process.cwd(), "user-data", "discards.json");
+const DATA_PATH = userDataPath("discards.json");
 
 function readDiscards(): DiscardFile {
     try {

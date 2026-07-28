@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { userDataPath } from "@/lib/paths";
 
 export interface EquityPoint {
     date: string;        // ISO timestamp
@@ -19,7 +20,7 @@ export interface EquityPoint {
     invested: number;
 }
 
-const DATA_PATH = path.join(process.cwd(), "user-data", "equity-history.json");
+const DATA_PATH = userDataPath("equity-history.json");
 
 function read(): EquityPoint[] {
     try {

@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { userDataPath } from "@/lib/paths";
 
 const STARTING_CASH = 100_000;
 const EPS = 1e-6;
@@ -41,7 +42,7 @@ export interface Portfolio {
     transactions: Transaction[];
 }
 
-const DATA_PATH = path.join(process.cwd(), "user-data", "portfolio.json");
+const DATA_PATH = userDataPath("portfolio.json");
 
 function read(): Portfolio {
     try {

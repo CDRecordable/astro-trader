@@ -1,0 +1,316 @@
+{
+  "generatedAt": "2026-07-28",
+  "assets": [
+    {
+      "id": "nvda",
+      "kind": "stock",
+      "ticker": "NVDA",
+      "name": "NVIDIA Corporation",
+      "sector": "Technology",
+      "price": 196.51,
+      "currency": "USD",
+      "metrics": {
+        "marketCap": 4759668,
+        "fcfYield": 0.97,
+        "evFcfYield": 0.97,
+        "bookToMarket": 0.04,
+        "ebitMargin": 65.6,
+        "roe": 114.29,
+        "roc": 85.49,
+        "netDebtToEbitda": 0.07,
+        "interestCoverage": 547.1,
+        "peRatio": 31.6,
+        "low52": 164.07,
+        "high52": 236.54
+      },
+      "dataQuality": {
+        "deltas": true,
+        "roc": true,
+        "growth": true,
+        "solvency": true,
+        "dilution": true,
+        "accruals": true,
+        "insiders": true,
+        "revisions": true
+      },
+      "spark": [
+        173.72,
+        182.7,
+        180.45,
+        177.99,
+        174.18,
+        167.02,
+        177.82,
+        176.67,
+        178.19,
+        187.62,
+        183.16,
+        183.22,
+        186.26,
+        202.49,
+        188.15,
+        190.17,
+        178.88,
+        177,
+        182.41,
+        175.02,
+        180.99,
+        190.53,
+        188.85,
+        184.86,
+        186.23,
+        187.67,
+        191.13,
+        185.41,
+        182.81,
+        189.82,
+        177.19,
+        177.82,
+        180.25,
+        172.7,
+        167.52,
+        177.39,
+        188.63,
+        201.68,
+        208.27,
+        198.45,
+        215.2,
+        225.32,
+        215.33,
+        211.14,
+        205.1,
+        205.19,
+        210.69,
+        192.53,
+        194.83,
+        210.96,
+        202.81,
+        206.84,
+        196.51
+      ],
+      "score": {
+        "total": 52,
+        "recommendation": "HOLD",
+        "pillars": [
+          {
+            "key": "valuation",
+            "label": "Valoración",
+            "value": 49,
+            "weight": 40
+          },
+          {
+            "key": "trend",
+            "label": "Calidad y tendencia",
+            "value": 61,
+            "weight": 30
+          },
+          {
+            "key": "timing",
+            "label": "Timing",
+            "value": 57,
+            "weight": 30
+          }
+        ]
+      }
+    },
+    {
+      "id": "vwce",
+      "kind": "etf",
+      "ticker": "VWCE",
+      "name": "Vanguard FTSE All-World UCITS ETF USD Accumulation",
+      "sector": "ETF · Global",
+      "price": 163.36,
+      "currency": "EUR",
+      "score": {
+        "total": 75,
+        "recommendation": "STRONG_BUY",
+        "pillars": [
+          {
+            "key": "vehicle",
+            "label": "Coste y vehículo",
+            "value": 89,
+            "weight": 30
+          },
+          {
+            "key": "portfolio",
+            "label": "Cartera y valoración",
+            "value": 58,
+            "weight": 40
+          },
+          {
+            "key": "momentum",
+            "label": "Momentum y timing",
+            "value": 82,
+            "weight": 30
+          }
+        ]
+      },
+      "metrics": {
+        "ter": 0.0022,
+        "aum": 75682906112,
+        "top10Pct": 22.8,
+        "underlyingPE": 22.9,
+        "maxSector": {
+          "sector": "Tecnología",
+          "pct": 32.509997
+        },
+        "vsSma200": 8,
+        "ret12m": 25.9,
+        "vol": 11.7,
+        "drawdown": -1.9,
+        "ageYears": 14.2,
+        "accumulating": true
+      },
+      "holdings": [
+        {
+          "symbol": "NVDA",
+          "name": "NVIDIA Corp",
+          "pct": 4.5
+        },
+        {
+          "symbol": "AAPL",
+          "name": "Apple Inc",
+          "pct": 4
+        },
+        {
+          "symbol": "MSFT",
+          "name": "Microsoft Corp",
+          "pct": 2.7
+        },
+        {
+          "symbol": "AMZN",
+          "name": "Amazon.com Inc",
+          "pct": 2.2
+        },
+        {
+          "symbol": "GOOGL",
+          "name": "Alphabet Inc Class A",
+          "pct": 2
+        }
+      ],
+      "sectors": [
+        {
+          "sector": "Tecnología",
+          "pct": 32.5
+        },
+        {
+          "sector": "Servicios financieros",
+          "pct": 15.8
+        },
+        {
+          "sector": "Industrial",
+          "pct": 10.8
+        },
+        {
+          "sector": "Consumo discrecional",
+          "pct": 8.8
+        },
+        {
+          "sector": "Salud",
+          "pct": 8.1
+        }
+      ],
+      "spark": [
+        95.36,
+        97.72,
+        99.54,
+        100.18,
+        101.88,
+        97.5,
+        102,
+        92.8,
+        90.97,
+        101.3,
+        92.77,
+        92.88,
+        91.25,
+        95.85,
+        93.86,
+        95.45,
+        99.85,
+        100.24,
+        100.44,
+        100.08,
+        102.28,
+        107.08,
+        112.58,
+        117.62,
+        116.62,
+        121.68,
+        121.34,
+        118.84,
+        129.66,
+        134.56,
+        133.72,
+        138.98,
+        115.8,
+        130.7,
+        130.1,
+        134.2,
+        139.04,
+        145.54,
+        143.18,
+        147.72,
+        148.34,
+        153.66,
+        163.16,
+        166.14
+      ]
+    },
+    {
+      "id": "hbar",
+      "kind": "crypto",
+      "ticker": "HBAR",
+      "name": "Hedera",
+      "sector": "Smart Contract Platform",
+      "price": 0.068132,
+      "currency": "USD",
+      "score": {
+        "total": 52,
+        "recommendation": "HOLD",
+        "pillars": [
+          {
+            "key": "tokenomics",
+            "label": "Tokenomics y valor",
+            "value": 45,
+            "weight": 40
+          },
+          {
+            "key": "network",
+            "label": "Red y on-chain",
+            "value": 50,
+            "weight": 35
+          },
+          {
+            "key": "momentum",
+            "label": "Momentum",
+            "value": 60,
+            "weight": 25
+          }
+        ]
+      },
+      "metrics": {
+        "marketCap": 2987030187,
+        "volume24h": 40643884,
+        "supplyPct": 87.6,
+        "fdvMc": 1.14,
+        "psRatio": 16023.3,
+        "tvl": null,
+        "holders": null,
+        "top10Concentration": null,
+        "athChange": -88,
+        "change1y": -76.2,
+        "tps": 3.429372188002187,
+        "fearGreed": 30
+      },
+      "dataQuality": {
+        "tokenomics": true,
+        "value": true,
+        "dev": true,
+        "onchain": false,
+        "catalysts": false
+      },
+      "spark": []
+    }
+  ]
+}

@@ -13,6 +13,24 @@ any line, the git history is the source of truth: commits use
 ## [Unreleased]
 
 ### Added
+- **Public landing site** (`landing/`) — a standalone, fully static marketing
+  app deployable to Railway on its own. It never calls a market API: the
+  interactive demo runs on a frozen snapshot carrying the scores the real
+  engine produced, so the site can be crawled and hammered without touching a
+  rate limit. Includes a voxel design system drawn as pure SVG, SEO metadata,
+  JSON-LD, sitemap and robots.
+- **Lifetime licence for the AI layer** — Ed25519 signed keys, **verified
+  offline** on the user's machine against a public key embedded in the app.
+  The product never phones home, keeps working without connectivity, and
+  survives the licence server disappearing. The landing issues keys from a
+  payment webhook (idempotent on the payment id), stores them so buyers can
+  recover a lost key, and exposes a passwordless licence portal — no accounts,
+  no passwords. Payments are provider-agnostic: Stripe and Lemon Squeezy are
+  both supported behind one adapter, so the merchant-of-record decision (EU
+  VAT) stays open.
+- **Settings → AI layer licence** — paste a key to unlock; the qualitative AI
+  routes return `402 no_license` and the UI shows an unlock notice until then.
+  The heuristic analysis remains free and untouched.
 - **ETF analyzer** — a third asset class with the same rigor as stocks and
   crypto. Curated universe of 55+ **UCITS** ETFs (global, USA, Europe,
   emerging, countries, sectors, thematics, factors and physical gold) with

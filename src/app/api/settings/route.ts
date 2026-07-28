@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { userDataPath } from "@/lib/paths";
 
 export interface LLMSettings {
     defaultProvider: "none" | "gemini" | "claude" | "deepseek";
@@ -44,7 +45,7 @@ const DEFAULT_SETTINGS: UserSettings = {
     },
 };
 
-const DATA_PATH = path.join(process.cwd(), "user-data", "settings.json");
+const DATA_PATH = userDataPath("settings.json");
 
 function readSettings(): UserSettings {
     try {

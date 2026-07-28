@@ -893,7 +893,8 @@
         "etfWhatYouOwn": "Qué posees realmente",
         "etfAlternatives": "Alternativas UCITS",
         "etfFit": "Rol en cartera",
-        "disclaimerEtf": "Análisis generado por IA sobre la exposición del fondo; puede contener errores. No es asesoramiento financiero."
+        "disclaimerEtf": "Análisis generado por IA sobre la exposición del fondo; puede contener errores. No es asesoramiento financiero.",
+        "noLicense": "Esta función forma parte de la capa de IA. Desbloquéala con tu licencia (pago único de 9,90 €) y usa tu propia API key."
     },
     "cryptoDetail": {
         "aboutTitle": "Sobre el proyecto",
@@ -1107,5 +1108,17 @@
         "vol": "Volatilidad anualizada",
         "volTip": "Cuánto se mueve el precio en un año típico. <15% tranquilo · >25% prepárate para vaivenes.",
         "range52": "Rango 52 semanas"
+    },
+    "license": {
+        "title": "Capa de IA · Licencia",
+        "lockedIntro": "El análisis heurístico es gratuito para siempre. La capa cualitativa de IA se desbloquea con un pago único de 9,90 € y funciona con tu propia API key: nosotros no intermediamos ni cobramos por tokens.",
+        "activate": "Activar",
+        "activeTitle": "Capa de IA activa",
+        "activeMeta": "Licencia de por vida · {email} · emitida el {date}",
+        "activeNote": "La licencia se verifica en tu propio ordenador, sin conectarse a ningún servidor. Seguirá funcionando sin conexión.",
+        "invalid": "Clave no válida. Cópiala entera, incluido el prefijo ATI1.",
+        "buy": "Comprar licencia (9,90 €)",
+        "recover": "He perdido mi clave",
+        "deactivate": "Desactivar en este equipo"
     }
 }

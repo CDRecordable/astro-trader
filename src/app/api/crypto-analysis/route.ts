@@ -5,8 +5,9 @@
 import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { userDataPath } from "@/lib/paths";
 
-const CACHE_DIR = path.join(process.cwd(), "user-data", "crypto-analysis");
+const CACHE_DIR = userDataPath("crypto-analysis");
 
 export async function GET() {
     try {

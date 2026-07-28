@@ -12,10 +12,12 @@ import {
     callLLM, buildCryptoAnalysisPrompt, parseCryptoAnalysisJson,
     type LLMProvider, type CryptoQualitative,
 } from "@/lib/api/llm-client";
+import { isLicensed } from "@/lib/license";
 import { fetchTickerNews, type NewsItem } from "@/lib/api/news-client";
+import { userDataPath } from "@/lib/paths";
 
-const CACHE_DIR = path.join(process.cwd(), "user-data", "crypto-analysis");
-const SETTINGS_PATH = path.join(process.cwd(), "user-data", "settings.json");
+const CACHE_DIR = userDataPath("crypto-analysis");
+const SETTINGS_PATH = userDataPath("settings.json");
 
 interface CachedCryptoAnalysis {
     id: string;
@@ -74,6 +76,15 @@ export async function POST(
 ) {
     const { id: rawId } = await params;
     const id = rawId.toLowerCase();
+
+    // The AI layer is the paid feature: verify the licence (offline, against the
+    // embedded public key) before spending the user's tokens.
+    if (!isLicensed()) {
+        return NextResponse.json(
+            { error: "no_license", message: "Desbloquea la capa de IA con tu licencia en Ajustes." },
+            { status: 402 }
+        );
+    }
 
     const { provider, apiKey } = readLLM();
     if (provider === "none" || !apiKey) {

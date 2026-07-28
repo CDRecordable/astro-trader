@@ -11,11 +11,12 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import type { Company, AlgorithmScore } from "@/lib/types";
+import { userDataPath } from "@/lib/paths";
 
 interface Snapshot { company: Company; score: AlgorithmScore; scoredAt: string }
 type CacheFile = Record<string, Snapshot>;
 
-const DATA_PATH = path.join(process.cwd(), "user-data", "watchlist-cache.json");
+const DATA_PATH = userDataPath("watchlist-cache.json");
 
 function read(): CacheFile {
     try { return JSON.parse(fs.readFileSync(DATA_PATH, "utf-8")) as CacheFile; }

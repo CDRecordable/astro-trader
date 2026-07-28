@@ -1,0 +1,28 @@
+{
+  "name": "astro-trader-landing",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Public marketing site for Astro Trader Insights — promotes the local app download and the lifetime AI unlock.",
+  "scripts": {
+    "dev": "next dev -p 3200",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "drizzle-orm": "^0.45.2",
+    "next": "16.2.1",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.10",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
