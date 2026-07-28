@@ -1,12 +1,13 @@
 import Link from "next/link";
 import Demo from "@/components/Demo";
 import BuyButton from "@/components/BuyButton";
+import SiteNav from "@/components/SiteNav";
+import SiteFooter from "@/components/SiteFooter";
 import {
     VoxelScene, STOCK_VOXELS, CRYPTO_VOXELS, ETF_VOXELS,
-    KEY_VOXELS, LOCAL_VOXELS, SCORE_VOXELS,
+    KEY_VOXELS, LOCAL_VOXELS, SCORE_VOXELS, ESOTERIC_VOXELS,
 } from "@/components/Voxel";
-
-const GITHUB = "https://github.com/CDRecordable/astro-trader";
+import { GITHUB } from "@/lib/site";
 
 /* ── Small building blocks ──────────────────────────────────── */
 function Eyebrow({ children }: { children: React.ReactNode }) {
@@ -26,27 +27,32 @@ function SectionTitle({ children, sub }: { children: React.ReactNode; sub?: stri
     );
 }
 
-function AnalyzerCard({ voxels, tag, title, points, accent }: {
+function AnalyzerCard({ voxels, tag, title, points, accent, href }: {
     voxels: Parameters<typeof VoxelScene>[0]["cubes"];
-    tag: string; title: string; points: string[]; accent: string;
+    tag: string; title: string; points: string[]; accent: string; href: string;
 }) {
     return (
-        <article className="glass rounded-2xl overflow-hidden flex flex-col transition-colors hover:bg-white/[0.02]">
+        <Link href={href} className="glass rounded-2xl overflow-hidden flex flex-col transition-colors hover:bg-white/[0.03] group">
             <div className="grid-bg flex items-center justify-center py-7" style={{ borderBottom: "1px solid var(--border)" }}>
                 <VoxelScene cubes={voxels} size={132} className="floaty" />
             </div>
             <div className="p-5 flex-1 flex flex-col">
                 <span className="text-[10px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: accent }}>{tag}</span>
                 <h3 className="text-base font-bold mb-3">{title}</h3>
-                <ul className="space-y-1.5 mt-auto">
+                <ul className="space-y-1.5">
                     {points.map((p) => (
                         <li key={p} className="text-xs leading-relaxed flex gap-2" style={{ color: "var(--text-soft)" }}>
                             <span style={{ color: accent }}>›</span>{p}
                         </li>
                     ))}
                 </ul>
+                <span className="text-[11px] font-semibold mt-4 pt-3 inline-flex items-center gap-1"
+                    style={{ color: accent, borderTop: "1px solid var(--border)" }}>
+                    Ver en detalle
+                    <span className="transition-transform group-hover:translate-x-0.5">→</span>
+                </span>
             </div>
-        </article>
+        </Link>
     );
 }
 
@@ -54,24 +60,7 @@ function AnalyzerCard({ voxels, tag, title, points, accent }: {
 export default function Home() {
     return (
         <main>
-            {/* ══ Nav ══ */}
-            <nav className="sticky top-0 z-50 backdrop-blur-xl" style={{ background: "rgba(10,12,18,0.72)", borderBottom: "1px solid var(--border)" }}>
-                <div className="max-w-6xl mx-auto px-5 h-14 flex items-center justify-between">
-                    <a href="#" className="flex items-center gap-2.5">
-                        <VoxelScene cubes={[{ x: 0, y: 0, z: 0, tone: "cyan" }, { x: 0, y: 1, z: 0, tone: "violet" }]} size={26} shadow={false} />
-                        <span className="text-sm font-bold tracking-tight">Astro Trader</span>
-                    </a>
-                    <div className="flex items-center gap-5 text-xs" style={{ color: "var(--text-soft)" }}>
-                        <a href="#demo" className="hidden sm:block hover:text-white transition-colors">Demo</a>
-                        <a href="#analizadores" className="hidden sm:block hover:text-white transition-colors">Analizadores</a>
-                        <a href="#precio" className="hidden sm:block hover:text-white transition-colors">Precio</a>
-                        <a href="#descargar" className="px-3.5 py-1.5 rounded-lg font-semibold transition-transform hover:scale-[1.03]"
-                            style={{ background: "linear-gradient(120deg, var(--cyan), var(--violet))", color: "#06080d" }}>
-                            Descargar
-                        </a>
-                    </div>
-                </div>
-            </nav>
+            <SiteNav />
 
             {/* ══ Hero ══ */}
             <header className="grid-bg relative overflow-hidden">
@@ -137,7 +126,7 @@ export default function Home() {
                     </div>
                     <div className="grid md:grid-cols-3 gap-5">
                         <AnalyzerCard
-                            voxels={STOCK_VOXELS} accent="var(--cyan)" tag="Acciones"
+                            voxels={STOCK_VOXELS} accent="var(--cyan)" tag="Acciones" href="/acciones"
                             title="Valoración, calidad y timing"
                             points={[
                                 "Valoración por valor de empresa (FCF/EV), no solo por PER",
@@ -147,7 +136,7 @@ export default function Home() {
                             ]}
                         />
                         <AnalyzerCard
-                            voxels={CRYPTO_VOXELS} accent="var(--amber)" tag="Cripto"
+                            voxels={CRYPTO_VOXELS} accent="var(--amber)" tag="Cripto" href="/cripto"
                             title="Tokenomics, red y momentum"
                             points={[
                                 "«P/S cripto»: capitalización entre comisiones reales del protocolo",
@@ -157,7 +146,7 @@ export default function Home() {
                             ]}
                         />
                         <AnalyzerCard
-                            voxels={ETF_VOXELS} accent="var(--violet)" tag="ETFs"
+                            voxels={ETF_VOXELS} accent="var(--violet)" tag="ETFs" href="/etfs"
                             title="Coste, cartera y momentum"
                             points={[
                                 "57 ETFs UCITS que sí puedes comprar desde España",
@@ -170,8 +159,63 @@ export default function Home() {
                 </div>
             </section>
 
+            {/* ══ Esoteric — the other half of the app ══ */}
+            <section id="esoterico" className="py-20 relative overflow-hidden">
+                <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{ background: "radial-gradient(ellipse 60% 60% at 80% 40%, rgba(167,139,250,0.12), transparent 70%)" }}
+                />
+                <div className="relative max-w-6xl mx-auto px-5 grid md:grid-cols-2 gap-12 items-center">
+                    <div className="order-2 md:order-1">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] mb-3" style={{ color: "var(--violet)" }}>
+                            La otra mitad de la app
+                        </p>
+                        <SectionTitle sub="Siete dimensiones de análisis esotérico calculadas sobre efemérides astronómicas reales — y sometidas a la misma estadística que exigirías a cualquier estrategia.">
+                            Exploración esotérica
+                        </SectionTitle>
+
+                        <div className="grid grid-cols-2 gap-x-5 gap-y-2.5 mt-7 mb-7">
+                            {[
+                                "Turbulencia astral",
+                                "Ciclos lunares",
+                                "Mercurio retrógrado",
+                                "Actividad solar",
+                                "Rotación sectorial planetaria",
+                                "Confluencias Fibonacci",
+                                "Backtester astral",
+                                "Motor de efemérides real",
+                            ].map((d) => (
+                                <div key={d} className="flex items-center gap-2 text-xs" style={{ color: "var(--text-soft)" }}>
+                                    <span style={{ color: "var(--violet)" }}>◆</span>{d}
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="rounded-xl px-4 py-3.5 mb-6" style={{ background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.2)" }}>
+                            <p className="text-xs leading-relaxed" style={{ color: "var(--text-soft)" }}>
+                                <strong style={{ color: "var(--emerald)" }}>Y aquí está la gracia:</strong> los tests de
+                                permutación dicen que estas señales <em>no</em> baten al azar. La app lo muestra en su
+                                propia pantalla, con el p-valor delante. Es exploración, no una promesa.
+                            </p>
+                        </div>
+
+                        <Link
+                            href="/esoterico"
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-transform hover:scale-[1.03]"
+                            style={{ background: "linear-gradient(120deg, var(--violet), var(--cyan))", color: "#06080d" }}
+                        >
+                            Ver las siete dimensiones →
+                        </Link>
+                    </div>
+
+                    <div className="order-1 md:order-2 flex justify-center">
+                        <VoxelScene cubes={ESOTERIC_VOXELS} size={280} className="floaty" />
+                    </div>
+                </div>
+            </section>
+
             {/* ══ Honesty — the differentiator ══ */}
-            <section className="py-20">
+            <section className="py-20" style={{ background: "var(--bg-soft)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
                 <div className="max-w-6xl mx-auto px-5 grid md:grid-cols-2 gap-12 items-center">
                     <div>
                         <Eyebrow>Lo que nos hace distintos</Eyebrow>
@@ -324,32 +368,7 @@ export default function Home() {
                 </div>
             </section>
 
-            {/* ══ Footer ══ */}
-            <footer style={{ borderTop: "1px solid var(--border)", background: "var(--bg-soft)" }}>
-                <div className="max-w-6xl mx-auto px-5 py-10">
-                    <div className="flex flex-wrap items-center justify-between gap-4 mb-7">
-                        <div className="flex items-center gap-2.5">
-                            <VoxelScene cubes={[{ x: 0, y: 0, z: 0, tone: "cyan" }, { x: 0, y: 1, z: 0, tone: "violet" }]} size={24} shadow={false} />
-                            <span className="text-sm font-bold">Astro Trader Insights</span>
-                        </div>
-                        <div className="flex gap-5 text-xs" style={{ color: "var(--text-soft)" }}>
-                            <a href={GITHUB} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">GitHub</a>
-                            <a href="#demo" className="hover:text-white transition-colors">Demo</a>
-                            <a href="#precio" className="hover:text-white transition-colors">Precio</a>
-                            <Link href="/licencia" className="hover:text-white transition-colors">Mi licencia</Link>
-                        </div>
-                    </div>
-                    <p className="text-[11px] leading-relaxed mb-3" style={{ color: "var(--text-mute)" }}>
-                        <strong style={{ color: "var(--text-soft)" }}>Esto no es asesoramiento financiero.</strong> Astro Trader
-                        Insights es una herramienta de investigación y educación. Los datos pueden estar incompletos o ser
-                        erróneos; verifica siempre antes de invertir. Los mercados —y las criptomonedas muy en particular—
-                        son altamente especulativos y puedes perder tu dinero.
-                    </p>
-                    <p className="text-[11px]" style={{ color: "var(--text-mute)" }}>
-                        © {new Date().getFullYear()} Víctor Balcells · Licencia MIT
-                    </p>
-                </div>
-            </footer>
+            <SiteFooter />
         </main>
     );
 }
