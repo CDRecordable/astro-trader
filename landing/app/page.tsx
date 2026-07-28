@@ -333,37 +333,53 @@ export default function Home() {
                         tus claves nunca salen de tu disco.
                     </p>
 
+                    {/* Primary: the installer. No terminal, no Node, no README. */}
+                    <a
+                        href={`${GITHUB}/releases/latest`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex flex-col items-center px-8 py-4 rounded-2xl transition-transform hover:scale-[1.02] mb-3"
+                        style={{ background: "linear-gradient(120deg, var(--cyan), var(--violet))", color: "#06080d" }}
+                    >
+                        <span className="text-base font-bold">Descargar para Windows</span>
+                        <span className="text-[11px] opacity-80">Instalador .exe · gratis · sin cuenta</span>
+                    </a>
+                    <p className="text-[11px] mb-9" style={{ color: "var(--text-mute)" }}>
+                        También disponible para{" "}
+                        <a href={`${GITHUB}/releases/latest`} target="_blank" rel="noopener noreferrer"
+                            className="underline" style={{ color: "var(--text-soft)" }}>macOS y Linux</a>.
+                    </p>
+
                     <div className="glass rounded-2xl p-6 text-left mb-7">
-                        <p className="text-[10px] uppercase tracking-widest mb-4" style={{ color: "var(--text-mute)" }}>Tres pasos</p>
-                        <ol className="space-y-4">
+                        <p className="text-[10px] uppercase tracking-widest mb-4" style={{ color: "var(--text-mute)" }}>
+                            Qué pasa al instalarlo
+                        </p>
+                        <ol className="space-y-3.5">
                             {[
-                                ["Clona el repositorio", "git clone https://github.com/CDRecordable/astro-trader"],
-                                ["Instala las dependencias", "npm install"],
-                                ["Arráncalo", "npm run dev"],
-                            ].map(([step, cmd], i) => (
+                                ["Doble clic en el instalador", "Se instala como cualquier programa, sin permisos de administrador."],
+                                ["Se abre en su propia ventana", "No necesitas Node, ni terminal, ni recordar ninguna dirección."],
+                                ["Pones tus claves dentro", "Ajustes → tu API key de IA y tu licencia, si la tienes. Se guardan solo en tu equipo."],
+                            ].map(([step, detail], i) => (
                                 <li key={step} className="flex gap-3.5 items-start">
                                     <span className="mono text-[10px] w-5 h-5 rounded flex items-center justify-center shrink-0 mt-0.5"
                                         style={{ background: "rgba(34,211,238,0.12)", color: "var(--cyan)" }}>{i + 1}</span>
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-xs font-semibold mb-1.5">{step}</p>
-                                        <code className="mono text-[11px] block px-3 py-2 rounded-lg overflow-x-auto"
-                                            style={{ background: "rgba(0,0,0,0.35)", color: "var(--cyan)", border: "1px solid var(--border)" }}>
-                                            {cmd}
-                                        </code>
+                                        <p className="text-xs font-semibold mb-0.5">{step}</p>
+                                        <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-mute)" }}>{detail}</p>
                                     </div>
                                 </li>
                             ))}
                         </ol>
                         <p className="text-[11px] mt-5 pt-4" style={{ color: "var(--text-mute)", borderTop: "1px solid var(--border)" }}>
-                            En Windows puedes hacer doble clic en <code className="mono" style={{ color: "var(--text-soft)" }}>Astro Trader.bat</code>:
-                            instala todo la primera vez y te abre el navegador solo.
+                            Windows puede avisar de que el editor es desconocido: el instalador aún no está
+                            firmado digitalmente. Pulsa «Más información → Ejecutar de todas formas», o
+                            compila tú mismo desde el código, que es público.
                         </p>
                     </div>
 
                     <a href={GITHUB} target="_blank" rel="noopener noreferrer"
-                        className="inline-block px-7 py-3.5 rounded-xl text-sm font-semibold transition-transform hover:scale-[1.03]"
-                        style={{ background: "linear-gradient(120deg, var(--cyan), var(--violet))", color: "#06080d" }}>
-                        Ver en GitHub · MIT
+                        className="inline-block px-6 py-3 rounded-xl text-sm font-semibold glass transition-colors hover:bg-white/[0.06]">
+                        Ver el código en GitHub · MIT
                     </a>
                 </div>
             </section>

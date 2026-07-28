@@ -14,9 +14,10 @@ import {
 } from "@/lib/api/llm-client";
 import { isLicensed } from "@/lib/license";
 import { fetchTickerNews, type NewsItem } from "@/lib/api/news-client";
+import { userDataPath } from "@/lib/paths";
 
-const CACHE_DIR = path.join(process.cwd(), "user-data", "crypto-analysis");
-const SETTINGS_PATH = path.join(process.cwd(), "user-data", "settings.json");
+const CACHE_DIR = userDataPath("crypto-analysis");
+const SETTINGS_PATH = userDataPath("settings.json");
 
 interface CachedCryptoAnalysis {
     id: string;

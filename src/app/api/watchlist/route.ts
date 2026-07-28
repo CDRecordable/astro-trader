@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { userDataPath } from "@/lib/paths";
 
 export interface WatchlistItem {
     /** Lookup key for /api/company — CoinGecko ID for crypto, symbol for stocks */
@@ -26,7 +27,7 @@ interface WatchlistFile {
     items: WatchlistItem[];
 }
 
-const DATA_PATH = path.join(process.cwd(), "user-data", "watchlist.json");
+const DATA_PATH = userDataPath("watchlist.json");
 
 function readWatchlist(): WatchlistFile {
     try {

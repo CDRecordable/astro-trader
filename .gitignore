@@ -55,3 +55,8 @@ landing/node_modules/
 landing/.next/
 landing/next-env.d.ts
 landing/tsconfig.tsbuildinfo
+
+# Desktop build artifacts (Electron shell)
+desktop/node_modules/
+desktop/app-server/
+desktop/dist/

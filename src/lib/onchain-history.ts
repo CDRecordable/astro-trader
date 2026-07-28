@@ -10,8 +10,9 @@
 
 import fs from "fs";
 import path from "path";
+import { userDataPath } from "./paths";
 
-const HISTORY_DIR = path.join(process.cwd(), "user-data", "onchain-history");
+const HISTORY_DIR = userDataPath("onchain-history");
 
 export interface OnChainSnapshot {
     t: string;                       // ISO timestamp

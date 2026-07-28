@@ -1,0 +1,20 @@
+{
+  "name": "astro-trader-desktop",
+  "version": "0.6.0",
+  "private": true,
+  "description": "Astro Trader Insights — desktop shell",
+  "author": "Víctor Balcells",
+  "license": "MIT",
+  "main": "main.js",
+  "scripts": {
+    "icon": "node scripts/make-icon.js",
+    "assemble": "node scripts/assemble.js",
+    "pack": "npm run assemble && electron-builder --dir",
+    "dist": "npm run assemble && electron-builder --publish never",
+    "release": "npm run assemble && electron-builder --publish always"
+  },
+  "devDependencies": {
+    "electron": "^34.0.0",
+    "electron-builder": "^25.1.8"
+  }
+}

@@ -1,0 +1,56 @@
+# ============================================================
+# Installer configuration
+# ============================================================
+# Produces a normal Windows installer (NSIS): double-click, next, done —
+# with a Start Menu entry and a desktop shortcut. macOS and Linux targets are
+# defined too, though they must be built on their own platform.
+
+appId: app.astrotrader.insights
+productName: Astro Trader Insights
+copyright: © 2026 Víctor Balcells
+
+directories:
+  output: dist
+  buildResources: build
+
+# Only the shell itself goes in the asar; the server bundle rides along as a
+# resource so Node can execute it as ordinary files.
+files:
+  - main.js
+  - package.json
+
+extraResources:
+  - from: app-server
+    to: app-server
+
+# Users install without admin rights, and can pick the folder.
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Astro Trader
+  deleteAppDataOnUninstall: false   # never delete someone's watchlist on uninstall
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  artifactName: AstroTrader-Setup-${version}.${ext}
+
+mac:
+  target: [dmg]
+  category: public.app-category.finance
+  artifactName: AstroTrader-${version}-${arch}.${ext}
+
+linux:
+  target: [AppImage]
+  category: Finance
+  artifactName: AstroTrader-${version}.${ext}
+
+# Distribution happens through GitHub Releases.
+publish:
+  provider: github
+  owner: CDRecordable
+  repo: astro-trader

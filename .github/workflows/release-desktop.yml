@@ -1,0 +1,57 @@
+# ============================================================
+# Build and publish the desktop installers
+# ============================================================
+# Triggered by pushing a version tag (v0.6.0, v0.7.0…). Each OS builds its own
+# installer — Windows can't produce a .dmg and macOS can't produce an .exe —
+# and all of them land on the same GitHub Release, which is what the website
+# links to.
+
+name: Release desktop app
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:      # allows building on demand from the Actions tab
+
+permissions:
+  contents: write         # required to create the release and upload assets
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false    # a macOS failure shouldn't discard the Windows build
+      matrix:
+        include:
+          - os: windows-latest
+            platform: --win
+          - os: macos-latest
+            platform: --mac
+          - os: ubuntu-latest
+            platform: --linux
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install app dependencies
+        run: npm ci
+
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm ci
+
+      - name: Generate the app icon
+        working-directory: desktop
+        run: npm run icon
+
+      - name: Build and publish the installer
+        working-directory: desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run assemble && npx electron-builder ${{ matrix.platform }} --publish always

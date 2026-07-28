@@ -16,11 +16,12 @@ import { fetchFearGreed } from "@/lib/api/feargreed-client";
 import { fetchHederaStats } from "@/lib/api/hedera-client";
 import { recordAndCompare } from "@/lib/onchain-history";
 import { mapCryptoToCompany } from "@/lib/api/crypto-provider";
+import { userDataPath } from "@/lib/paths";
 import {
     calculateCryptoScoreV2, deriveNextUnlockDays, type CryptoFundamentals,
 } from "@/lib/crypto-fundamentals";
 
-const SETTINGS_PATH = path.join(process.cwd(), "user-data", "settings.json");
+const SETTINGS_PATH = userDataPath("settings.json");
 
 function readDataKeys(): { coinmarketcal: string } {
     try {

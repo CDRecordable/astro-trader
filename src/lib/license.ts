@@ -12,6 +12,7 @@
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
+import { userDataPath } from "./paths";
 
 /** Ed25519 public key matching the issuer's private key. */
 const PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
@@ -19,7 +20,7 @@ MCowBQYDK2VwAyEAADbO/JXrSe9ZOgE6J7NRUMG/Q3n5Dl3fssL6MgPyjLY=
 -----END PUBLIC KEY-----`;
 
 const LICENSE_PREFIX = "ATI1";
-const LICENSE_PATH = path.join(process.cwd(), "user-data", "license.json");
+const LICENSE_PATH = userDataPath("license.json");
 
 export interface LicenseInfo {
     email: string;
