@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+/* ============================================================
+   Design tokens — premium minimal, dark. Mirrors the app so the
+   landing and the product feel like one thing.
+   ============================================================ */
+:root {
+    --bg: #0a0c12;
+    --bg-soft: #0e1118;
+    --card: #111520;
+    --card-hover: #151a27;
+    --border: rgba(255, 255, 255, 0.07);
+    --border-strong: rgba(255, 255, 255, 0.14);
+
+    --text: #e8eaf0;
+    --text-soft: #9aa3b8;
+    --text-mute: #626b80;
+
+    --cyan: #22d3ee;
+    --violet: #a78bfa;
+    --emerald: #34d399;
+    --amber: #fbbf24;
+    --rose: #fb7185;
+
+    --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html {
+    scroll-behavior: smooth;
+    background: var(--bg);
+}
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+}
+
+/* Subtle dotted grid — the "technical instrument" texture */
+.grid-bg {
+    background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.05) 1px, transparent 0);
+    background-size: 28px 28px;
+}
+
+.glass {
+    background: var(--card);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+}
+
+.mono { font-family: var(--font-mono); }
+
+/* Gradient text used for the key headline words */
+.grad {
+    background: linear-gradient(120deg, var(--cyan), var(--violet));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* ── Motion (CSS only — no animation library shipped) ───────── */
+@keyframes rise {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes floaty {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-8px); }
+}
+@keyframes sweep {
+    from { transform: translateX(-100%); }
+    to   { transform: translateX(220%); }
+}
+
+.rise { animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.floaty { animation: floaty 6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+    .rise, .floaty { animation: none; }
+    html { scroll-behavior: auto; }
+}
+
+/* Focus ring — keyboard accessibility on a dark theme */
+:focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: 3px;
+    border-radius: 6px;
+}

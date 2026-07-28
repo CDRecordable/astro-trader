@@ -49,3 +49,9 @@ next-env.d.ts
 
 # windows shortcuts (personal/local)
 *.lnk
+
+# Landing (separate deployable app — its own install/build)
+landing/node_modules/
+landing/.next/
+landing/next-env.d.ts
+landing/tsconfig.tsbuildinfo
