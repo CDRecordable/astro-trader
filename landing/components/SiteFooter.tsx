@@ -1,19 +1,21 @@
 // ============================================================
 // SiteFooter — shared footer, doubles as the crawlable site index
 // ============================================================
+// Every page in the registry appears here as a real link (children included),
+// so crawlers can reach the whole site from any page.
 
+import React from "react";
 import Link from "next/link";
-import { PAGES, GROUP_LABEL, HOME_ANCHORS, GITHUB, type SitePage } from "@/lib/site";
+import { topLevel, childrenOf, GROUP_LABEL, HOME_ANCHORS, GITHUB, type SitePage } from "@/lib/site";
 import { VoxelScene, MARK_VOXELS } from "./Voxel";
 
-const GROUPS: SitePage["group"][] = ["analisis", "esoterico", "cuenta"];
+const GROUPS: SitePage["group"][] = ["analisis", "herramientas", "esoterico", "cuenta"];
 
 export default function SiteFooter() {
     return (
         <footer style={{ borderTop: "1px solid var(--border)", background: "var(--bg-soft)" }}>
             <div className="max-w-6xl mx-auto px-5 py-11">
-                {/* Index — real links, so crawlers reach every page from anywhere */}
-                <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-7 mb-9">
+                <div className="grid sm:grid-cols-2 md:grid-cols-5 gap-7 mb-9">
                     <div>
                         <Link href="/" className="flex items-center gap-2.5 mb-3">
                             <VoxelScene cubes={MARK_VOXELS} size={24} shadow={false} />
@@ -25,7 +27,7 @@ export default function SiteFooter() {
                     </div>
 
                     {GROUPS.map((g) => {
-                        const items = PAGES.filter((p) => p.group === g);
+                        const items = topLevel(g);
                         if (items.length === 0) return null;
                         return (
                             <div key={g}>
@@ -34,11 +36,20 @@ export default function SiteFooter() {
                                 </p>
                                 <ul className="space-y-1.5">
                                     {items.map((p) => (
-                                        <li key={p.href}>
-                                            <Link href={p.href} className="text-xs hover:text-white transition-colors" style={{ color: "var(--text-soft)" }}>
-                                                {p.label}
-                                            </Link>
-                                        </li>
+                                        <React.Fragment key={p.href}>
+                                            <li>
+                                                <Link href={p.href} className="text-xs hover:text-white transition-colors" style={{ color: "var(--text-soft)" }}>
+                                                    {p.label}
+                                                </Link>
+                                            </li>
+                                            {childrenOf(p.href).map((k) => (
+                                                <li key={k.href} className="pl-3">
+                                                    <Link href={k.href} className="text-[11px] hover:text-white transition-colors" style={{ color: "var(--text-mute)" }}>
+                                                        {k.label}
+                                                    </Link>
+                                                </li>
+                                            ))}
+                                        </React.Fragment>
                                     ))}
                                     {g === "cuenta" && (
                                         <>

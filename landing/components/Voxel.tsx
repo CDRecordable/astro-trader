@@ -206,3 +206,37 @@ export const MARK_VOXELS: Cube[] = [
     { x: 0, y: 0, z: 0, tone: "cyan" },
     { x: 0, y: 1, z: 0, tone: "violet" },
 ];
+
+/** A grid with one candidate lifted out: the screener. */
+export const SCREENER_VOXELS: Cube[] = [
+    ...slab(3, 3, 0, "slate"),
+    { x: 1, y: 1, z: 1, tone: "cyan" },
+    { x: 1, y: 2, z: 1, tone: "emerald" },
+];
+
+/** Three economies at different heights: the country-macro dashboard. */
+export const ECON_VOXELS: Cube[] = [
+    ...col(2, 0, 2, "cyan"), ...col(2, 1, 2, "cyan"),
+    ...col(1, 0, 3, "indigo"), ...col(1, 1, 3, "indigo"),
+    ...col(0, 0, 1, "amber"), ...col(0, 1, 1, "amber"),
+];
+
+/** A calm base with one spike: the VIX / volatility regime. */
+export const VIX_VOXELS: Cube[] = [
+    ...col(3, 0, 1, "slate"), ...col(2, 0, 1, "slate"),
+    ...col(1, 0, 4, "rose"),
+    ...col(0, 0, 1, "slate"),
+];
+
+/** A shelf of assets with one marked: the watchlist. */
+export const WATCHLIST_VOXELS: Cube[] = [
+    ...slab(3, 1, 0, "slate"),
+    { x: 0, y: 1, z: 0, tone: "amber" },
+    { x: 2, y: 1, z: 0, tone: "slate" },
+];
+
+/** Two growing coin stacks: the simulated portfolio. */
+export const CARTERA_VOXELS: Cube[] = [
+    ...col(1, 0, 2, "emerald"), ...col(1, 1, 2, "emerald"),
+    ...col(0, 0, 3, "emerald"), ...col(0, 1, 4, "cyan"),
+];
