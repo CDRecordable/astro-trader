@@ -28,11 +28,13 @@ interface Dimension {
     what: string;
     how: string;
     tone: string;
+    href: string;
 }
 
 const DIMENSIONS: Dimension[] = [
     {
         n: "01",
+        href: "/esoterico/turbulencia-astral",
         title: "Turbulencia Astral",
         what: "Un índice de tensión construido con los aspectos duros entre planetas lentos (Saturno, Urano, Plutón) — los ciclos generacionales que la tradición asocia a crisis.",
         how: "Aspectos calculados con astronomy-engine a partir de longitudes eclípticas reales, no de fechas escogidas a mano.",
@@ -40,6 +42,7 @@ const DIMENSIONS: Dimension[] = [
     },
     {
         n: "02",
+        href: "/esoterico/ciclos-lunares",
         title: "Ciclos Lunares",
         what: "Retornos diarios del mercado clasificados por fase lunar, siguiendo la metodología del estudio académico de Dichev & Janes.",
         how: "Fase calculada astronómicamente para cada sesión, con más de 6.000 días de datos reales de mercado.",
@@ -47,6 +50,7 @@ const DIMENSIONS: Dimension[] = [
     },
     {
         n: "03",
+        href: "/esoterico/mercurio-retrogrado",
         title: "Mercurio Retrógrado",
         what: "El clásico del folclore financiero: ¿se comporta peor el mercado durante los periodos retrógrados de Mercurio?",
         how: "Ventanas retrógradas reales sombreadas sobre el gráfico, comparando retornos dentro y fuera del periodo.",
@@ -54,6 +58,7 @@ const DIMENSIONS: Dimension[] = [
     },
     {
         n: "04",
+        href: "/esoterico/actividad-solar",
         title: "Actividad Solar",
         what: "El ciclo de manchas solares frente al mercado: regímenes de máximo, medio y mínimo solar.",
         how: "Datos del observatorio SILSO (Bélgica), la fuente oficial del recuento de manchas solares.",
@@ -61,6 +66,7 @@ const DIMENSIONS: Dimension[] = [
     },
     {
         n: "05",
+        href: "/esoterico/rotacion-sectorial",
         title: "Rotación Sectorial Planetaria",
         what: "Cada sector del mercado mapeado a su regente planetario tradicional, midiendo su rendimiento según la fase del planeta.",
         how: "ETFs sectoriales reales contrastados contra tránsitos planetarios, con la rentabilidad anualizada correctamente.",
@@ -68,6 +74,7 @@ const DIMENSIONS: Dimension[] = [
     },
     {
         n: "06",
+        href: "/esoterico/confluencia-fibonacci",
         title: "Confluencia Fibonacci",
         what: "Zonas donde un retroceso de Fibonacci coincide en el tiempo con un evento astrológico: la hipótesis de que ahí se concentran los giros.",
         how: "Retrocesos multi-swing cruzados con 170+ eventos astrológicos, midiendo la tasa real de reversión frente a un baseline.",
@@ -75,6 +82,7 @@ const DIMENSIONS: Dimension[] = [
     },
     {
         n: "07",
+        href: "/esoterico/backtester",
         title: "Backtester",
         what: "«¿Y si hubieras operado con las estrellas?» Simula una estrategia que sale del mercado cuando la turbulencia supera un umbral.",
         how: "Contra Buy & Hold, con costes de transacción, drawdown máximo y CAGR sobre el calendario real.",
@@ -155,19 +163,23 @@ export default function EsotericPage() {
 
                         <div className="space-y-3">
                             {DIMENSIONS.map((d) => (
-                                <article key={d.n} className="glass rounded-2xl p-5 sm:p-6 transition-colors hover:bg-white/[0.02]">
+                                <Link key={d.n} href={d.href} className="block glass rounded-2xl p-5 sm:p-6 transition-colors hover:bg-white/[0.03] group">
                                     <div className="flex gap-4 sm:gap-5">
                                         <span className="mono text-lg font-bold shrink-0" style={{ color: d.tone }}>{d.n}</span>
-                                        <div className="min-w-0">
+                                        <div className="min-w-0 flex-1">
                                             <h3 className="text-base font-bold mb-2">{d.title}</h3>
                                             <p className="text-sm leading-relaxed mb-2.5" style={{ color: "var(--text-soft)" }}>{d.what}</p>
-                                            <p className="text-[11px] leading-relaxed flex gap-2" style={{ color: "var(--text-mute)" }}>
+                                            <p className="text-[11px] leading-relaxed flex gap-2 mb-2.5" style={{ color: "var(--text-mute)" }}>
                                                 <span style={{ color: d.tone }}>▸</span>
                                                 <span><strong style={{ color: "var(--text-soft)" }}>Cómo se calcula:</strong> {d.how}</span>
                                             </p>
+                                            <span className="text-[11px] font-semibold inline-flex items-center gap-1" style={{ color: d.tone }}>
+                                                Ver en detalle
+                                                <span className="transition-transform group-hover:translate-x-0.5">→</span>
+                                            </span>
                                         </div>
                                     </div>
-                                </article>
+                                </Link>
                             ))}
                         </div>
                     </div>

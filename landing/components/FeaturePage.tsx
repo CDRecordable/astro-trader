@@ -1,38 +1,33 @@
 // ============================================================
-// AnalyzerPage — shared layout for the three analyzer pages
+// FeaturePage — shared layout for the tool landings
 // ============================================================
-// Same skeleton, different substance: keeps /acciones, /cripto and /etfs
-// consistent and means a design change lands on all three at once.
+// Used by /screener, /economia, /vix, /watchlist, /cartera and /ia. Hero with
+// voxel art, a "how it works" walkthrough, the feature grid, the honest
+// differentiator, FAQ (with FAQPage JSON-LD) and the download CTA.
 
 import Link from "next/link";
 import SiteNav from "./SiteNav";
 import SiteFooter from "./SiteFooter";
-import { FaqJsonLd } from "./Seo";
+import { FaqJsonLd, type Faq } from "./Seo";
 import { VoxelScene, type Cube } from "./Voxel";
 
-export interface Pillar {
-    name: string;
-    weight: number;
-    detail: string;
-}
+export interface Step { title: string; detail: string }
+export interface Feature { name: string; detail: string }
 
-export interface Signal {
-    name: string;
-    detail: string;
-}
-
-export default function AnalyzerPage({
-    eyebrow, title, lead, accent, voxels, pillars, signals, differentiator, faq,
+export default function FeaturePage({
+    eyebrow, title, lead, accent, voxels, steps, features, differentiator, faq, related,
 }: {
     eyebrow: string;
     title: React.ReactNode;
     lead: string;
     accent: string;
     voxels: Cube[];
-    pillars: Pillar[];
-    signals: Signal[];
+    steps: Step[];
+    features: Feature[];
     differentiator: { title: string; body: string };
-    faq: { q: string; a: string }[];
+    faq: Faq[];
+    /** Cross-links to sibling landings, for internal SEO juice. */
+    related?: { href: string; label: string }[];
 }) {
     return (
         <>
@@ -43,11 +38,11 @@ export default function AnalyzerPage({
                 <header className="grid-bg relative overflow-hidden">
                     <div
                         className="absolute inset-0 pointer-events-none"
-                        style={{ background: `radial-gradient(ellipse 70% 50% at 50% -10%, ${accent}22, transparent 70%)` }}
+                        style={{ background: `radial-gradient(ellipse 70% 50% at 50% -10%, ${accent}20, transparent 70%)` }}
                     />
                     <div className="relative max-w-4xl mx-auto px-5 pt-14 pb-12 text-center">
                         <div className="flex justify-center mb-6 rise">
-                            <VoxelScene cubes={voxels} size={170} className="floaty" />
+                            <VoxelScene cubes={voxels} size={160} className="floaty" />
                         </div>
                         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] mb-3" style={{ color: accent }}>
                             {eyebrow}
@@ -59,44 +54,34 @@ export default function AnalyzerPage({
                     </div>
                 </header>
 
-                {/* Pillars */}
+                {/* How it works */}
                 <section className="py-16" style={{ background: "var(--bg-soft)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
                     <div className="max-w-4xl mx-auto px-5">
-                        <div className="text-center mb-10">
-                            <h2 className="text-2xl font-bold tracking-tight mb-3">Cómo se puntúa</h2>
-                            <p className="text-sm max-w-xl mx-auto" style={{ color: "var(--text-soft)" }}>
-                                Tres pilares con peso propio. Cada uno se renormaliza sobre los datos que
-                                existen de verdad, así que una métrica ausente puntúa neutro y no como un cero.
-                            </p>
-                        </div>
+                        <h2 className="text-2xl font-bold tracking-tight mb-9 text-center">Cómo funciona</h2>
                         <div className="grid md:grid-cols-3 gap-4">
-                            {pillars.map((p) => (
-                                <article key={p.name} className="glass rounded-2xl p-5">
-                                    <div className="flex items-baseline justify-between mb-3">
-                                        <h3 className="text-sm font-bold">{p.name}</h3>
-                                        <span className="mono text-xs font-bold" style={{ color: accent }}>{p.weight}%</span>
-                                    </div>
-                                    <div className="h-1 rounded-full mb-3.5 overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
-                                        <div className="h-full rounded-full" style={{ width: `${p.weight}%`, background: accent }} />
-                                    </div>
-                                    <p className="text-xs leading-relaxed" style={{ color: "var(--text-soft)" }}>{p.detail}</p>
-                                </article>
+                            {steps.map((s, i) => (
+                                <div key={s.title} className="glass rounded-2xl p-5">
+                                    <span className="mono text-xs font-bold inline-flex w-6 h-6 rounded items-center justify-center mb-3"
+                                        style={{ background: `${accent}1d`, color: accent }}>
+                                        {i + 1}
+                                    </span>
+                                    <h3 className="text-sm font-bold mb-2">{s.title}</h3>
+                                    <p className="text-xs leading-relaxed" style={{ color: "var(--text-soft)" }}>{s.detail}</p>
+                                </div>
                             ))}
                         </div>
                     </div>
                 </section>
 
-                {/* Signals */}
+                {/* Feature grid */}
                 <section className="py-16">
                     <div className="max-w-4xl mx-auto px-5">
-                        <div className="text-center mb-10">
-                            <h2 className="text-2xl font-bold tracking-tight">Lo que mira, una por una</h2>
-                        </div>
+                        <h2 className="text-2xl font-bold tracking-tight mb-9 text-center">Qué incluye</h2>
                         <div className="grid sm:grid-cols-2 gap-x-8 gap-y-1">
-                            {signals.map((s) => (
-                                <div key={s.name} className="py-3.5" style={{ borderBottom: "1px solid var(--border)" }}>
-                                    <h3 className="text-sm font-semibold mb-1">{s.name}</h3>
-                                    <p className="text-xs leading-relaxed" style={{ color: "var(--text-soft)" }}>{s.detail}</p>
+                            {features.map((f) => (
+                                <div key={f.name} className="py-3.5" style={{ borderBottom: "1px solid var(--border)" }}>
+                                    <h3 className="text-sm font-semibold mb-1">{f.name}</h3>
+                                    <p className="text-xs leading-relaxed" style={{ color: "var(--text-soft)" }}>{f.detail}</p>
                                 </div>
                             ))}
                         </div>
@@ -113,11 +98,11 @@ export default function AnalyzerPage({
                     </div>
                 </section>
 
-                {/* FAQ — plain markup so it's easy to read and to crawl */}
+                {/* FAQ + CTA */}
                 <section className="py-16" style={{ background: "var(--bg-soft)", borderTop: "1px solid var(--border)" }}>
                     <div className="max-w-3xl mx-auto px-5">
                         <h2 className="text-2xl font-bold tracking-tight mb-8 text-center">Preguntas frecuentes</h2>
-                        <div className="space-y-5">
+                        <div className="space-y-5 mb-11">
                             {faq.map((f) => (
                                 <div key={f.q}>
                                     <h3 className="text-sm font-semibold mb-1.5">{f.q}</h3>
@@ -126,7 +111,20 @@ export default function AnalyzerPage({
                             ))}
                         </div>
 
-                        <div className="flex flex-wrap gap-3 justify-center mt-11">
+                        {related && related.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-2 justify-center mb-10">
+                                <span className="text-[11px]" style={{ color: "var(--text-mute)" }}>Relacionado:</span>
+                                {related.map((r) => (
+                                    <Link key={r.href} href={r.href}
+                                        className="text-[11px] px-2.5 py-1 rounded-full glass hover:bg-white/[0.06] transition-colors"
+                                        style={{ color: "var(--text-soft)" }}>
+                                        {r.label}
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+
+                        <div className="flex flex-wrap gap-3 justify-center">
                             <Link href="/#descargar" className="px-6 py-3 rounded-xl text-sm font-semibold transition-transform hover:scale-[1.03]"
                                 style={{ background: "linear-gradient(120deg, var(--cyan), var(--violet))", color: "#06080d" }}>
                                 Descargar gratis
