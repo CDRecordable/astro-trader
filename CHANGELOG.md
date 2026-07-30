@@ -12,6 +12,17 @@ any line, the git history is the source of truth: commits use
 
 ## [Unreleased]
 
+### Added
+- **Public site: SEO architecture and one landing per function** — the site
+  grows from 5 to 18 indexed pages following a one-landing-per-search-intent
+  plan (documented in landing/SEO.md): tool landings for the screener, country
+  macro, VIX, watchlist, simulated portfolio and the AI layer, plus a dedicated
+  page for each of the seven esoteric dimensions structured as hypothesis /
+  how-we-measure-it / honest statistical verdict. A Golfmanager-style
+  four-column mega-menu and the footer index every page from a single registry
+  that also generates the sitemap; landings emit FAQPage and BreadcrumbList
+  structured data.
+
 ## [0.6.0] — 2026-07-28
 
 First release with a real installer: the app is now downloadable and installs
