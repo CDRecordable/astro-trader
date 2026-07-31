@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { VoxelScene, KEY_VOXELS } from "@/components/Voxel";
+import KeyReveal from "./KeyReveal";
 
 export const metadata: Metadata = {
     title: "Gracias · Astro Trader Insights",
@@ -18,9 +19,13 @@ export default function ThanksPage() {
 
                 <h1 className="text-3xl font-bold tracking-tight mb-3">Gracias 🙌</h1>
                 <p className="text-sm leading-relaxed mb-8" style={{ color: "var(--text-soft)" }}>
-                    Tu licencia de por vida ya está emitida. Te la hemos enviado al correo de la
-                    compra — busca un mensaje con tu clave <span className="mono" style={{ color: "var(--cyan)" }}>ATI1.…</span>
+                    Tu licencia de por vida queda emitida a tu nombre y asociada al correo de la
+                    compra: podrás recuperarla siempre desde{" "}
+                    <Link href="/licencia" className="underline" style={{ color: "var(--cyan)" }}>Mi licencia</Link>.
                 </p>
+
+                {/* Shows the actual key when arriving from Stripe with ?session_id=… */}
+                <KeyReveal />
 
                 <div className="glass rounded-2xl p-6 text-left mb-6">
                     <p className="text-[10px] uppercase tracking-widest mb-4" style={{ color: "var(--text-mute)" }}>
