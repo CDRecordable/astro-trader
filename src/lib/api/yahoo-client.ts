@@ -14,6 +14,33 @@ export type { MarketGroupId, MarketGroup } from "../market-groups";
 // yahoo-finance2 v3 requires explicit instantiation
 const yf = new YahooFinance();
 
+// ── Transient-failure retry ──────────────────────────────────
+// Yahoo occasionally drops a connection mid-request (undici "fetch failed",
+// resets, DNS hiccups). Without a retry that surfaces to the user as a bogus
+// "Company X not found". Retry ONLY genuinely transient network errors; real
+// 404s / validation errors are rethrown immediately.
+const TRANSIENT_RE = /fetch failed|ECONNRESET|ECONNREFUSED|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|socket hang up|UND_ERR|network/i;
+
+export function isTransientNetworkError(e: unknown): boolean {
+    if (!(e instanceof Error)) return false;
+    const cause = (e as Error & { cause?: { code?: string; message?: string } }).cause;
+    return TRANSIENT_RE.test(`${e.message} ${cause?.code ?? ""} ${cause?.message ?? ""}`);
+}
+
+async function yfRetry<T>(fn: () => Promise<T>, tries = 3): Promise<T> {
+    let last: unknown;
+    for (let i = 0; i < tries; i++) {
+        try {
+            return await fn();
+        } catch (e) {
+            last = e;
+            if (!isTransientNetworkError(e) || i === tries - 1) throw e;
+            await new Promise((r) => setTimeout(r, 400 * (i + 1)));
+        }
+    }
+    throw last;
+}
+
 // Legacy: all US tickers combined
 const ALL_TICKERS = [
     ...MARKET_GROUPS.us_large.tickers,
@@ -82,9 +109,9 @@ async function fetchAnnualFundamentals(ticker: string): Promise<AnnualRow[]> {
         const period2 = new Date();
         const period1 = new Date();
         period1.setFullYear(period1.getFullYear() - 4);
-        const rows = await yf.fundamentalsTimeSeries(ticker, {
+        const rows = await yfRetry(() => yf.fundamentalsTimeSeries(ticker, {
             period1, period2, type: "annual", module: "all",
-        }) as AnnualRow[];
+        })) as AnnualRow[];
         if (!Array.isArray(rows)) return [];
         return rows
             .filter((r) => r && (r.totalRevenue || r.totalAssets))
@@ -102,7 +129,7 @@ export async function fetchCompanyFromYahoo(
     try {
         // Fetch quote first (always works)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const quote: any = await yf.quote(ticker);
+        const quote: any = await yfRetry(() => yf.quote(ticker));
         if (!quote) return null;
 
         // Fetch financial data with separate calls for type safety
@@ -123,12 +150,12 @@ export async function fetchCompanyFromYahoo(
         let hasRevisions = false;
 
         try {
-            const summary = await yf.quoteSummary(ticker, {
+            const summary = await yfRetry(() => yf.quoteSummary(ticker, {
                 modules: [
                     "financialData", "defaultKeyStatistics", "assetProfile",
                     "calendarEvents", "netSharePurchaseActivity", "earningsTrend",
                 ],
-            });
+            }));
 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const s = summary as any;
@@ -408,6 +435,14 @@ export async function fetchCompanyFromYahoo(
         };
     } catch (error) {
         console.error(`[Yahoo] Failed to fetch ${ticker}:`, error);
+        // A network failure that survived the retries is NOT "company not
+        // found" — surfacing it as such misleads the user into thinking the
+        // ticker is wrong. Let it propagate with an honest, actionable message.
+        if (isTransientNetworkError(error)) {
+            throw new Error(
+                `No se pudo conectar con Yahoo Finance para ${ticker} (problema de red temporal). Vuelve a intentarlo en unos segundos.`
+            );
+        }
         return null;
     }
 }
@@ -421,10 +456,10 @@ export async function fetchYahooHistoricalPrices(
         const fromDate = new Date();
         fromDate.setMonth(fromDate.getMonth() - months);
 
-        const result = await yf.chart(ticker, {
+        const result = await yfRetry(() => yf.chart(ticker, {
             period1: fromDate,
             interval: "1wk",
-        }) as { quotes?: Array<{ date: Date | string; close: number | null }> };
+        })) as { quotes?: Array<{ date: Date | string; close: number | null }> };
 
         if (!result?.quotes) return [];
 
