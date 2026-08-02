@@ -12,7 +12,51 @@ any line, the git history is the source of truth: commits use
 
 ## [Unreleased]
 
+### Changed
+- **Scoring: renormalization now carries a confidence term.** A metric we don't
+  have is still excluded from the exam rather than scored as a failure — but
+  excluding a question also handed the whole pillar to whichever metrics
+  survived. Measured against live data, Ethereum's "on-chain" pillar read
+  **87/100 with every on-chain metric N/D**: it was two GitHub counters, and
+  Bitcoin scored a perfect **100** on the same pillar the same way. Each pillar
+  now knows the size of the exam it *didn't* sit and is pulled toward neutral
+  in proportion to what was actually measured. A fully-covered pillar is
+  untouched (stocks, whose Yahoo data is near-complete, barely move); a pillar
+  resting on two of six metrics no longer passes for a confident number.
+  Applies to all three engines. Not-applicable metrics (concentration on a
+  deliberately concentrated sector ETF) are distinguished from missing ones and
+  don't count against coverage.
+- **Crypto: two metrics that couldn't discriminate have been removed.**
+  *Distance above the all-time low* awarded full marks above +500% — Ethereum
+  measured **+429,980%** and Bitcoin **+92,925%**, so every surviving coin
+  banked a guaranteed 20/20. *Supply dilution* and *FDV / market cap* were
+  reciprocals of one another, scoring the same fact twice, and CoinGecko
+  returns `fdv == market cap` for both BTC and ETH — a ratio of exactly 1.0000
+  that was worth another free 20/20. They are now one **supply overhang**
+  metric, computed from the supply figures when available, and a bare 1.0000×
+  with nothing to confirm it counts as absent data instead of a perfect score.
+  Ethereum's composite moves from **83 STRONG_BUY to 64 BUY** as a result.
+
+### Fixed
+- **CoinGecko rate limits no longer masquerade as "asset not found".** Every
+  failure collapsed into `return null`, which the API reported as
+  `Crypto asset "x" not found`. In a live sweep **8 of 12 valid coins "did not
+  exist"** — they had simply been throttled after the first four requests.
+  Transient failures are now retried with backoff and, if they persist,
+  reported honestly as a temporary CoinGecko problem (503); only a genuinely
+  empty response is a 404. Same fix already applied to the Yahoo client.
+
 ### Added
+- **Per-pillar coverage in the UI** — each pillar shows how much of it we could
+  measure, with a warning when it rests on too little, and a tooltip stating
+  what the raw figure was before the confidence shrink.
+- **The score's full arithmetic is now visible** — `composite × adjustment =
+  total`. The Fear & Greed multiplier was applied after the pillars and shown
+  nowhere, so anyone checking the sum found an unexplained gap (81.5 × 1.02 =
+  83).
+- **Staleness warning on cached AI analyses** — a qualitative analysis kept in
+  cache for weeks sat next to a score recomputed on every open, with nothing
+  distinguishing their vintages. Analyses older than 14 days now say so.
 - **Public site: SEO architecture and one landing per function** — the site
   grows from 5 to 18 indexed pages following a one-landing-per-search-intent
   plan (documented in landing/SEO.md): tool landings for the screener, country

@@ -35,142 +35,148 @@ export interface EtfFundamentals extends EtfRawData {
     };
 }
 
-// ── Renormalization helper (same as crypto engine) ───────────
-class Pillar {
-    earned = 0;
-    possible = 0;
-    add(present: boolean, earned: number, possible: number) {
-        if (!present) return;
-        this.earned += earned;
-        this.possible += possible;
-    }
-    score(): number {
-        return this.possible > 0 ? Math.round((this.earned / this.possible) * 100) : 50;
-    }
-}
+// ── Renormalization helper (shared with the stock & crypto engines) ──
+// Note the distinction this pillar draws: a metric that is MISSING enters
+// the exam and drags coverage down, while a metric that is NOT APPLICABLE
+// (concentration on a deliberately concentrated sector fund) is never added
+// at all — we're not failing to measure it, it simply doesn't apply.
+import { Pillar, type PillarResult } from "./scoring";
 
 // ── Pillar 1: Cost & Vehicle ─────────────────────────────────
-function scoreVehicle(f: EtfFundamentals): number {
+function scoreVehicle(f: EtfFundamentals): PillarResult {
     const p = new Pillar();
 
     // TER — the silent compounding killer. <0.15% excellent, >0.60% expensive.
-    if (f.ter !== null) {
-        const t = f.ter;
-        const pts = t <= 0.0010 ? 30 : t <= 0.0020 ? 26 : t <= 0.0035 ? 19 : t <= 0.0060 ? 10 : t <= 0.0100 ? 4 : 0;
-        p.add(true, pts, 30);
-    }
+    const t = f.ter;
+    p.add(
+        t !== null,
+        t === null ? 0 : t <= 0.0010 ? 30 : t <= 0.0020 ? 26 : t <= 0.0035 ? 19 : t <= 0.0060 ? 10 : t <= 0.0100 ? 4 : 0,
+        30,
+    );
 
     // AUM — liquidity + closure risk. (Fund currency; EUR/USD ≈ parity for tiers.)
-    if (f.totalAssets !== null && f.totalAssets > 0) {
-        const b = f.totalAssets / 1e9;
-        const pts = b >= 10 ? 25 : b >= 1 ? 21 : b >= 0.5 ? 17 : b >= 0.1 ? 10 : b >= 0.05 ? 4 : 0;
-        p.add(true, pts, 25);
-    }
+    const aum = f.totalAssets;
+    const b = aum !== null ? aum / 1e9 : 0;
+    p.add(
+        aum !== null && aum > 0,
+        b >= 10 ? 25 : b >= 1 ? 21 : b >= 0.5 ? 17 : b >= 0.1 ? 10 : b >= 0.05 ? 4 : 0,
+        25,
+    );
 
     // Track record
-    if (f.ageYears !== null) {
-        const a = f.ageYears;
-        const pts = a >= 10 ? 15 : a >= 5 ? 12 : a >= 3 ? 8 : a >= 1 ? 4 : 1;
-        p.add(true, pts, 15);
-    }
+    const a = f.ageYears;
+    p.add(a !== null, a === null ? 0 : a >= 10 ? 15 : a >= 5 ? 12 : a >= 3 ? 8 : a >= 1 ? 4 : 1, 15);
 
     // Holdings turnover — passive indexing should be lazy.
-    if (f.turnover !== null) {
-        const t = f.turnover;
-        const pts = t <= 0.10 ? 15 : t <= 0.30 ? 11 : t <= 0.60 ? 6 : 2;
-        p.add(true, pts, 15);
-    }
+    const to = f.turnover;
+    p.add(to !== null, to === null ? 0 : to <= 0.10 ? 15 : to <= 0.30 ? 11 : to <= 0.60 ? 6 : 2, 15);
 
     // Accumulating class: no dividend-tax drag for a Spanish investor.
-    if (f.accumulating !== null) {
-        p.add(true, f.accumulating ? 15 : 9, 15);
-    }
+    p.add(f.accumulating !== null, f.accumulating ? 15 : 9, 15);
 
-    return p.score();
+    return p.result();
 }
 
 // ── Pillar 2: Portfolio & Value ──────────────────────────────
-function scorePortfolio(f: EtfFundamentals): number {
+function scorePortfolio(f: EtfFundamentals): PillarResult {
     const p = new Pillar();
     // Sector and thematic funds are concentrated BY DESIGN — concentration
-    // blocks would punish exactly what the buyer chose. Skip those blocks
-    // (renormalized out) and let valuation carry the pillar.
+    // blocks would punish exactly what the buyer chose. Those blocks are NOT
+    // APPLICABLE here (never added to the pillar), which is different from
+    // data we wanted and couldn't get: they don't count against coverage.
     const intentionallyConcentrated = f.category === "sector" || f.category === "thematic" || f.category === "gold";
 
     // Top-10 weight — is "diversified" real or 7 stocks in a trench coat?
-    if (!intentionallyConcentrated && f.top10Pct !== null) {
+    if (!intentionallyConcentrated) {
         const c = f.top10Pct;
-        const pts = c <= 15 ? 25 : c <= 25 ? 21 : c <= 35 ? 15 : c <= 50 ? 8 : c <= 70 ? 3 : 0;
-        p.add(true, pts, 25);
+        p.add(
+            c !== null,
+            c === null ? 0 : c <= 15 ? 25 : c <= 25 ? 21 : c <= 35 ? 15 : c <= 50 ? 8 : c <= 70 ? 3 : 0,
+            25,
+        );
     }
 
     // Underlying P/E — how expensive is the basket you're buying?
-    if (f.underlyingPE !== null) {
-        const pe = f.underlyingPE;
-        const pts = pe <= 12 ? 30 : pe <= 16 ? 25 : pe <= 20 ? 19 : pe <= 25 ? 12 : pe <= 32 ? 6 : 1;
-        p.add(true, pts, 30);
-    }
+    const pe = f.underlyingPE;
+    p.add(
+        pe !== null,
+        pe === null ? 0 : pe <= 12 ? 30 : pe <= 16 ? 25 : pe <= 20 ? 19 : pe <= 25 ? 12 : pe <= 32 ? 6 : 1,
+        30,
+    );
 
     // Underlying P/B
-    if (f.underlyingPB !== null) {
-        const pb = f.underlyingPB;
-        const pts = pb <= 1.5 ? 15 : pb <= 2.5 ? 12 : pb <= 4 ? 8 : pb <= 6 ? 4 : 1;
-        p.add(true, pts, 15);
-    }
+    const pb = f.underlyingPB;
+    p.add(
+        pb !== null,
+        pb === null ? 0 : pb <= 1.5 ? 15 : pb <= 2.5 ? 12 : pb <= 4 ? 8 : pb <= 6 ? 4 : 1,
+        15,
+    );
 
     // Sector diversification — largest sector weight.
-    if (!intentionallyConcentrated && f.maxSectorPct !== null) {
+    if (!intentionallyConcentrated) {
         const m = f.maxSectorPct;
-        const pts = m <= 20 ? 15 : m <= 30 ? 11 : m <= 45 ? 6 : m <= 60 ? 3 : 1;
-        p.add(true, pts, 15);
+        p.add(
+            m !== null,
+            m === null ? 0 : m <= 20 ? 15 : m <= 30 ? 11 : m <= 45 ? 6 : m <= 60 ? 3 : 1,
+            15,
+        );
     }
 
-    // Dividend yield of the basket (meaningless for a gold ETC)
-    if (f.category !== "gold" && f.dividendYield !== null) {
-        const y = f.dividendYield * 100;
-        const pts = y >= 3 ? 15 : y >= 1.5 ? 11 : y > 0.5 ? 7 : 4;
-        p.add(true, pts, 15);
+    // Dividend yield of the basket (not applicable to a gold ETC)
+    if (f.category !== "gold") {
+        const y = f.dividendYield !== null ? f.dividendYield * 100 : 0;
+        p.add(
+            f.dividendYield !== null,
+            y >= 3 ? 15 : y >= 1.5 ? 11 : y > 0.5 ? 7 : 4,
+            15,
+        );
     }
 
-    return p.score();
+    return p.result();
 }
 
 // ── Pillar 3: Momentum & Timing ──────────────────────────────
-function scoreMomentum(f: EtfFundamentals): number {
+function scoreMomentum(f: EtfFundamentals): PillarResult {
     const p = new Pillar();
 
     // Position vs the 200-day SMA — trend health without chasing.
-    if (f.vsSma200Pct !== null) {
-        const v = f.vsSma200Pct;
-        const pts = v >= 0 && v <= 10 ? 30 : v > 10 && v <= 20 ? 22 : v > 20 ? 12
-            : v >= -5 ? 15 : v >= -15 ? 8 : 3;
-        p.add(true, pts, 30);
-    }
+    const v200 = f.vsSma200Pct;
+    p.add(
+        v200 !== null,
+        v200 === null ? 0
+            : v200 >= 0 && v200 <= 10 ? 30 : v200 > 10 && v200 <= 20 ? 22 : v200 > 20 ? 12
+                : v200 >= -5 ? 15 : v200 >= -15 ? 8 : 3,
+        30,
+    );
 
     // 12-month return — steady beats euphoric.
-    if (f.ret12mPct !== null) {
-        const r = f.ret12mPct;
-        const pts = r >= 5 && r <= 25 ? 25 : r > 0 && r < 5 ? 18 : r > 25 && r <= 50 ? 14
-            : r > 50 ? 6 : r > -10 ? 10 : 4;
-        p.add(true, pts, 25);
-    }
+    const r = f.ret12mPct;
+    p.add(
+        r !== null,
+        r === null ? 0
+            : r >= 5 && r <= 25 ? 25 : r > 0 && r < 5 ? 18 : r > 25 && r <= 50 ? 14
+                : r > 50 ? 6 : r > -10 ? 10 : 4,
+        25,
+    );
 
     // Drawdown from 52-week high — a moderate dip in a broad index is an
     // entry, not a warning (unlike single names).
-    if (f.drawdownPct !== null) {
-        const d = Math.abs(f.drawdownPct);
-        const pts = d >= 5 && d <= 15 ? 25 : d < 5 ? 18 : d <= 25 ? 15 : 8;
-        p.add(true, pts, 25);
-    }
+    const d = f.drawdownPct !== null ? Math.abs(f.drawdownPct) : 0;
+    p.add(
+        f.drawdownPct !== null,
+        d >= 5 && d <= 15 ? 25 : d < 5 ? 18 : d <= 25 ? 15 : 8,
+        25,
+    );
 
     // Annualized volatility — the ride quality.
-    if (f.volAnnPct !== null) {
-        const v = f.volAnnPct;
-        const pts = v <= 12 ? 20 : v <= 18 ? 16 : v <= 25 ? 10 : v <= 35 ? 5 : 2;
-        p.add(true, pts, 20);
-    }
+    const vol = f.volAnnPct;
+    p.add(
+        vol !== null,
+        vol === null ? 0 : vol <= 12 ? 20 : vol <= 18 ? 16 : vol <= 25 ? 10 : vol <= 35 ? 5 : 2,
+        20,
+    );
 
-    return p.score();
+    return p.result();
 }
 
 // ── Main entry ───────────────────────────────────────────────
@@ -179,7 +185,7 @@ export function calculateEtfScore(f: EtfFundamentals): AlgorithmScore {
     const portfolio = scorePortfolio(f);
     const momentum = scoreMomentum(f);
 
-    const composite = 0.30 * vehicle + 0.40 * portfolio + 0.30 * momentum;
+    const composite = 0.30 * vehicle.score + 0.40 * portfolio.score + 0.30 * momentum.score;
     const totalScore = Math.max(0, Math.min(100, Math.round(composite)));
 
     // ── Hard filters ──
@@ -207,11 +213,13 @@ export function calculateEtfScore(f: EtfFundamentals): AlgorithmScore {
         tier: "large",
         passesHardFilters,
         hardFilterReasons: fails,
-        valuationScore: vehicle,     // Pillar 1 → Cost & Vehicle
-        trendScore: portfolio,       // Pillar 2 → Portfolio & Value
-        timingScore: momentum,       // Pillar 3 → Momentum & Timing
+        valuationScore: vehicle.score,     // Pillar 1 → Cost & Vehicle
+        trendScore: portfolio.score,       // Pillar 2 → Portfolio & Value
+        timingScore: momentum.score,       // Pillar 3 → Momentum & Timing
         cosmicFluidityScore: 0,
         macroAdjustment: 1.0,
+        compositeBeforeMacro: Math.round(composite * 10) / 10,
+        coverage: { valuation: vehicle, trend: portfolio, timing: momentum },
         totalScore,
         recommendation,
     };

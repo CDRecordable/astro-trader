@@ -8,6 +8,7 @@ import type { Company, AlgorithmScore, MacroContext, MarketCapTier } from "./typ
 import { calculateCryptoScore } from "./api/crypto-algorithm";
 import type { CoinGeckoMarketData } from "./api/coingecko-client";
 import { clamp, proximityTo52WeekLow } from "./utils";
+import { renormalize, type PillarResult } from "./scoring";
 
 /**
  * Reconstructs a dummy CoinGeckoMarketData from a Company object just to pass into the score calculator.
@@ -125,10 +126,12 @@ export function applyHardFilters(
 // block. A levered company can no longer look artificially cheap: its debt
 // is in the denominator and its leverage is scored directly.
 // Blocks without data are renormalized out (neutral), as in scoreTrend.
-export function scoreValuation(company: Company, tier: MarketCapTier): number {
+export function scoreValuation(company: Company, tier: MarketCapTier): PillarResult {
     const m = company.metrics;
     const hasSolvency = m.dataQuality?.solvency === true;
 
+    // Blocks A (50) + B (25) + solvency leverage (15) + coverage (10).
+    const MAX_POSSIBLE = 100;
     let earned = 0;
     let possible = 0;
 
@@ -190,19 +193,22 @@ export function scoreValuation(company: Company, tier: MarketCapTier): number {
         }
     }
 
-    return possible > 0 ? clamp((earned / possible) * 100, 0, 100) : 50;
+    return renormalize(earned, possible, MAX_POSSIBLE);
 }
 
 // ── 3. Trend & Quality Score ────────────────────────────────
 // Quality LEVELS (always available) + YoY trend + reinvestment efficiency.
 // Unavailable metric groups are RENORMALIZED OUT (neutral), never scored
 // as a failure: score = earned / possible × 100 over the available blocks.
-export function scoreTrend(company: Company): number {
+export function scoreTrend(company: Company): PillarResult {
     const m = company.metrics;
     // Legacy data (mock/older cache rows) carries no flags → assume present,
     // which preserves the old behavior for that data.
     const dq = m.dataQuality ?? { deltas: true, roc: true, growth: true };
 
+    // Quality levels 15+15+10, ROC 10, three YoY deltas 30, reinvestment 20,
+    // dilution 10, accruals 10, revisions 10.
+    const MAX_POSSIBLE = 130;
     let earned = 0;
     let possible = 0;
 
@@ -302,7 +308,7 @@ export function scoreTrend(company: Company): number {
     }
 
     // Nothing measurable at all → neutral, not zero.
-    return possible > 0 ? clamp((earned / possible) * 100, 0, 100) : 50;
+    return renormalize(earned, possible, MAX_POSSIBLE);
 }
 
 // ── 4. Timing Score ─────────────────────────────────────────
@@ -375,9 +381,16 @@ export function evaluateCompany(
     const tier = classifyTier(company.metrics.marketCap);
     const { passes, reasons } = applyHardFilters(company, tier, maxMarketCap);
 
-    const valuationScore = Math.round(scoreValuation(company, tier));
-    const trendScore = Math.round(scoreTrend(company));
-    const timingScore = Math.round(scoreTiming(company));
+    const valuation = scoreValuation(company, tier);
+    const trend = scoreTrend(company);
+    // Timing runs purely on price history: if we can draw the chart we have
+    // every input, so it is always fully covered.
+    const timingRaw = Math.round(scoreTiming(company));
+    const timing = renormalize(timingRaw, 100, 100);
+
+    const valuationScore = valuation.score;
+    const trendScore = trend.score;
+    const timingScore = timing.score;
     // Cosmic factor intentionally excluded from the serious composite:
     // it was identical for every stock on a given day (inert for ranking).
     const cosmicFluidityScore = 0;
@@ -409,6 +422,8 @@ export function evaluateCompany(
         timingScore,
         cosmicFluidityScore,
         macroAdjustment: macroAdj,
+        compositeBeforeMacro: Math.round(rawScore * 10) / 10,
+        coverage: { valuation, trend, timing },
         totalScore,
         recommendation,
     };
