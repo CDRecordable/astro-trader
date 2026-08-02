@@ -14,11 +14,15 @@
         "stocks": "Stocks",
         "crypto": "Crypto",
         "esoteric": "Esoteric",
-        "serious": "Analysis",
         "vix": "VIX",
         "home": "Home",
         "economy": "Economy",
-        "etfs": "ETFs"
+        "etfs": "ETFs",
+        "primaryNav": "Primary navigation",
+        "collapsePanel": "Collapse panel",
+        "expandPanel": "Expand panel",
+        "assetClass": "Asset",
+        "esotericBlurb": "Each module tests an esoteric cycle against real market data and publishes its statistical verdict — including when there is no signal."
     },
     "portfolio": {
         "title": "My Portfolio",

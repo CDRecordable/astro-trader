@@ -317,8 +317,9 @@ input[type="range"]::-moz-range-thumb {
   .print-only { display: block !important; }
 
   /* The layout offsets content to clear the sidebar; not needed on paper. */
-  main, [style*="margin-left: 72px"], [style*="marginLeft: 72"] {
+  main, .app-content {
     margin-left: 0 !important;
+    width: 100% !important;
   }
 
   /* Sticky headers repeat awkwardly across pages. */

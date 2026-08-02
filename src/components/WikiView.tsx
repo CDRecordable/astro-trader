@@ -545,7 +545,7 @@ export default function WikiView() {
     );
 
     return (
-        <div className="min-h-screen p-6" style={{ marginLeft: 72 }}>
+        <div className="min-h-screen p-6">
             {/* Header */}
             <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, var(--accent-amber), var(--accent-emerald))" }}>

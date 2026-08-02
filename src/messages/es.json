@@ -14,11 +14,15 @@
         "stocks": "Acciones",
         "crypto": "Cripto",
         "esoteric": "Esotérico",
-        "serious": "Análisis",
         "vix": "VIX",
         "home": "Inicio",
         "economy": "Economía",
-        "etfs": "ETFs"
+        "etfs": "ETFs",
+        "primaryNav": "Navegación principal",
+        "collapsePanel": "Contraer panel",
+        "expandPanel": "Desplegar panel",
+        "assetClass": "Activo",
+        "esotericBlurb": "Cada módulo contrasta un ciclo esotérico con datos reales de mercado y publica su veredicto estadístico, incluido cuando no hay señal."
     },
     "portfolio": {
         "title": "Mi Cartera",

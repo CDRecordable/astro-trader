@@ -3,7 +3,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { notFound } from "next/navigation";
-import Sidebar from "@/components/Sidebar";
+import AppShell from "@/components/AppShell";
 import UpdateNotice from "@/components/UpdateNotice";
 
 const inter = Inter({
@@ -56,8 +56,7 @@ export default async function LocaleLayout({
         >
             <body className="min-h-full">
                 <NextIntlClientProvider messages={messages}>
-                    <Sidebar />
-                    {children}
+                    <AppShell>{children}</AppShell>
                     <UpdateNotice />
                 </NextIntlClientProvider>
             </body>

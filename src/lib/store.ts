@@ -11,8 +11,6 @@ import type { MarketGroupId } from "./market-groups";
 export type DataSource = "mock" | "live";
 export type ActiveSection = "macro" | "explorer" | "screener" | "watchlist" | "wiki" | "settings";
 export type AssetClass = "stocks" | "crypto" | "etf";
-/** Top-level app mode: esoteric (cosmic) vs serious (fundamental analysis). */
-export type AppMode = "esoteric" | "serious";
 export type MacroSubSection = "overview" | "turbulence" | "lunar" | "mercury" | "solar" | "backtest" | "sectors" | "fibonacci";
 
 interface AppState {
@@ -25,7 +23,6 @@ interface AppState {
     // ── Navigation ────────────────────────────────────────────
     activeSection: ActiveSection;
     assetClass: AssetClass;
-    appMode: AppMode;
     macroSubSection: MacroSubSection;
     selectedMarket: MarketGroupId | null | string; // crypto markets can be strings like "decentralized-finance-defi"
 
@@ -44,7 +41,6 @@ interface AppState {
     initializeData: () => void;
     setActiveSection: (section: ActiveSection) => void;
     setAssetClass: (assetClass: AssetClass) => void;
-    setAppMode: (mode: AppMode) => void;
     setDataSource: (source: DataSource) => void;
     setMacroSubSection: (sub: MacroSubSection) => void;
     setSelectedMarket: (market: MarketGroupId | string | null) => void;
@@ -64,7 +60,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     dataSource: "live",
     activeSection: "macro",
     assetClass: "stocks",
-    appMode: "serious",
     macroSubSection: "overview",
     selectedMarket: null,
 
@@ -96,8 +91,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     setAssetClass: (assetClass) => {
         set({ assetClass, selectedMarket: null, companies: [], scores: [], selectedCompanyId: null, isDetailOpen: false });
     },
-
-    setAppMode: (mode) => set({ appMode: mode }),
 
     setDataSource: (source) => {
         set({ dataSource: source, error: null });
