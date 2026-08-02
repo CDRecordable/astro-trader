@@ -22,6 +22,7 @@ import AiAnalysisSection from "./AiAnalysisSection";
 import WatchlistButton from "./WatchlistButton";
 import DiscardButton from "./DiscardButton";
 import TradeButtons from "./TradeButtons";
+import { PrintButton, PrintHeader } from "./PrintReport";
 import { useTranslations } from "next-intl";
 import {
     X, ArrowUpRight, ArrowDownRight,
@@ -298,6 +299,9 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                     background: "var(--bg-secondary)",
                 }}
             >
+                {/* Report identity — printed page only */}
+                <PrintHeader ticker={company.ticker} name={company.name} subtitle={company.sector} />
+
                 {/* ── Header ── */}
                 <div
                     className="sticky top-0 z-10 px-6 py-4 flex items-center justify-between"
@@ -333,6 +337,7 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        <PrintButton />
                         <TradeButtons company={company} assetType="s" />
                         <DiscardButton company={company} assetType="s" />
                         <WatchlistButton company={company} assetType="s" />

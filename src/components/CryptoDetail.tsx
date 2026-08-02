@@ -19,6 +19,7 @@ import MetricScatter from "./MetricScatter";
 import WatchlistButton from "./WatchlistButton";
 import DiscardButton from "./DiscardButton";
 import TradeButtons from "./TradeButtons";
+import { PrintButton, PrintHeader } from "./PrintReport";
 import CryptoAiSection from "./CryptoAiSection";
 import CryptoBetaAnalysis from "./CryptoBetaAnalysis";
 import { reinforcementLevel } from "./ReinforcementBadge";
@@ -194,6 +195,9 @@ export default function CryptoDetail({ company, score: initialScore, onClose }: 
     return (
         <AnimatePresence>
             <div className="w-full max-w-4xl mx-auto" style={{ background: "var(--bg-secondary)" }}>
+                {/* Report identity — printed page only */}
+                <PrintHeader ticker={company.ticker} name={company.name} subtitle={company.sector} />
+
                 {/* Header */}
                 <div
                     className="sticky top-0 z-10 px-6 py-4 flex items-center justify-between"
@@ -223,6 +227,7 @@ export default function CryptoDetail({ company, score: initialScore, onClose }: 
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        <PrintButton />
                         <TradeButtons company={company} assetType="c" />
                         <DiscardButton company={company} assetType="c" />
                         <WatchlistButton company={company} assetType="c" />

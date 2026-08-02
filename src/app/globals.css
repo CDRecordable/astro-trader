@@ -235,3 +235,152 @@ input[type="range"]::-moz-range-thumb {
 .score-ring svg {
   transform: rotate(-90deg);
 }
+
+/* ============================================================
+   Print / Save as PDF
+   ============================================================
+   The report already exists on screen, so "download as PDF" is just the
+   browser's own print pipeline with a proper stylesheet. Because the whole UI
+   is driven by CSS custom properties, redefining them here flips the entire
+   dark theme to an ink-friendly light document in one place — inline styles
+   written as var(--…) follow along automatically.
+
+   Elements that only make sense on screen opt out with .no-print; elements
+   that only belong in the document use .print-only. */
+
+.print-only { display: none; }
+
+@media print {
+  /* ── Ink-friendly palette ───────────────────────────────── */
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f4f4f5;
+    --bg-card: #ffffff;
+    --bg-card-hover: #ffffff;
+
+    --text-primary: #18181b;
+    --text-secondary: #3f3f46;
+    --text-muted: #52525b;
+
+    /* Darkened accents: the neon versions are illegible on white. */
+    --accent-cyan: #0e7490;
+    --accent-cyan-dim: #155e75;
+    --accent-emerald: #047857;
+    --accent-violet: #6d28d9;
+    --accent-violet-dim: #5b21b6;
+    --accent-amber: #b45309;
+    --accent-rose: #be123c;
+
+    --signal-strong-buy: #047857;
+    --signal-buy: #0e7490;
+    --signal-hold: #b45309;
+    --signal-avoid: #be123c;
+
+    --border-subtle: #e4e4e7;
+    --border-active: #d4d4d8;
+    --glass-bg: transparent;
+    --glass-border: #e4e4e7;
+
+    --shadow-card: none;
+    --shadow-glow-cyan: none;
+    --shadow-glow-emerald: none;
+  }
+
+  @page {
+    size: A4;
+    margin: 14mm 12mm;
+  }
+
+  html, body {
+    background: #fff !important;
+    color: #18181b !important;
+  }
+
+  /* Chrome/Edge drop background colours by default; we need the tinted
+     callouts and score rings to survive. */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* ── What never belongs in the document ─────────────────── */
+  .no-print,
+  aside,                      /* the fixed sidebar */
+  nav,
+  button,
+  input,
+  [role="tablist"] { display: none !important; }
+
+  .print-only { display: block !important; }
+
+  /* The layout offsets content to clear the sidebar; not needed on paper. */
+  main, [style*="margin-left: 72px"], [style*="marginLeft: 72"] {
+    margin-left: 0 !important;
+  }
+
+  /* Sticky headers repeat awkwardly across pages. */
+  [class*="sticky"] { position: static !important; }
+
+  /* ── Report header / footer ─────────────────────────────── */
+  .print-header {
+    display: flex !important;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 10px;
+    margin-bottom: 16px;
+    border-bottom: 2px solid #18181b;
+  }
+  .print-brand {
+    font-size: 9pt;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: #0e7490;
+    margin: 0 0 2px;
+  }
+  .print-title { font-size: 17pt; font-weight: 700; margin: 0; color: #18181b; }
+  .print-sub { font-size: 9pt; color: #52525b; margin: 2px 0 0; }
+  .print-date { font-size: 8.5pt; color: #52525b; margin: 0; white-space: nowrap; }
+  .print-disclaimer {
+    font-size: 7.5pt;
+    line-height: 1.45;
+    color: #52525b;
+    border: 1px solid #e4e4e7;
+    border-radius: 4px;
+    padding: 6px 8px;
+    margin: 0 0 14px;
+  }
+
+  /* ── Keep blocks whole across page breaks ───────────────── */
+  section, article, table, figure, .glass-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  h1, h2, h3 { break-after: avoid; page-break-after: avoid; }
+
+  .glass-card, section {
+    border: 1px solid #e4e4e7 !important;
+    background: #fff !important;
+  }
+
+  /* Charts are canvas-rendered; make sure they fit the page width. */
+  canvas, svg { max-width: 100% !important; height: auto !important; }
+
+  /* Links: show the destination for news sources, but not for in-app anchors. */
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 7pt;
+    color: #71717a;
+    word-break: break-all;
+  }
+
+  /* Animations would freeze mid-way in the print snapshot. */
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

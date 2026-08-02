@@ -19,6 +19,7 @@ import ScoreRing from "./ScoreRing";
 import WatchlistButton from "./WatchlistButton";
 import DiscardButton from "./DiscardButton";
 import TradeButtons from "./TradeButtons";
+import { PrintButton, PrintHeader } from "./PrintReport";
 import EtfAiSection from "./EtfAiSection";
 import { reinforcementLevel } from "./ReinforcementBadge";
 import {
@@ -191,6 +192,9 @@ export default function EtfDetail({ company, score: initialScore, onClose }: Etf
     return (
         <AnimatePresence>
             <div className="w-full max-w-4xl mx-auto" style={{ background: "var(--bg-secondary)" }}>
+                {/* Report identity — printed page only */}
+                <PrintHeader ticker={company.ticker} name={company.name} subtitle={company.sector} />
+
                 {/* Header */}
                 <div
                     className="sticky top-0 z-10 px-6 py-4 flex items-center justify-between"
@@ -220,6 +224,7 @@ export default function EtfDetail({ company, score: initialScore, onClose }: Etf
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        <PrintButton />
                         <TradeButtons company={company} assetType="e" />
                         <DiscardButton company={company} assetType="e" />
                         <WatchlistButton company={company} assetType="e" />

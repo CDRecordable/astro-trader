@@ -1120,5 +1120,11 @@
         "buy": "Comprar licencia (9,90 €)",
         "recover": "He perdido mi clave",
         "deactivate": "Desactivar en este equipo"
+    },
+    "printReport": {
+        "button": "PDF",
+        "tooltip": "Descargar el informe completo en PDF",
+        "generatedOn": "Generado el {date}",
+        "disclaimer": "Informe generado por Astro Trader Insights a partir de datos públicos de mercado. No es asesoramiento financiero: los datos pueden estar incompletos o ser erróneos y las decisiones de inversión son responsabilidad de quien las toma."
     }
 }
