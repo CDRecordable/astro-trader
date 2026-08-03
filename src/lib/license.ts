@@ -25,7 +25,19 @@ const LICENSE_PATH = userDataPath("license.json");
 export interface LicenseInfo {
     email: string;
     issuedAt: string;   // ISO date
-    product: "ai-lifetime";
+    /**
+     * `ai-lifetime` — the one-off purchase: permanent, and the user supplies
+     *   their own provider key.
+     * `patreon-pro` — an active Patreon membership: the AI runs through our
+     *   proxy on our key, so it EXPIRES and is renewed while the membership
+     *   lasts. A subscription that never expired would let someone pledge for
+     *   one month and keep spending our budget forever.
+     */
+    product: "ai-lifetime" | "patreon-pro";
+    /** Expiry (ISO date) — `patreon-pro` only. */
+    expiresAt?: string;
+    /** Seconds until expiry; negative once expired. `patreon-pro` only. */
+    expiresInSeconds?: number;
 }
 
 interface StoredLicense { key: string }
@@ -50,14 +62,24 @@ export function verifyLicenseKey(key: string): LicenseInfo | null {
         if (!ok) return null;
 
         const payload = JSON.parse(b64uDecode(body).toString("utf8")) as {
-            e?: string; t?: number; p?: string;
+            e?: string; t?: number; p?: string; x?: number;
         };
-        if (!payload.e || !payload.t || payload.p !== "ai-lifetime") return null;
+        if (!payload.e || !payload.t) return null;
+        if (payload.p !== "ai-lifetime" && payload.p !== "patreon-pro") return null;
 
-        return {
+        const base: LicenseInfo = {
             email: payload.e,
             issuedAt: new Date(payload.t * 1000).toISOString().slice(0, 10),
-            product: "ai-lifetime",
+            product: payload.p,
+        };
+        if (payload.p !== "patreon-pro") return base;
+
+        // A PRO token without an expiry would be a lifetime grant by accident.
+        if (typeof payload.x !== "number") return null;
+        return {
+            ...base,
+            expiresAt: new Date(payload.x * 1000).toISOString().slice(0, 10),
+            expiresInSeconds: payload.x - Math.floor(Date.now() / 1000),
         };
     } catch {
         return null;

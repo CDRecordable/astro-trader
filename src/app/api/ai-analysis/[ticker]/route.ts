@@ -14,15 +14,13 @@ import { getCompanyDetail } from "@/lib/api/provider";
 import { evaluateCompany } from "@/lib/algorithm";
 import { getDefaultMacroContext } from "@/lib/mock-data";
 import {
-    callLLM, buildAnalysisPrompt, parseAnalysisJson,
-    type LLMProvider, type QualitativeAnalysis,
+    buildAnalysisPrompt, parseAnalysisJson, type QualitativeAnalysis,
 } from "@/lib/api/llm-client";
-import { isLicensed } from "@/lib/license";
+import { runAi } from "@/lib/ai-access";
 import { fetchTickerNews, type NewsItem } from "@/lib/api/news-client";
 import { userDataPath } from "@/lib/paths";
 
 const CACHE_DIR = userDataPath("ai-analysis");
-const SETTINGS_PATH = userDataPath("settings.json");
 
 interface CachedAnalysis {
     ticker: string;
@@ -36,29 +34,6 @@ interface CachedAnalysis {
 
 function cachePath(ticker: string): string {
     return path.join(CACHE_DIR, `${ticker.replace(/[^A-Za-z0-9.\-]/g, "_")}.json`);
-}
-
-function readSettings(): { provider: LLMProvider | "none"; apiKey: string } {
-    try {
-        const s = JSON.parse(fs.readFileSync(SETTINGS_PATH, "utf-8")) as {
-            llm?: { defaultProvider?: string; apiKeys?: Record<string, string> };
-        };
-        const keys = s.llm?.apiKeys ?? {};
-        const chosen = (s.llm?.defaultProvider ?? "none") as LLMProvider | "none";
-
-        // Prefer the explicitly chosen provider IF it actually has a key.
-        if (chosen !== "none" && (keys[chosen] ?? "").trim()) {
-            return { provider: chosen, apiKey: keys[chosen].trim() };
-        }
-        // Otherwise fall back to the first provider with a non-empty key, so
-        // "paste a key and go" works even if the user never picked a default.
-        for (const p of ["claude", "gemini", "deepseek"] as LLMProvider[]) {
-            if ((keys[p] ?? "").trim()) return { provider: p, apiKey: keys[p].trim() };
-        }
-        return { provider: "none", apiKey: "" };
-    } catch {
-        return { provider: "none", apiKey: "" };
-    }
 }
 
 // ── GET: cached analysis ─────────────────────────────────────
@@ -83,22 +58,8 @@ export async function POST(
     const { ticker: rawTicker } = await params;
     const ticker = rawTicker.toUpperCase();
 
-    // The AI layer is the paid feature: verify the licence (offline, against the
-    // embedded public key) before spending the user's tokens.
-    if (!isLicensed()) {
-        return NextResponse.json(
-            { error: "no_license", message: "Desbloquea la capa de IA con tu licencia en Ajustes." },
-            { status: 402 }
-        );
-    }
-
-    const { provider, apiKey } = readSettings();
-    if (provider === "none" || !apiKey) {
-        return NextResponse.json(
-            { error: "no_api_key", message: "Configura un proveedor LLM y su API key en Ajustes." },
-            { status: 400 }
-        );
-    }
+    // Access is resolved in one place: a lifetime licence uses the user's own
+    // key, an active Patreon membership goes through our proxy. See ai-access.ts.
 
     try {
         // Ground the model with our real quantitative picture + recent news
@@ -133,14 +94,20 @@ export async function POST(
             news: newsBlock,
         });
 
-        const { text, model } = await callLLM(provider, apiKey, prompt);
+        const ai = await runAi(prompt);
+        if (!ai.ok) {
+            return NextResponse.json({ error: ai.failure, message: ai.message }, { status: ai.status });
+        }
+        const { text, model, provider } = ai;
         const analysis = parseAnalysisJson(text);
 
         const cached: CachedAnalysis = {
             ticker,
             name: company.name,
             generatedAt: new Date().toISOString(),
+
             provider,
+
             model,
             analysis,
             news,

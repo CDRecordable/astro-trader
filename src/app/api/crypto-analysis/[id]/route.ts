@@ -9,15 +9,13 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import {
-    callLLM, buildCryptoAnalysisPrompt, parseCryptoAnalysisJson,
-    type LLMProvider, type CryptoQualitative,
+    buildCryptoAnalysisPrompt, parseCryptoAnalysisJson, type CryptoQualitative,
 } from "@/lib/api/llm-client";
-import { isLicensed } from "@/lib/license";
+import { runAi } from "@/lib/ai-access";
 import { fetchTickerNews, type NewsItem } from "@/lib/api/news-client";
 import { userDataPath } from "@/lib/paths";
 
 const CACHE_DIR = userDataPath("crypto-analysis");
-const SETTINGS_PATH = userDataPath("settings.json");
 
 interface CachedCryptoAnalysis {
     id: string;
@@ -36,25 +34,6 @@ function cachePath(id: string): string {
 
 // Same smart provider selection as /api/ai-analysis: chosen-if-keyed, else
 // first provider with a non-empty key.
-function readLLM(): { provider: LLMProvider | "none"; apiKey: string } {
-    try {
-        const s = JSON.parse(fs.readFileSync(SETTINGS_PATH, "utf-8")) as {
-            llm?: { defaultProvider?: string; apiKeys?: Record<string, string> };
-        };
-        const keys = s.llm?.apiKeys ?? {};
-        const chosen = (s.llm?.defaultProvider ?? "none") as LLMProvider | "none";
-        if (chosen !== "none" && (keys[chosen] ?? "").trim()) {
-            return { provider: chosen, apiKey: keys[chosen].trim() };
-        }
-        for (const p of ["claude", "gemini", "deepseek"] as LLMProvider[]) {
-            if ((keys[p] ?? "").trim()) return { provider: p, apiKey: keys[p].trim() };
-        }
-        return { provider: "none", apiKey: "" };
-    } catch {
-        return { provider: "none", apiKey: "" };
-    }
-}
-
 // ── GET ──────────────────────────────────────────────────────
 export async function GET(
     _req: NextRequest,
@@ -77,22 +56,8 @@ export async function POST(
     const { id: rawId } = await params;
     const id = rawId.toLowerCase();
 
-    // The AI layer is the paid feature: verify the licence (offline, against the
-    // embedded public key) before spending the user's tokens.
-    if (!isLicensed()) {
-        return NextResponse.json(
-            { error: "no_license", message: "Desbloquea la capa de IA con tu licencia en Ajustes." },
-            { status: 402 }
-        );
-    }
-
-    const { provider, apiKey } = readLLM();
-    if (provider === "none" || !apiKey) {
-        return NextResponse.json(
-            { error: "no_api_key", message: "Configura un proveedor LLM y su API key en Ajustes." },
-            { status: 400 }
-        );
-    }
+    // Access is resolved in one place: a lifetime licence uses the user's own
+    // key, an active Patreon membership goes through our proxy. See ai-access.ts.
 
     try {
         const body = await req.json() as {
@@ -114,7 +79,11 @@ export async function POST(
             news: newsBlock,
         });
 
-        const { text, model } = await callLLM(provider, apiKey, prompt);
+        const ai = await runAi(prompt);
+        if (!ai.ok) {
+            return NextResponse.json({ error: ai.failure, message: ai.message }, { status: ai.status });
+        }
+        const { text, model, provider } = ai;
         const analysis = parseCryptoAnalysisJson(text);
 
         const cached: CachedCryptoAnalysis = {
