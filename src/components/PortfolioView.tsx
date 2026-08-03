@@ -23,15 +23,13 @@ import PortfolioConfig from "./PortfolioConfig";
 
 function useOpenDetail() {
     const router = useRouter();
-    const setAppMode = useAppStore((s) => s.setAppMode);
     const setAssetClass = useAppStore((s) => s.setAssetClass);
     const addCompanyByTicker = useAppStore((s) => s.addCompanyByTicker);
     return useCallback((assetType: "s" | "c" | "e", ticker: string) => {
-        setAppMode("serious");
         setAssetClass(assetType === "c" ? "crypto" : assetType === "e" ? "etf" : "stocks");
         addCompanyByTicker(ticker, assetType);
         router.push("/explorer");
-    }, [router, setAppMode, setAssetClass, addCompanyByTicker]);
+    }, [router, setAssetClass, addCompanyByTicker]);
 }
 
 interface Position extends Holding {

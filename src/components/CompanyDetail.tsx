@@ -23,6 +23,7 @@ import WatchlistButton from "./WatchlistButton";
 import DiscardButton from "./DiscardButton";
 import TradeButtons from "./TradeButtons";
 import { PrintButton, PrintHeader } from "./PrintReport";
+import { CoverageBar, ScoreArithmetic } from "./ScoreTransparency";
 import { useTranslations } from "next-intl";
 import {
     X, ArrowUpRight, ArrowDownRight,
@@ -430,9 +431,18 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                             />
                             <div className="space-y-1.5 mt-2">
                                 <MetricRow label={t("valuation35")} value={`${score.valuationScore}/100`} color="var(--accent-cyan)" />
+                                <CoverageBar pillar={score.coverage?.valuation} />
                                 <MetricRow label={t("trend25")} value={`${score.trendScore}/100`} color="var(--accent-violet)" />
+                                <CoverageBar pillar={score.coverage?.trend} />
                                 <MetricRow label={t("timing20")} value={`${score.timingScore}/100`} color="var(--accent-amber)" />
+                                <CoverageBar pillar={score.coverage?.timing} />
                                 <MetricRow label={t("macroAdj")} value={`×${score.macroAdjustment.toFixed(2)}`} color="var(--text-secondary)" />
+                                <ScoreArithmetic
+                                    composite={score.compositeBeforeMacro}
+                                    macro={score.macroAdjustment}
+                                    total={score.totalScore}
+                                    macroLabel={t("macroAdj")}
+                                />
                                 <MetricRow label={t("totalScore")} value={`${score.totalScore}/100`} color="var(--accent-emerald)" />
                             </div>
                         </section>

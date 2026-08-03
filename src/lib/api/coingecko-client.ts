@@ -31,6 +31,62 @@ export interface CoinGeckoMarketData {
 
 const COINGECKO_BASE_URL = "https://api.coingecko.com/api/v3";
 
+// ── Transient failures vs "this coin doesn't exist" ──────────
+// Every error used to collapse into `return null`, which the API route then
+// reported as `Crypto asset "x" not found on CoinGecko`. Measured against the
+// live free tier, 8 of 12 valid coins "did not exist" — they had simply been
+// rate-limited after the first four requests. Telling a user a real asset
+// doesn't exist because we were throttled is the worst kind of wrong answer,
+// so the two cases are now distinguished and the transient one is retried.
+// (Same fix already applied to the Yahoo client.)
+
+/** CoinGecko was unreachable or throttled — NOT a statement about the asset. */
+export class CoinGeckoUnavailableError extends Error {
+    constructor(message: string, readonly status?: number) {
+        super(message);
+        this.name = "CoinGeckoUnavailableError";
+    }
+}
+
+/** 429 is the free tier's rate limit; the 5xx family and timeouts are retryable. */
+const TRANSIENT_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
+const TRANSIENT_NETWORK_RE =
+    /fetch failed|ECONNRESET|ECONNREFUSED|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|socket hang up|UND_ERR|network|aborted/i;
+
+export function isTransientCoinGeckoError(e: unknown): boolean {
+    if (e instanceof CoinGeckoUnavailableError) return true;
+    if (e instanceof Error) return TRANSIENT_NETWORK_RE.test(`${e.message} ${e.cause ?? ""}`);
+    return false;
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * fetch with backoff on throttling and network blips. A non-transient HTTP
+ * error (a real 404) is returned as-is for the caller to interpret.
+ * Throws CoinGeckoUnavailableError once the retries are exhausted.
+ */
+async function cgFetch(url: string, init?: RequestInit, tries = 3): Promise<Response> {
+    let last: unknown;
+    for (let i = 0; i < tries; i++) {
+        try {
+            const res = await fetch(url, init);
+            if (res.ok) return res;
+            if (!TRANSIENT_STATUS.has(res.status)) return res; // genuine client error
+            last = new CoinGeckoUnavailableError(`CoinGecko HTTP ${res.status}`, res.status);
+            // The free tier throttles hard; give it real room before retrying.
+            if (i < tries - 1) await sleep((res.status === 429 ? 1500 : 500) * (i + 1));
+        } catch (e) {
+            last = e;
+            if (!isTransientCoinGeckoError(e)) throw e;
+            if (i < tries - 1) await sleep(500 * (i + 1));
+        }
+    }
+    throw last instanceof CoinGeckoUnavailableError
+        ? last
+        : new CoinGeckoUnavailableError(`CoinGecko unreachable: ${last instanceof Error ? last.message : String(last)}`);
+}
+
 /** Daily price history for a coin (for beta vs BTC). Free tier caps at ~365d.
  *  Returns oldest → newest {date (ISO), price}. Empty array on error. */
 export async function fetchCoinMarketChart(
@@ -115,7 +171,7 @@ export async function fetchCoinDetail(coingeckoId: string): Promise<CoinGeckoDet
         url.searchParams.append("developer_data", "true");
         url.searchParams.append("sparkline", "false");
 
-        const res = await fetch(url.toString(), { next: { revalidate: 600 } });
+        const res = await cgFetch(url.toString(), { next: { revalidate: 600 } });
         if (!res.ok) throw new Error(`CoinGecko detail ${res.status}`);
 
         // CoinGecko's detail document is deeply nested and loosely typed.
@@ -191,19 +247,20 @@ export async function fetchCryptoDetail(coingeckoId: string): Promise<CoinGeckoM
         url.searchParams.append("sparkline", "false");
         url.searchParams.append("price_change_percentage", "24h,7d");
 
-        const res = await fetch(url.toString(), {
-            next: { revalidate: 300 }
-        });
+        const res = await cgFetch(url.toString(), { next: { revalidate: 300 } });
 
         if (!res.ok) {
             const err = await res.text();
             throw new Error(`CoinGecko API Error ${res.status}: ${err}`);
         }
 
+        // An empty array here is the ONLY honest "this coin doesn't exist".
         const data: CoinGeckoMarketData[] = await res.json();
         return data.length > 0 ? data[0] : null;
     } catch (error) {
         console.error(`[CoinGecko] Error fetching detail for ${coingeckoId}:`, error);
+        // Throttling and network failures must not masquerade as "not found".
+        if (isTransientCoinGeckoError(error)) throw error;
         return null;
     }
 }

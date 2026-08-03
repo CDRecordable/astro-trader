@@ -22,6 +22,7 @@ import TradeButtons from "./TradeButtons";
 import { PrintButton, PrintHeader } from "./PrintReport";
 import EtfAiSection from "./EtfAiSection";
 import { reinforcementLevel } from "./ReinforcementBadge";
+import { CoverageBar } from "./ScoreTransparency";
 import {
     X, Landmark, PieChart, ActivitySquare, AlertTriangle, Loader2,
     HelpCircle, ChevronUp, ChevronDown, ArrowLeftRight, LineChart as LineChartIcon,
@@ -285,8 +286,11 @@ export default function EtfDetail({ company, score: initialScore, onClose }: Etf
                             <span className="text-sm font-mono font-bold" style={{ color: "var(--accent-cyan)" }}>{score.totalScore}/100</span>
                         </div>
                         <Row label={t("pillarVehicle")} value={`${score.valuationScore}/100`} tone="neutral" />
+                        <CoverageBar pillar={score.coverage?.valuation} />
                         <Row label={t("pillarPortfolio")} value={`${score.trendScore}/100`} tone="neutral" />
+                        <CoverageBar pillar={score.coverage?.trend} />
                         <Row label={t("pillarMomentum")} value={`${score.timingScore}/100`} tone="neutral" />
+                        <CoverageBar pillar={score.coverage?.timing} />
                     </section>
 
                     {loading && !f && (

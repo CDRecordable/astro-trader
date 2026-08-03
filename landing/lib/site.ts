@@ -152,6 +152,13 @@ export const PAGES: SitePage[] = [
 
     // ── Cuenta ─────────────────────────────────────────────────
     {
+        href: "/pro",
+        label: "Acceso PRO (Patreon)",
+        blurb: "Apoya el proyecto y usa la capa de IA sin configurar ninguna clave.",
+        group: "cuenta",
+        priority: 0.8,
+    },
+    {
         href: "/licencia",
         label: "Mi licencia",
         blurb: "Comprueba o recupera tu clave. Sin cuentas ni contraseñas.",
@@ -185,4 +192,5 @@ export const HOME_ANCHORS = [
 ];
 
 export const GITHUB = "https://github.com/CDRecordable/astro-trader";
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://astrotrader.app";
+export const SITE_URL =
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://astro-trader-production.up.railway.app";

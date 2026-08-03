@@ -32,12 +32,22 @@ nsis:
   createStartMenuShortcut: true
   shortcutName: Astro Trader
   deleteAppDataOnUninstall: false   # never delete someone's watchlist on uninstall
+  # Keep the historical filename so existing download links keep working.
+  artifactName: AstroTrader-Setup-${version}.${ext}
 
+# Two Windows artifacts, for two different distribution routes:
+#   · nsis — the normal installer, published to GitHub Releases and what the
+#     in-app updater checks against.
+#   · zip  — a portable build for hosting where an .exe is awkward to upload
+#     or would be flagged (Patreon posts, for instance). Unzip and run; it
+#     writes its data to the same per-user folder as the installed version.
 win:
   target:
     - target: nsis
       arch: [x64]
-  artifactName: AstroTrader-Setup-${version}.${ext}
+    - target: zip
+      arch: [x64]
+  artifactName: AstroTrader-${version}-${arch}.${ext}
 
 mac:
   target: [dmg]

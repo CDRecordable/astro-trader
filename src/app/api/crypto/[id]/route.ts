@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
-import { fetchCryptoDetail, fetchCoinDetail } from "@/lib/api/coingecko-client";
+import { fetchCryptoDetail, fetchCoinDetail, isTransientCoinGeckoError } from "@/lib/api/coingecko-client";
 import { fetchLlamaProtocol, fetchLlamaFees } from "@/lib/api/defillama-client";
 import { fetchOnChainStats } from "@/lib/api/onchain-client";
 import { fetchCatalysts } from "@/lib/api/coinmarketcal-client";
@@ -160,6 +160,17 @@ export async function GET(
         return NextResponse.json({ company, fundamentals, score });
     } catch (error) {
         console.error("[API /crypto]", error);
+        // Throttling / connectivity is a temporary failure on OUR side. Saying
+        // "not found" here would tell the user a real asset doesn't exist.
+        if (isTransientCoinGeckoError(error)) {
+            return NextResponse.json(
+                {
+                    error: `No hemos podido consultar CoinGecko para "${id}" (límite de peticiones o red). Vuelve a intentarlo en unos segundos.`,
+                    transient: true,
+                },
+                { status: 503 }
+            );
+        }
         return NextResponse.json(
             { error: error instanceof Error ? error.message : "Unknown error" },
             { status: 500 }

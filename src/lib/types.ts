@@ -2,6 +2,8 @@
 // Astro Trader Insights - Core Type Definitions
 // ============================================================
 
+import type { ScoreCoverage } from "./scoring";
+
 /** Market cap tier for adaptive algorithm scoring */
 export type MarketCapTier = "small" | "mid" | "large";
 
@@ -146,6 +148,21 @@ export interface AlgorithmScore {
     timingScore: number;
     cosmicFluidityScore: number; // cosmic weather (0-100)
     macroAdjustment: number;     // multiplier (0.9 - 1.0)
+
+    /**
+     * Weighted composite BEFORE `macroAdjustment` is applied, so the UI can
+     * show the whole arithmetic (`62.8 × 1.02 = 64`) instead of a final number
+     * that doesn't match the pillars above it. Optional: analyses cached before
+     * this field existed simply don't have it.
+     */
+    compositeBeforeMacro?: number;
+
+    /**
+     * How much of each pillar we could actually measure. A pillar decided by
+     * 2 of its 6 metrics is reported as such rather than passed off as a
+     * confident number. Optional for the same backwards-compatibility reason.
+     */
+    coverage?: ScoreCoverage;
 
     // --- Final ---
     totalScore: number;          // weighted composite (0-100)

@@ -14,11 +14,15 @@
         "stocks": "Acciones",
         "crypto": "Cripto",
         "esoteric": "Esotérico",
-        "serious": "Análisis",
         "vix": "VIX",
         "home": "Inicio",
         "economy": "Economía",
-        "etfs": "ETFs"
+        "etfs": "ETFs",
+        "primaryNav": "Navegación principal",
+        "collapsePanel": "Contraer panel",
+        "expandPanel": "Desplegar panel",
+        "assetClass": "Activo",
+        "esotericBlurb": "Cada módulo contrasta un ciclo esotérico con datos reales de mercado y publica su veredicto estadístico, incluido cuando no hay señal."
     },
     "portfolio": {
         "title": "Mi Cartera",
@@ -902,7 +906,7 @@
         "hardFilterFail": "Filtros duros no superados",
         "scoreTitle": "Puntuación compuesta",
         "pillarValue": "Tokenomics y Valor (40%)",
-        "pillarNetwork": "Red y On-chain (35%)",
+        "pillarNetwork": "Desarrollo y Red (35%)",
         "pillarMomentum": "Momentum y Timing (25%)",
         "fearGreed": "Fear & Greed",
         "fearGreedTip": "Índice de miedo/codicia del mercado cripto (0 = miedo extremo, 100 = codicia extrema). Usado como ajuste macro contrario: el miedo extremo sube ligeramente la nota.",
@@ -1126,5 +1130,16 @@
         "tooltip": "Descargar el informe completo en PDF",
         "generatedOn": "Generado el {date}",
         "disclaimer": "Informe generado por Astro Trader Insights a partir de datos públicos de mercado. No es asesoramiento financiero: los datos pueden estar incompletos o ser erróneos y las decisiones de inversión son responsabilidad de quien las toma."
+    },
+    "coverage": {
+        "label": "cobertura {pct}%",
+        "metrics": "{measured}/{total} métricas",
+        "points": "{possible}/{max} pts",
+        "tip": "Parte de la puntuación de este pilar que hemos podido medir de verdad. Lo que no tenemos no puntúa ni penaliza: se excluye del examen.",
+        "tipShifted": "Medido a medias: el dato bruto daba {raw}/100, pero con tan poca cobertura la puntuación se acerca a 50 (neutro). Queda en {score}/100.",
+        "arithmetic": "Cómo sale el total",
+        "macroTip": "Ajuste contrarian por {label}: {pct}% sobre el compuesto de los tres pilares.",
+        "thinWarning": "Pilar decidido por pocas métricas — tómalo como orientativo.",
+        "staleAnalysis": "Este análisis cualitativo se generó hace {days} días ({date}) y se ha conservado en caché. La puntuación cuantitativa de arriba, en cambio, se recalcula cada vez que abres la ficha: no son de la misma fecha. Pulsa «Regenerar» para actualizarlo."
     }
 }

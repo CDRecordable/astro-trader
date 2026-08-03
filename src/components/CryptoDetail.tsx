@@ -23,6 +23,7 @@ import { PrintButton, PrintHeader } from "./PrintReport";
 import CryptoAiSection from "./CryptoAiSection";
 import CryptoBetaAnalysis from "./CryptoBetaAnalysis";
 import { reinforcementLevel } from "./ReinforcementBadge";
+import { CoverageBar, ScoreArithmetic } from "./ScoreTransparency";
 import {
     X, Coins, Network, ActivitySquare, Calendar,
     AlertTriangle, Loader2, HelpCircle, Gauge, ChevronUp, ChevronDown,
@@ -282,11 +283,20 @@ export default function CryptoDetail({ company, score: initialScore, onClose }: 
                             <span className="text-sm font-mono font-bold" style={{ color: "var(--accent-cyan)" }}>{score.totalScore}/100</span>
                         </div>
                         <Row label={t("pillarValue")} value={`${score.valuationScore}/100`} tone="neutral" />
+                        <CoverageBar pillar={score.coverage?.valuation} />
                         <Row label={t("pillarNetwork")} value={`${score.trendScore}/100`} tone="neutral" />
+                        <CoverageBar pillar={score.coverage?.trend} />
                         <Row label={t("pillarMomentum")} value={`${score.timingScore}/100`} tone="neutral" />
+                        <CoverageBar pillar={score.coverage?.timing} />
                         {f?.fearGreed != null && (
                             <Row label={t("fearGreed")} value={`${f.fearGreed} · ${f.fearGreedLabel ?? ""}`} tone={f.fearGreed <= 45 ? "good" : f.fearGreed >= 75 ? "warn" : "neutral"} tooltip={t("fearGreedTip")} />
                         )}
+                        <ScoreArithmetic
+                            composite={score.compositeBeforeMacro}
+                            macro={score.macroAdjustment}
+                            total={score.totalScore}
+                            macroLabel={t("fearGreed")}
+                        />
                     </section>
 
                     {loading && !f && (

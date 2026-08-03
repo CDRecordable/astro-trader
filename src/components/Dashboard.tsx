@@ -213,7 +213,7 @@ export default function Dashboard() {
     );
 
     return (
-        <div className="min-h-screen" style={{ marginLeft: 72 }}>
+        <div className="min-h-screen">
             {/* Header is ALWAYS visible */}
             <Header />
 

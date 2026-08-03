@@ -14,6 +14,7 @@ import type { QualitativeAnalysis } from "@/lib/api/llm-client";
 import type { NewsItem } from "@/lib/api/news-client";
 import AiLoadingBar from "./AiLoadingBar";
 import ReinforcementBadge from "./ReinforcementBadge";
+import { AnalysisAge } from "./ScoreTransparency";
 
 interface CachedAnalysis {
     ticker: string;
@@ -127,6 +128,7 @@ export default function AiAnalysisSection({ ticker, onResult }: { ticker: string
             {/* Rendered analysis */}
             {a && !loading && (
                 <div className="space-y-4">
+                    <AnalysisAge generatedAt={data?.generatedAt} />
                     {/* Summary + reinforcement on the main score */}
                     <div className="flex items-start gap-4">
                         <div className="flex flex-col items-center shrink-0 gap-1.5">

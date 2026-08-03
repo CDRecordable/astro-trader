@@ -46,13 +46,11 @@ function scoreColor(s: number) {
 export default function HomeView() {
     const t = useTranslations("home");
     const router = useRouter();
-    const setAppMode = useAppStore((s) => s.setAppMode);
     const setAssetClass = useAppStore((s) => s.setAssetClass);
     const addCompanyByTicker = useAppStore((s) => s.addCompanyByTicker);
 
     // Open a watchlist asset's full detail in the Explorer (serious mode).
     const openDetail = (row: Row) => {
-        setAppMode("serious");
         setAssetClass(row.assetType === "c" ? "crypto" : row.assetType === "e" ? "etf" : "stocks");
         addCompanyByTicker(row.ticker, row.assetType);
         router.push("/explorer");
@@ -157,7 +155,7 @@ export default function HomeView() {
 
                 {/* ── Two-mode entry ───────────────────────────────── */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-10">
-                    <Link href="/explorer" onClick={() => setAppMode("serious")}>
+                    <Link href="/explorer">
                         <motion.div whileHover={{ scale: 1.015 }} className="rounded-2xl p-6 h-full cursor-pointer group" style={{ background: "linear-gradient(135deg, rgba(52,211,153,0.08), rgba(34,211,238,0.04))", border: "1px solid rgba(52,211,153,0.18)" }}>
                             <div className="flex items-center justify-between mb-3">
                                 <LineChart size={24} style={{ color: "var(--accent-emerald)" }} />
@@ -167,7 +165,7 @@ export default function HomeView() {
                             <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>{t("seriousDesc")}</p>
                         </motion.div>
                     </Link>
-                    <Link href="/macro" onClick={() => setAppMode("esoteric")}>
+                    <Link href="/macro">
                         <motion.div whileHover={{ scale: 1.015 }} className="rounded-2xl p-6 h-full cursor-pointer group" style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.08), rgba(34,211,238,0.04))", border: "1px solid rgba(167,139,250,0.18)" }}>
                             <div className="flex items-center justify-between mb-3">
                                 <Moon size={24} style={{ color: "var(--accent-violet)" }} />
@@ -193,7 +191,7 @@ export default function HomeView() {
                                     <Moon size={15} style={{ color: "var(--accent-violet)" }} />
                                     <h2 className="text-sm font-bold uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>{t("macroTitle")}</h2>
                                 </div>
-                                <Link href="/macro" onClick={() => setAppMode("esoteric")} className="text-xs flex items-center gap-1" style={{ color: "var(--accent-violet)" }}>
+                                <Link href="/macro" className="text-xs flex items-center gap-1" style={{ color: "var(--accent-violet)" }}>
                                     {t("viewMacro")} <ArrowRight size={12} />
                                 </Link>
                             </div>
@@ -226,7 +224,7 @@ export default function HomeView() {
                         <h2 className="text-sm font-bold uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>{t("watchlistTitle")}</h2>
                     </div>
                     {rows.length > 0 && (
-                        <Link href="/watchlist" onClick={() => setAppMode("serious")} className="text-xs flex items-center gap-1 transition-colors" style={{ color: "var(--accent-cyan)" }}>
+                        <Link href="/watchlist" className="text-xs flex items-center gap-1 transition-colors" style={{ color: "var(--accent-cyan)" }}>
                             {t("viewAll")} <ArrowRight size={12} />
                         </Link>
                     )}
@@ -251,7 +249,7 @@ export default function HomeView() {
                             <BookmarkX size={26} style={{ color: "var(--text-muted)" }} />
                         </div>
                         <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{t("emptyTitle")}</p>
-                        <Link href="/watchlist" onClick={() => setAppMode("serious")} className="text-xs px-4 py-2 rounded-lg font-semibold" style={{ background: "var(--accent-cyan-dim)", color: "white" }}>
+                        <Link href="/watchlist" className="text-xs px-4 py-2 rounded-lg font-semibold" style={{ background: "var(--accent-cyan-dim)", color: "white" }}>
                             {t("emptyCta")}
                         </Link>
                     </div>
