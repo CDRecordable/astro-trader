@@ -25,7 +25,9 @@ const SETTINGS_PATH = userDataPath("settings.json");
 const PROVIDERS: LLMProvider[] = ["gemini", "claude", "deepseek"];
 
 /** Where the PRO proxy lives. Overridable so a self-hoster can point elsewhere. */
-const PRO_API = (process.env.ASTRO_PRO_API ?? "https://astrotraderinsights.com").replace(/\/$/, "");
+const PRO_API = (
+    process.env.ASTRO_PRO_API ?? "https://astro-trader-production.up.railway.app"
+).replace(/\/$/, "");
 
 /** Renew once the token has less than this left, so it never lapses in use. */
 const RENEW_BEFORE_SECONDS = 3 * 86_400;

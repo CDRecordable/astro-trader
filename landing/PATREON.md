@@ -36,8 +36,9 @@ puesto dentro de él se puede borrar editando dos líneas.
 
    Para probar en local, añade también `http://localhost:3000/api/patreon/callback`.
 4. Guarda y copia **Client ID** y **Client Secret**.
-5. En la misma página verás el **Campaign ID**. Cópialo: sirve para que solo
-   cuente quien apoya *tu* campaña, no cualquiera que use Patreon.
+5. En la ficha del cliente verás también el **Token de acceso del creador**.
+   Cópialo: con él el servidor averigua por su cuenta cuál es tu campaña, para
+   que solo cuente quien te apoya a *ti* y no a cualquier creador de Patreon.
 
 ---
 
@@ -58,7 +59,7 @@ En el servicio de la landing, **Variables**:
 |---|---|---|
 | `PATREON_CLIENT_ID` | del paso 1 | Identifica tu app ante Patreon |
 | `PATREON_CLIENT_SECRET` | del paso 1 | **Secreto.** Nunca en el repo |
-| `PATREON_CAMPAIGN_ID` | del paso 1 | Solo cuenta quien apoya tu campaña |
+| `PATREON_CREATOR_ACCESS_TOKEN` | de la ficha del cliente | Con esto el servidor averigua tu campaña solo |
 | `PATREON_REDIRECT_URI` | `https://TU-DOMINIO/api/patreon/callback` | Debe coincidir **carácter a carácter** con lo que pusiste en Patreon |
 | `PATREON_MONTHLY_QUOTA` | `100` | Análisis incluidos al mes |
 | `PATREON_MIN_PLEDGE_CENTS` | `0`, o el mínimo de tu tramo en céntimos | Si solo quieres dar PRO a partir de cierto tramo |
@@ -74,11 +75,15 @@ En el servicio de la landing, **Variables**:
 > abrir esto al público** y sustituye la pública también en
 > `src/lib/license.ts` de la app. Quien tenga la privada puede emitir accesos.
 
-Después, crea las tablas nuevas:
+### Las tablas ya están creadas
 
-```bash
-npx drizzle-kit push
-```
+`patrons`, `ai_usage` y `licenses` existen ya en Neon.
+
+⚠️ **No ejecutes `drizzle-kit push` contra esta base de datos.** La app de
+escritorio y esta web comparten un mismo proyecto de Neon, pero el esquema de
+aquí solo declara sus tres tablas — un push intentaría **borrar las de la app**
+(`companies`, `crypto_assets`, `scan_log`) por no encontrarlas en él.
+Si algún día hay que cambiar el esquema, hazlo con SQL explícito.
 
 ---
 

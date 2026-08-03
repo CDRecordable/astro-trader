@@ -14,6 +14,7 @@
 const AUTHORIZE_URL = "https://www.patreon.com/oauth2/authorize";
 const TOKEN_URL = "https://www.patreon.com/api/oauth2/token";
 const IDENTITY_URL = "https://www.patreon.com/api/oauth2/v2/identity";
+const CAMPAIGNS_URL = "https://www.patreon.com/api/oauth2/v2/campaigns";
 
 /** Minimum monthly pledge, in cents, that unlocks PRO. */
 export const PRO_MIN_PLEDGE_CENTS = Number(process.env.PATREON_MIN_PLEDGE_CENTS ?? 0);
@@ -37,6 +38,34 @@ function required(name: string): string {
     const v = process.env[name];
     if (!v) throw new Error(`${name} is not configured`);
     return v;
+}
+
+// ── Which campaign counts ────────────────────────────────────
+// Only supporters of OUR campaign get PRO. Patreon never shows the campaign's
+// numeric id in its UI, so rather than make the operator dig it out with a
+// terminal we resolve it from the creator token they already have — and cache
+// it, since it never changes.
+let cachedCampaignId: string | null = null;
+
+export async function resolveCampaignId(): Promise<string | null> {
+    if (process.env.PATREON_CAMPAIGN_ID) return process.env.PATREON_CAMPAIGN_ID;
+    if (cachedCampaignId) return cachedCampaignId;
+
+    const creatorToken = process.env.PATREON_CREATOR_ACCESS_TOKEN;
+    if (!creatorToken) return null;
+
+    try {
+        const res = await fetch(CAMPAIGNS_URL, {
+            headers: { Authorization: `Bearer ${creatorToken}` },
+        });
+        if (!res.ok) return null;
+        const json = (await res.json()) as { data?: Array<{ id?: string }> };
+        const id = json.data?.[0]?.id ?? null;
+        if (id) cachedCampaignId = id;
+        return id;
+    } catch {
+        return null;
+    }
 }
 
 /** Where we send someone to approve the connection. */
@@ -141,12 +170,19 @@ export async function memberFromAccessToken(accessToken: string): Promise<Patreo
     const email = (json.data?.attributes?.email ?? "").toLowerCase();
     if (!patreonUserId) throw new Error("Patreon identity returned no user id");
 
-    // A person can back several campaigns; only ours grants the tier.
-    const campaignId = process.env.PATREON_CAMPAIGN_ID;
+    // A person can back many campaigns; only ours grants the tier. If we cannot
+    // establish which campaign is ours we deny — an earlier version fell back to
+    // "the first membership", which would have handed PRO to anyone supporting
+    // any creator on Patreon.
+    const campaignId = await resolveCampaignId();
+    if (!campaignId) {
+        throw new Error(
+            "Cannot determine our campaign: set PATREON_CAMPAIGN_ID or PATREON_CREATOR_ACCESS_TOKEN",
+        );
+    }
+
     const memberships = (json.included ?? []).filter((i) => i.type === "member");
-    const ours = campaignId
-        ? memberships.find((m) => m.relationships?.campaign?.data?.id === campaignId)
-        : memberships[0];
+    const ours = memberships.find((m) => m.relationships?.campaign?.data?.id === campaignId);
 
     const status = ours?.attributes?.patron_status ?? "none";
     const pledgeCents = ours?.attributes?.currently_entitled_amount_cents ?? 0;
