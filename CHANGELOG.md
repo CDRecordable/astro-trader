@@ -12,6 +12,47 @@ any line, the git history is the source of truth: commits use
 
 ## [Unreleased]
 
+### Added
+- **Technical (chartist) analysis** — a fourth leg of the product, built with
+  the same honesty rules as the rest. A new **"Técnico" section** hosts a
+  TradingView-style workbench: candlestick chart with four synchronized panes
+  (price, volume, RSI, MACD), toggleable overlays (SMA 20/50/200, EMA 12/26,
+  Bollinger), timeframes that move the zoom without corrupting indicator
+  warm-up, clustered support/resistance levels, and a **technical score**
+  (0-100) built from three renormalized pillars — Trend 40% · Momentum 35% ·
+  Volume&Volatility 25% — with per-pillar coverage visible. Indicators are
+  computed locally (no library, no API): RSI/ATR/ADX use Wilder's smoothing,
+  verified against Wilder's canonical vectors by `npm run verify:ta`.
+  Crypto series are synthesized from daily closes (real close + volume, no
+  invented wicks), so OHLC-dependent indicators honestly report N/D there.
+- **AI read of the chart** — the model receives the PRE-computed indicators
+  and translates them into very simple signals, an overall stance
+  (bullish/neutral/bearish with a permanent "short-term, indicative" label),
+  and — honesty first — a list of indicators that CONTRADICT each other
+  instead of a forced direction. Price targets are forbidden by prompt. The
+  staleness warning fires at 3 days (a chart read is a photograph, not a
+  thesis).
+- **Investment-horizon selector** — the detail header now carries a premium
+  score block showing both valuations side by side (fundamental ring with its
+  recommendation and AI arrows, global ring with its own verdict) plus a
+  Corto/Medio/Largo selector. The horizon reshapes the blend live and
+  transparently: short multiplies the technical weight ×1.75 (weeks-months —
+  the chart is most of what you can know), medium uses your configured
+  baseline, long drops it to ×0.375 (years — volatility washes out and
+  fundamentals dominate). The multipliers scale YOUR baseline, so a user who
+  set the technical weight to 0 keeps 0 at every horizon. The choice persists
+  across restarts, and every arithmetic line on screen updates in sync.
+- **Global score, configurable** — each detail card now shows the technical
+  block (compact score, pillars, top signals, AI read) and a **global blend**:
+  fundamental × (1−w) + technical × w, with the visible arithmetic and a
+  small "Global" ring next to the main one. The weight w lives in Settings
+  (default 40%), and **0% turns the global score off entirely** — for users
+  who consider chartism a chimera. The fundamental score remains the headline
+  number everywhere, and no cached score changes: the blend is pure
+  presentation. Tooltip discloses that ~30% of the stock fundamental score
+  (its timing pillar) is already price-based.
+
+
 ### Changed
 - **Scoring: renormalization now carries a confidence term.** A metric we don't
   have is still excluded from the exam rather than scored as a failure — but

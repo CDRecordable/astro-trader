@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import {
     Settings, Key, Eye, EyeOff, Save, CheckCircle2,
-    AlertCircle, Loader2, Brain, Cpu, Zap, Info,
+    AlertCircle, Loader2, Brain, Cpu, Zap, Info, SlidersHorizontal,
 } from "lucide-react";
 import type { UserSettings } from "@/app/api/settings/route";
 import LicenseSection from "./LicenseSection";
@@ -125,6 +125,15 @@ export default function SettingsView() {
         setSettings({
             ...settings,
             llm: { ...settings.llm, defaultProvider: provider },
+        });
+        setSaved(false);
+    };
+
+    const handleTechnicalWeight = (value: number) => {
+        if (!settings) return;
+        setSettings({
+            ...settings,
+            scoring: { ...settings.scoring, technicalWeight: value / 100 },
         });
         setSaved(false);
     };
@@ -331,6 +340,45 @@ export default function SettingsView() {
                                 </motion.div>
                             );
                         })}
+                    </div>
+                </section>
+
+                {/* ── Global score blend ───────────────────────── */}
+                <section className="mb-8">
+                    <div className="flex items-center gap-2 mb-4">
+                        <SlidersHorizontal size={16} style={{ color: "var(--accent-cyan)" }} />
+                        <h2 className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>
+                            {t("scoringTitle")}
+                        </h2>
+                    </div>
+                    <div className="glass-card p-5">
+                        <p className="text-xs leading-relaxed mb-4" style={{ color: "var(--text-secondary)" }}>
+                            {t("technicalWeightHint")}
+                        </p>
+                        {(() => {
+                            const pct = Math.round((settings.scoring?.technicalWeight ?? 0.4) * 100);
+                            return (
+                                <div>
+                                    <div className="flex items-center justify-between mb-2 text-[11px] font-mono" style={{ color: "var(--text-muted)" }}>
+                                        <span>{t("weightFundamental")}: {100 - pct}%</span>
+                                        <span>{t("weightTechnical")}: {pct}%</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min={0}
+                                        max={100}
+                                        step={5}
+                                        value={pct}
+                                        onChange={(e) => handleTechnicalWeight(Number(e.target.value))}
+                                        className="w-full accent-cyan-400 cursor-pointer"
+                                        style={{ accentColor: "var(--accent-cyan)" }}
+                                    />
+                                    <p className="text-[10px] mt-2" style={{ color: pct === 0 ? "var(--signal-hold)" : "var(--text-muted)" }}>
+                                        {pct === 0 ? t("technicalWeightOff") : t("technicalWeightNote", { pct })}
+                                    </p>
+                                </div>
+                            );
+                        })()}
                     </div>
                 </section>
 

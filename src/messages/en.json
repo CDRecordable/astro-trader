@@ -22,7 +22,8 @@
         "collapsePanel": "Collapse panel",
         "expandPanel": "Expand panel",
         "assetClass": "Asset",
-        "esotericBlurb": "Each module tests an esoteric cycle against real market data and publishes its statistical verdict — including when there is no signal."
+        "esotericBlurb": "Each module tests an esoteric cycle against real market data and publishes its statistical verdict — including when there is no signal.",
+        "technical": "Technical"
     },
     "portfolio": {
         "title": "My Portfolio",
@@ -169,6 +170,10 @@
         "economy": {
             "title": "Country Macro — Astro Trader Insights",
             "description": "Jobs, inflation and activity per country with an implied central-bank bias reading."
+        },
+        "technical": {
+            "title": "Technical Analysis — Astro Trader Insights",
+            "description": "Candlestick chart with RSI, MACD, Bollinger and moving averages, a technical score with visible coverage, and a plain-language AI read."
         }
     },
     "macroOverview": {
@@ -720,7 +725,11 @@
         "betaInverse": "Moves opposite to the market (negative beta): a natural hedge.",
         "betaR2": "The market explains {r2}% of its moves; the rest is idiosyncratic (company-specific).",
         "betaNeutral": "Barely moves with the market: its behaviour is largely independent (beta ≈ 0).",
-        "peerLoading": "Finding sector peers…"
+        "peerLoading": "Finding sector peers…",
+        "technicalTitle": "Technical",
+        "insightTechnical": "What this is",
+        "insightTechnicalBody": "Technical analysis reads only price and volume: trend, momentum and volatility. It knows nothing about the business — it is a snapshot of what the market is doing with the stock, on a days-to-weeks horizon.",
+        "insightTechnicalLimits": "Honest limits: it is probabilistic, works worse than its fans believe and better than its detractors admit. That is why its weight in the global score is configurable in Settings — including 0%."
     },
     "watchlist": {
         "title": "My Watchlist",
@@ -780,7 +789,13 @@
         "saving": "Saving...",
         "saved": "Saved!",
         "storageTitle": "Local storage",
-        "storageDesc": "All your data (watchlist, API keys) is saved to the project folder:"
+        "storageDesc": "All your data (watchlist, API keys) is saved to the project folder:",
+        "scoringTitle": "Global score",
+        "technicalWeightHint": "The global score blends fundamental and technical analysis. Choose how much each weighs according to your investment philosophy.",
+        "weightFundamental": "Fundamental",
+        "weightTechnical": "Technical",
+        "technicalWeightNote": "The global score will appear on detail cards as fundamental blended with {pct}% technical.",
+        "technicalWeightOff": "Global score disabled: only the fundamental score will be shown."
     },
     "screener": {
         "title": "Screener",
@@ -1141,5 +1156,81 @@
         "macroTip": "Contrarian {label} adjustment: {pct}% on the three-pillar composite.",
         "thinWarning": "Pillar decided by few metrics — treat it as indicative.",
         "staleAnalysis": "This qualitative analysis was generated {days} days ago ({date}) and has been kept in cache. The quantitative score above, by contrast, is recomputed every time you open the card: they are not the same vintage. Hit \"Regenerate\" to refresh it."
+    },
+    "technical": {
+        "title": "Technical Analysis",
+        "subtitle": "Candles, indicators and an honest technical score — short-term, probabilistic",
+        "emptyState": "Search a stock, crypto or ETF to open its technical chart.",
+        "notEnoughHistory": "This asset lacks enough history for a reliable technical read (about 3 months minimum).",
+        "throttled": "The data provider is rate-limiting. Try again in a few seconds.",
+        "fetchError": "Could not load the technical data.",
+        "price": "Price",
+        "volume": "Volume",
+        "asOf": "as of {date}",
+        "syntheticNote": "Synthetic series built from daily closes (no intraday highs/lows): a line is shown instead of candles, and OHLC-dependent indicators appear as N/A.",
+        "scoreTitle": "Technical score",
+        "pillar_trend": "Trend",
+        "pillar_momentum": "Momentum",
+        "pillar_volatility": "Volume & volatility",
+        "verdict_strong": "Strong",
+        "verdict_moderate": "Constructive",
+        "verdict_weak": "Weak",
+        "verdict_avoid": "Adverse",
+        "balance": "Signal balance",
+        "signalsTitle": "Signals",
+        "ndNote": "N/A for this asset: {list}.",
+        "levelsTitle": "Levels",
+        "supports": "Supports",
+        "resistances": "Resistances",
+        "disclaimer": "Technical analysis is probabilistic and short-term. Nothing in this section predicts price or constitutes financial advice.",
+        "ind_sma_structure": "Moving-average structure",
+        "ind_golden_cross": "50/200 cross",
+        "ind_rsi": "RSI (14)",
+        "ind_macd": "MACD",
+        "ind_macd_momentum": "MACD impulse",
+        "ind_bollinger": "Bollinger %B",
+        "ind_squeeze": "Band squeeze",
+        "ind_stochastic": "Stochastic",
+        "ind_obv": "OBV (volume)",
+        "ind_volume_trend": "Recent volume",
+        "ind_adx": "ADX (strength)",
+        "ind_atr": "ATR% (volatility)",
+        "ind_divergence": "RSI divergence",
+        "sectionTitle": "Technical analysis",
+        "unavailable": "Not available for this asset (insufficient history or provider throttling).",
+        "openWorkbench": "Open in workbench",
+        "globalLabel": "Global",
+        "globalTip": "Global score = fundamental blended with technical at {w}%. Configurable in Settings. Honest caveat: ~30% of the fundamental score (its timing pillar) is already price signal, so the global slightly over-weights the short term.",
+        "fundamentalLabel": "Fundamental",
+        "horizonLabel": "Horizon",
+        "horizon_short": "Short",
+        "horizon_medium": "Medium",
+        "horizon_long": "Long",
+        "horizonTip_short": "Weeks-months: at this range the chart is most of what you can know — the technical weight scales ×1.75.",
+        "horizonTip_medium": "6-18 months: the split you configured in Settings, as is.",
+        "horizonTip_long": "Years: volatility washes out and fundamentals dominate — the technical weight drops to about a third.",
+        "globalVerdict_strong": "STRONG",
+        "globalVerdict_constructive": "CONSTRUCTIVE",
+        "globalVerdict_weak": "WEAK",
+        "globalVerdict_adverse": "ADVERSE"
+    },
+    "technicalAi": {
+        "title": "AI read",
+        "generate": "Generate read",
+        "regenerate": "Regenerate",
+        "emptyHint": "The AI translates the pre-computed indicators into simple signals: what each one says, where they contradict each other, and the overall picture. It does not predict price.",
+        "loadReading": "Reading indicators…",
+        "loadContradictions": "Looking for contradictions…",
+        "loadWriting": "Writing the read…",
+        "networkError": "Could not reach the AI service.",
+        "stance_alcista": "Bullish",
+        "stance_bajista": "Bearish",
+        "stance_neutral": "Neutral",
+        "horizonNote": "short-term · indicative",
+        "structure": "Structure",
+        "contradictions": "Contradicting indicators",
+        "verdict": "Final read",
+        "generatedWith": "Generated with {model} on {date}",
+        "disclaimer": "AI-generated read over locally computed indicators. Days-to-weeks horizon, probabilistic by nature; not financial advice."
     }
 }

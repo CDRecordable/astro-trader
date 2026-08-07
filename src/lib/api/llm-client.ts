@@ -491,3 +491,98 @@ Devuelve EXCLUSIVAMENTE un JSON válido (sin texto fuera del JSON) con este esqu
   "verdict": "conclusión cualitativa en 2-3 frases, escéptica y accionable"
 }`;
 }
+
+// ── Technical (chartist) qualitative layer ───────────────────
+// The AI does NOT compute anything: every indicator arrives pre-calculated.
+// Its job is translation — turning a dozen numeric readings into a handful
+// of very simple signals, and saying out loud when they contradict each
+// other instead of forcing a direction.
+
+export interface TechnicalSignalItem {
+    indicator: string;                       // "RSI (14)", "MACD", "Bandas de Bollinger"…
+    reading: string;                         // "58.2 — zona alcista moderada"
+    signal: "alcista" | "bajista" | "neutral";
+    strength: "fuerte" | "moderada" | "débil";
+}
+
+export interface TechnicalQualitative {
+    summary: string;
+    /** The very-simple signals the user asked for, one per indicator. */
+    signals: TechnicalSignalItem[];
+    /** Structure read (trend regime, ranges) in 2-3 plain sentences. */
+    structure: string;
+    levels: { supports: number[]; resistances: number[] };
+    /** Indicators pointing in opposite directions — honesty over certainty. */
+    contradictions: string[];
+    /** The single simplest takeaway. */
+    stance: "alcista" | "neutral" | "bajista";
+    qualitativeScore: number;                // 0-100, coherent with stance
+    verdict: string;
+}
+
+export function parseTechnicalJson(raw: string): TechnicalQualitative {
+    let s = raw.trim();
+    const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (fence) s = fence[1].trim();
+    const start = s.indexOf("{");
+    const end = s.lastIndexOf("}");
+    const candidate = start === -1 ? "" : end > start ? s.slice(start, end + 1) : s.slice(start);
+    if (!candidate) throw new Error("La respuesta del modelo no contiene JSON");
+    const obj = salvageJson(candidate) as TechnicalQualitative;
+    if (typeof obj.summary !== "string") throw new Error("JSON con esquema inesperado");
+
+    obj.signals = (Array.isArray(obj.signals) ? obj.signals : [])
+        .filter((x) => x && typeof x.indicator === "string")
+        .map((x) => ({
+            indicator: x.indicator,
+            reading: typeof x.reading === "string" ? x.reading : "",
+            signal: ["alcista", "bajista", "neutral"].includes(x.signal) ? x.signal : "neutral",
+            strength: ["fuerte", "moderada", "débil"].includes(x.strength) ? x.strength : "débil",
+        }));
+    obj.structure = typeof obj.structure === "string" ? obj.structure : "";
+    const nums = (xs: unknown): number[] =>
+        (Array.isArray(xs) ? xs : []).map(Number).filter((n) => isFinite(n) && n > 0);
+    obj.levels = { supports: nums(obj.levels?.supports), resistances: nums(obj.levels?.resistances) };
+    obj.contradictions = (Array.isArray(obj.contradictions) ? obj.contradictions : [])
+        .filter((x): x is string => typeof x === "string");
+    obj.stance = ["alcista", "neutral", "bajista"].includes(obj.stance) ? obj.stance : "neutral";
+    obj.qualitativeScore = Math.max(0, Math.min(100, Number(obj.qualitativeScore) || 50));
+    if (typeof obj.verdict !== "string") obj.verdict = "";
+    return obj;
+}
+
+/** Build the grounded Spanish prompt for the technical (chartist) layer. */
+export function buildTechnicalPrompt(input: {
+    name: string;
+    symbol: string;
+    quantSummary: string;   // pre-computed indicators, score, levels, data quality
+}): string {
+    const today = new Date().toISOString().split("T")[0];
+    return `Eres un analista técnico escéptico. Sabes que el chartismo es PROBABILÍSTICO, no profético: describe lo que los indicadores dicen hoy, nunca lo que el precio hará. Hoy es ${today}.
+
+ACTIVO: ${input.name} (${input.symbol})
+
+INDICADORES YA CALCULADOS (no los recalcules ni inventes otros — interpreta EXACTAMENTE estos números):
+${input.quantSummary}
+
+Tu trabajo: traducir esos números a señales MUY sencillas que un inversor no técnico entienda de un vistazo.
+
+REGLAS DE HONESTIDAD (críticas):
+- PROHIBIDO dar precios objetivo o predecir el precio ("subirá a X", "caerá hasta Y"). Si lo haces, fallas.
+- Todo lo que digas es de HORIZONTE CORTO (días-semanas) y probabilístico; dilo así en el verdict.
+- Si los indicadores se contradicen (p. ej. tendencia alcista con RSI sobrecomprado), NO fuerces una dirección: lista cada contradicción en "contradictions" y deja stance en "neutral" si el conjunto no es claro.
+- Los indicadores marcados N/D no existen para este activo: no los menciones como si tuvieran valor.
+- Los niveles de soporte/resistencia ya vienen calculados: coméntalos, no inventes otros.
+
+Devuelve EXCLUSIVAMENTE un JSON válido (sin texto fuera del JSON) con este esquema:
+{
+  "summary": "lectura técnica global en 2-3 frases claras",
+  "signals": [{"indicator": "RSI (14)", "reading": "58.2 — momentum sano sin sobrecompra", "signal": "alcista|bajista|neutral", "strength": "fuerte|moderada|débil"}],
+  "structure": "régimen de tendencia y estructura en 2-3 frases",
+  "levels": {"supports": [123.4], "resistances": [140.2]},
+  "contradictions": ["indicador A dice X pero indicador B dice Y"],
+  "stance": "alcista|neutral|bajista",
+  "qualitativeScore": 0-100,
+  "verdict": "conclusión sencilla, con el recordatorio de horizonte corto y naturaleza probabilística, SIN precio objetivo"
+}`;
+}

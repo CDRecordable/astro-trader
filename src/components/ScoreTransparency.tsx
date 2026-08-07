@@ -66,7 +66,15 @@ export const STALE_ANALYSIS_DAYS = 14;
  * text is written once and kept. A six-week-old narrative next to today's
  * score read as one coherent, current analysis. This says otherwise.
  */
-export function AnalysisAge({ generatedAt }: { generatedAt?: string }) {
+export function AnalysisAge({ generatedAt, staleDays = STALE_ANALYSIS_DAYS }: {
+    generatedAt?: string;
+    /**
+     * Days before the warning shows. Defaults to the qualitative layer's 14;
+     * the technical layer passes 3 — a chart read is a photograph, not a
+     * thesis, and goes stale in days.
+     */
+    staleDays?: number;
+}) {
     const t = useTranslations("coverage");
     // Read the clock after mount, not during render: it keeps the component
     // pure and avoids a server/client hydration mismatch on the day boundary.
@@ -79,7 +87,7 @@ export function AnalysisAge({ generatedAt }: { generatedAt?: string }) {
     if (isNaN(then.getTime())) return null;
 
     const days = Math.floor((now - then.getTime()) / 86_400_000);
-    if (days < STALE_ANALYSIS_DAYS) return null;
+    if (days < staleDays) return null;
 
     return (
         <div

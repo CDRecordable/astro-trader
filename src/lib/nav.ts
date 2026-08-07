@@ -14,7 +14,7 @@
 import {
     LayoutDashboard, Telescope, Settings, TrendingUp, BookOpen, Gauge,
     Moon, Wallet, Landmark, Activity, Search, Home, Sun, RotateCcw,
-    FlaskConical, Sparkles, Waves, Spline,
+    FlaskConical, Sparkles, Waves, Spline, CandlestickChart,
 } from "lucide-react";
 
 export type NavIcon = typeof LayoutDashboard;
@@ -66,6 +66,7 @@ export const NAV_SECTIONS: NavSection[] = [
             { tKey: "economy", href: "/economy", icon: Landmark },
         ],
     },
+    { id: "technical", icon: CandlestickChart, tKey: "technical", href: "/technical" },
     { id: "watchlist", icon: TrendingUp, tKey: "watchlist", href: "/watchlist" },
     { id: "portfolio", icon: Wallet, tKey: "portfolio", href: "/portfolio" },
     {
@@ -111,6 +112,7 @@ const SLUG_TO_SECTION: Record<string, string> = {
     screener: "explore",
     vix: "market",
     economy: "market",
+    technical: "technical",
     watchlist: "watchlist",
     portfolio: "portfolio",
     macro: "esoteric",

@@ -16,6 +16,12 @@ interface TickerSearchProps {
     assetType: "s" | "c" | "e" | "all";
     /** Compact mode: smaller padding, no shadow glow — used in inline bar */
     compact?: boolean;
+    /**
+     * When provided, selection is handed to the caller INSTEAD of loading the
+     * asset into the explorer store. Used by the technical workbench, which
+     * has its own data pipeline.
+     */
+    onSelect?: (entry: TickerEntry) => void;
 }
 
 /** Map curated ETF registry hits into the generic search-entry shape. */
@@ -46,7 +52,7 @@ function getMarketColor(entry: TickerEntry): string {
     return "var(--text-muted)";
 }
 
-export default function TickerSearch({ assetType, compact = false }: TickerSearchProps) {
+export default function TickerSearch({ assetType, compact = false, onSelect }: TickerSearchProps) {
     const t = useTranslations("tickerSearch");
     const [query, setQuery] = useState("");
     const [results, setResults] = useState<TickerEntry[]>([]);
@@ -117,10 +123,14 @@ export default function TickerSearch({ assetType, compact = false }: TickerSearc
             setQuery("");
             setIsOpen(false);
             setResults([]);
+            if (onSelect) {
+                onSelect(entry);
+                return;
+            }
             // Pass asset type so the store routes crypto → CoinGecko, stocks → Yahoo
             await addCompanyByTicker(entry.t, entry.y);
         },
-        [addCompanyByTicker]
+        [addCompanyByTicker, onSelect]
     );
 
     const handleKeyDown = (e: React.KeyboardEvent) => {

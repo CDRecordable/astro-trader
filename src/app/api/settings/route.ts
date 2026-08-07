@@ -26,9 +26,31 @@ export interface DataKeys {
     coinmarketcal: string;  // catalyst event calendar
 }
 
+/** Investment horizon — reshapes the fundamental/technical blend. */
+export type ScoringHorizon = "short" | "medium" | "long";
+
+/** Scoring preferences — how the presentation layer blends the two scores. */
+export interface ScoringSettings {
+    /**
+     * Weight of the TECHNICAL score in the global blend at the MEDIUM
+     * horizon, 0..1. Global = fundamental × (1−w) + technical × w. At 0 the
+     * global score disappears entirely — for users who consider chartism a
+     * chimera — and the horizon selector disappears with it.
+     */
+    technicalWeight: number;
+    /**
+     * Selected horizon. Short scales the technical weight up (weeks-months:
+     * the chart is most of what you can know), long scales it down (years:
+     * fundamentals dominate and volatility washes out). Changed inline from
+     * the detail cards; persisted here so it survives restarts.
+     */
+    horizon: ScoringHorizon;
+}
+
 export interface UserSettings {
     llm: LLMSettings;
     dataKeys: DataKeys;
+    scoring: ScoringSettings;
 }
 
 const DEFAULT_SETTINGS: UserSettings = {
@@ -42,6 +64,10 @@ const DEFAULT_SETTINGS: UserSettings = {
     },
     dataKeys: {
         coinmarketcal: "",
+    },
+    scoring: {
+        technicalWeight: 0.4,
+        horizon: "medium",
     },
 };
 
@@ -64,6 +90,10 @@ function readSettings(): UserSettings {
             dataKeys: {
                 ...DEFAULT_SETTINGS.dataKeys,
                 ...(parsed.dataKeys ?? {}),
+            },
+            scoring: {
+                ...DEFAULT_SETTINGS.scoring,
+                ...(parsed.scoring ?? {}),
             },
         };
     } catch {
@@ -99,6 +129,16 @@ export async function POST(req: NextRequest) {
         },
         dataKeys: {
             coinmarketcal: body.dataKeys?.coinmarketcal ?? current.dataKeys.coinmarketcal,
+        },
+        scoring: {
+            // Clamp: a corrupted or hand-edited value must never break the blend.
+            technicalWeight: Math.min(1, Math.max(0,
+                Number(body.scoring?.technicalWeight ?? current.scoring.technicalWeight) || 0)),
+            horizon: (["short", "medium", "long"] as const).includes(
+                body.scoring?.horizon as ScoringHorizon,
+            )
+                ? (body.scoring!.horizon as ScoringHorizon)
+                : current.scoring.horizon,
         },
     };
 

@@ -110,6 +110,38 @@ export async function fetchCoinMarketChart(
     }
 }
 
+/**
+ * Daily close + volume series for the technical analysis section.
+ *
+ * Why not CoinGecko's /ohlc endpoint: on the free tier it returns 4-DAY
+ * candles for ranges above 30 days — useless for daily RSI/MACD. market_chart
+ * gives real daily closes and volumes; the technical layer builds synthetic
+ * candles from them and honestly reports high/low-dependent indicators as N/D.
+ *
+ * Uses cgFetch (retry + throttling detection), unlike the older
+ * fetchCoinMarketChart above — a 429 here should retry, not silently return
+ * an empty chart.
+ */
+export async function fetchCoinMarketChartFull(
+    coingeckoId: string,
+    days: number = 365,
+): Promise<{ prices: [number, number][]; volumes: [number, number][] }> {
+    const url = new URL(`${COINGECKO_BASE_URL}/coins/${encodeURIComponent(coingeckoId.toLowerCase())}/market_chart`);
+    url.searchParams.append("vs_currency", "usd");
+    url.searchParams.append("days", String(days));
+    url.searchParams.append("interval", "daily");
+
+    const res = await cgFetch(url.toString(), { next: { revalidate: 21_600 } }); // 6h
+    if (!res.ok) throw new Error(`CoinGecko market_chart ${res.status}`);
+    const d = await res.json() as {
+        prices?: Array<[number, number]>;
+        total_volumes?: Array<[number, number]>;
+    };
+    const clean = (rows?: Array<[number, number]>): [number, number][] =>
+        (rows ?? []).filter(([ts, v]) => isFinite(ts) && isFinite(v));
+    return { prices: clean(d.prices), volumes: clean(d.total_volumes) };
+}
+
 // ── Rich single-coin detail (/coins/{id}) ────────────────────
 // Free, no key. Gives the data /coins/markets omits: developer activity,
 // community size, on-chain contract addresses, TVL, multi-timeframe price
