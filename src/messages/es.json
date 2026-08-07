@@ -22,7 +22,8 @@
         "collapsePanel": "Contraer panel",
         "expandPanel": "Desplegar panel",
         "assetClass": "Activo",
-        "esotericBlurb": "Cada módulo contrasta un ciclo esotérico con datos reales de mercado y publica su veredicto estadístico, incluido cuando no hay señal."
+        "esotericBlurb": "Cada módulo contrasta un ciclo esotérico con datos reales de mercado y publica su veredicto estadístico, incluido cuando no hay señal.",
+        "technical": "Técnico"
     },
     "portfolio": {
         "title": "Mi Cartera",
@@ -169,6 +170,10 @@
         "economy": {
             "title": "Macro por país — Astro Trader Insights",
             "description": "Empleo, inflación y actividad por país con lectura del sesgo del banco central."
+        },
+        "technical": {
+            "title": "Análisis Técnico — Astro Trader Insights",
+            "description": "Gráfico de velas con RSI, MACD, Bollinger y medias móviles, score técnico con cobertura visible y lectura sencilla con IA."
         }
     },
     "macroOverview": {
@@ -1141,5 +1146,64 @@
         "macroTip": "Ajuste contrarian por {label}: {pct}% sobre el compuesto de los tres pilares.",
         "thinWarning": "Pilar decidido por pocas métricas — tómalo como orientativo.",
         "staleAnalysis": "Este análisis cualitativo se generó hace {days} días ({date}) y se ha conservado en caché. La puntuación cuantitativa de arriba, en cambio, se recalcula cada vez que abres la ficha: no son de la misma fecha. Pulsa «Regenerar» para actualizarlo."
+    },
+    "technical": {
+        "title": "Análisis Técnico",
+        "subtitle": "Velas, indicadores y un score técnico honesto — corto plazo, probabilístico",
+        "emptyState": "Busca una acción, cripto o ETF para abrir su gráfico técnico.",
+        "notEnoughHistory": "Este activo no tiene historial suficiente para un análisis técnico fiable (mínimo ~3 meses).",
+        "throttled": "El proveedor de datos está limitando peticiones. Inténtalo en unos segundos.",
+        "fetchError": "No se han podido cargar los datos técnicos.",
+        "price": "Precio",
+        "volume": "Volumen",
+        "asOf": "a {date}",
+        "syntheticNote": "Serie sintética construida desde cierres diarios (sin máximos/mínimos intradía): se muestra línea en vez de velas, y los indicadores que requieren OHLC aparecen como N/D.",
+        "scoreTitle": "Score técnico",
+        "pillar_trend": "Tendencia",
+        "pillar_momentum": "Momentum",
+        "pillar_volatility": "Volumen y volatilidad",
+        "verdict_strong": "Fuerte",
+        "verdict_moderate": "Constructivo",
+        "verdict_weak": "Débil",
+        "verdict_avoid": "Adverso",
+        "balance": "Balance de señales",
+        "signalsTitle": "Señales",
+        "ndNote": "N/D para este activo: {list}.",
+        "levelsTitle": "Niveles",
+        "supports": "Soportes",
+        "resistances": "Resistencias",
+        "disclaimer": "El análisis técnico es probabilístico y de corto plazo. Nada de esta sección predice el precio ni constituye asesoramiento financiero.",
+        "ind_sma_structure": "Estructura de medias",
+        "ind_golden_cross": "Cruce 50/200",
+        "ind_rsi": "RSI (14)",
+        "ind_macd": "MACD",
+        "ind_macd_momentum": "Impulso MACD",
+        "ind_bollinger": "Bollinger %B",
+        "ind_squeeze": "Compresión de bandas",
+        "ind_stochastic": "Estocástico",
+        "ind_obv": "OBV (volumen)",
+        "ind_volume_trend": "Volumen reciente",
+        "ind_adx": "ADX (fuerza)",
+        "ind_atr": "ATR% (volatilidad)",
+        "ind_divergence": "Divergencia RSI"
+    },
+    "technicalAi": {
+        "title": "Lectura con IA",
+        "generate": "Generar lectura",
+        "regenerate": "Regenerar",
+        "emptyHint": "La IA traduce los indicadores ya calculados a señales sencillas: qué dice cada uno, en qué se contradicen y cuál es la foto global. No predice el precio.",
+        "loadReading": "Leyendo indicadores…",
+        "loadContradictions": "Buscando contradicciones…",
+        "loadWriting": "Redactando la lectura…",
+        "networkError": "No se ha podido conectar con el servicio de IA.",
+        "stance_alcista": "Alcista",
+        "stance_bajista": "Bajista",
+        "stance_neutral": "Neutral",
+        "horizonNote": "corto plazo · indicativo",
+        "structure": "Estructura",
+        "contradictions": "Indicadores en contradicción",
+        "verdict": "Lectura final",
+        "generatedWith": "Generado con {model} el {date}",
+        "disclaimer": "Lectura generada por IA sobre indicadores calculados localmente. Horizonte de días-semanas, naturaleza probabilística; no es asesoramiento financiero."
     }
 }

@@ -22,7 +22,8 @@
         "collapsePanel": "Collapse panel",
         "expandPanel": "Expand panel",
         "assetClass": "Asset",
-        "esotericBlurb": "Each module tests an esoteric cycle against real market data and publishes its statistical verdict — including when there is no signal."
+        "esotericBlurb": "Each module tests an esoteric cycle against real market data and publishes its statistical verdict — including when there is no signal.",
+        "technical": "Technical"
     },
     "portfolio": {
         "title": "My Portfolio",
@@ -169,6 +170,10 @@
         "economy": {
             "title": "Country Macro — Astro Trader Insights",
             "description": "Jobs, inflation and activity per country with an implied central-bank bias reading."
+        },
+        "technical": {
+            "title": "Technical Analysis — Astro Trader Insights",
+            "description": "Candlestick chart with RSI, MACD, Bollinger and moving averages, a technical score with visible coverage, and a plain-language AI read."
         }
     },
     "macroOverview": {
@@ -1141,5 +1146,64 @@
         "macroTip": "Contrarian {label} adjustment: {pct}% on the three-pillar composite.",
         "thinWarning": "Pillar decided by few metrics — treat it as indicative.",
         "staleAnalysis": "This qualitative analysis was generated {days} days ago ({date}) and has been kept in cache. The quantitative score above, by contrast, is recomputed every time you open the card: they are not the same vintage. Hit \"Regenerate\" to refresh it."
+    },
+    "technical": {
+        "title": "Technical Analysis",
+        "subtitle": "Candles, indicators and an honest technical score — short-term, probabilistic",
+        "emptyState": "Search a stock, crypto or ETF to open its technical chart.",
+        "notEnoughHistory": "This asset lacks enough history for a reliable technical read (about 3 months minimum).",
+        "throttled": "The data provider is rate-limiting. Try again in a few seconds.",
+        "fetchError": "Could not load the technical data.",
+        "price": "Price",
+        "volume": "Volume",
+        "asOf": "as of {date}",
+        "syntheticNote": "Synthetic series built from daily closes (no intraday highs/lows): a line is shown instead of candles, and OHLC-dependent indicators appear as N/A.",
+        "scoreTitle": "Technical score",
+        "pillar_trend": "Trend",
+        "pillar_momentum": "Momentum",
+        "pillar_volatility": "Volume & volatility",
+        "verdict_strong": "Strong",
+        "verdict_moderate": "Constructive",
+        "verdict_weak": "Weak",
+        "verdict_avoid": "Adverse",
+        "balance": "Signal balance",
+        "signalsTitle": "Signals",
+        "ndNote": "N/A for this asset: {list}.",
+        "levelsTitle": "Levels",
+        "supports": "Supports",
+        "resistances": "Resistances",
+        "disclaimer": "Technical analysis is probabilistic and short-term. Nothing in this section predicts price or constitutes financial advice.",
+        "ind_sma_structure": "Moving-average structure",
+        "ind_golden_cross": "50/200 cross",
+        "ind_rsi": "RSI (14)",
+        "ind_macd": "MACD",
+        "ind_macd_momentum": "MACD impulse",
+        "ind_bollinger": "Bollinger %B",
+        "ind_squeeze": "Band squeeze",
+        "ind_stochastic": "Stochastic",
+        "ind_obv": "OBV (volume)",
+        "ind_volume_trend": "Recent volume",
+        "ind_adx": "ADX (strength)",
+        "ind_atr": "ATR% (volatility)",
+        "ind_divergence": "RSI divergence"
+    },
+    "technicalAi": {
+        "title": "AI read",
+        "generate": "Generate read",
+        "regenerate": "Regenerate",
+        "emptyHint": "The AI translates the pre-computed indicators into simple signals: what each one says, where they contradict each other, and the overall picture. It does not predict price.",
+        "loadReading": "Reading indicators…",
+        "loadContradictions": "Looking for contradictions…",
+        "loadWriting": "Writing the read…",
+        "networkError": "Could not reach the AI service.",
+        "stance_alcista": "Bullish",
+        "stance_bajista": "Bearish",
+        "stance_neutral": "Neutral",
+        "horizonNote": "short-term · indicative",
+        "structure": "Structure",
+        "contradictions": "Contradicting indicators",
+        "verdict": "Final read",
+        "generatedWith": "Generated with {model} on {date}",
+        "disclaimer": "AI-generated read over locally computed indicators. Days-to-weeks horizon, probabilistic by nature; not financial advice."
     }
 }
