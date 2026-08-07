@@ -26,14 +26,25 @@ export interface DataKeys {
     coinmarketcal: string;  // catalyst event calendar
 }
 
+/** Investment horizon — reshapes the fundamental/technical blend. */
+export type ScoringHorizon = "short" | "medium" | "long";
+
 /** Scoring preferences — how the presentation layer blends the two scores. */
 export interface ScoringSettings {
     /**
-     * Weight of the TECHNICAL score in the global blend, 0..1.
-     * Global = fundamental × (1−w) + technical × w. At 0 the global score
-     * disappears entirely — for users who consider chartism a chimera.
+     * Weight of the TECHNICAL score in the global blend at the MEDIUM
+     * horizon, 0..1. Global = fundamental × (1−w) + technical × w. At 0 the
+     * global score disappears entirely — for users who consider chartism a
+     * chimera — and the horizon selector disappears with it.
      */
     technicalWeight: number;
+    /**
+     * Selected horizon. Short scales the technical weight up (weeks-months:
+     * the chart is most of what you can know), long scales it down (years:
+     * fundamentals dominate and volatility washes out). Changed inline from
+     * the detail cards; persisted here so it survives restarts.
+     */
+    horizon: ScoringHorizon;
 }
 
 export interface UserSettings {
@@ -56,6 +67,7 @@ const DEFAULT_SETTINGS: UserSettings = {
     },
     scoring: {
         technicalWeight: 0.4,
+        horizon: "medium",
     },
 };
 
@@ -122,6 +134,11 @@ export async function POST(req: NextRequest) {
             // Clamp: a corrupted or hand-edited value must never break the blend.
             technicalWeight: Math.min(1, Math.max(0,
                 Number(body.scoring?.technicalWeight ?? current.scoring.technicalWeight) || 0)),
+            horizon: (["short", "medium", "long"] as const).includes(
+                body.scoring?.horizon as ScoringHorizon,
+            )
+                ? (body.scoring!.horizon as ScoringHorizon)
+                : current.scoring.horizon,
         },
     };
 

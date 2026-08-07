@@ -14,7 +14,6 @@ import type { CryptoFundamentals } from "@/lib/crypto-fundamentals";
 import type { CryptoQualitative } from "@/lib/api/llm-client";
 import { useTranslations } from "next-intl";
 import { useAppStore } from "@/lib/store";
-import ScoreRing from "./ScoreRing";
 import MetricScatter from "./MetricScatter";
 import WatchlistButton from "./WatchlistButton";
 import DiscardButton from "./DiscardButton";
@@ -25,11 +24,11 @@ import CryptoBetaAnalysis from "./CryptoBetaAnalysis";
 import { reinforcementLevel } from "./ReinforcementBadge";
 import { CoverageBar, ScoreArithmetic } from "./ScoreTransparency";
 import TechnicalSection from "./TechnicalSection";
-import { GlobalScoreRing } from "./GlobalScore";
+import ScoreHeader from "./ScoreHeader";
 import type { TechnicalScore } from "@/lib/technical-score";
 import {
     X, Coins, Network, ActivitySquare, Calendar,
-    AlertTriangle, Loader2, HelpCircle, Gauge, ChevronUp, ChevronDown,
+    AlertTriangle, Loader2, HelpCircle, Gauge,
 } from "lucide-react";
 
 interface CryptoDetailProps {
@@ -209,19 +208,12 @@ export default function CryptoDetail({ company, score: initialScore, onClose }: 
                     style={{ background: "var(--bg-secondary)", borderBottom: "1px solid var(--border-subtle)", backdropFilter: "blur(12px)" }}
                 >
                     <div className="flex items-center gap-4">
-                        <div className="relative">
-                            <ScoreRing score={score.totalScore} size={48} strokeWidth={3} recommendation={score.recommendation.replace("_", " ")} />
-                            {ai && aiLevel !== 0 && (
-                                <div className="absolute -top-1.5 -right-1.5 flex flex-col items-center -space-y-1.5">
-                                    {Array.from({ length: Math.abs(aiLevel) }).map((_, i) => (
-                                        aiLevel > 0
-                                            ? <ChevronUp key={i} size={12} strokeWidth={3.5} style={{ color: "var(--signal-strong-buy)" }} />
-                                            : <ChevronDown key={i} size={12} strokeWidth={3.5} style={{ color: "var(--signal-avoid)" }} />
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                        <GlobalScoreRing fundamental={score.totalScore} technical={tech?.score ?? null} />
+                        <ScoreHeader
+                            fundamental={score.totalScore}
+                            recommendation={score.recommendation.replace("_", " ")}
+                            aiLevel={ai ? aiLevel : 0}
+                            technical={tech?.score ?? null}
+                        />
                         <div>
                             <div className="flex items-center gap-2">
                                 <span className="font-bold text-base" style={{ color: "var(--accent-amber)" }}>{company.ticker}</span>

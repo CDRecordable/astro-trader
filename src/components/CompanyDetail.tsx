@@ -17,14 +17,13 @@ import { formatMarketCap, formatPercent, formatCurrency } from "@/lib/utils";
 import { PriceChart, MarginChart, ReturnChart, ScoreBreakdownChart } from "./FinancialCharts";
 import MetricScatter from "./MetricScatter";
 import BetaAnalysis from "./BetaAnalysis";
-import ScoreRing from "./ScoreRing";
 import AiAnalysisSection from "./AiAnalysisSection";
 import WatchlistButton from "./WatchlistButton";
 import DiscardButton from "./DiscardButton";
 import TradeButtons from "./TradeButtons";
 import { PrintButton, PrintHeader } from "./PrintReport";
 import TechnicalSection from "./TechnicalSection";
-import { GlobalScoreRing } from "./GlobalScore";
+import ScoreHeader from "./ScoreHeader";
 import type { TechnicalScore } from "@/lib/technical-score";
 import { CoverageBar, ScoreArithmetic } from "./ScoreTransparency";
 import { useTranslations } from "next-intl";
@@ -32,7 +31,7 @@ import {
     X, ArrowUpRight, ArrowDownRight,
     Shield, Target, Activity, BarChart3, Globe,
     HelpCircle, CheckCircle2, XCircle, MinusCircle, Info, TrendingUp, Building2,
-    ChevronUp, ChevronDown, Sparkles, Users, Loader2,
+    Sparkles, Users, Loader2,
 } from "lucide-react";
 
 interface CompanyDetailProps {
@@ -317,19 +316,13 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                     }}
                 >
                     <div className="flex items-center gap-4">
-                        <div className="relative" title={ai ? t("scoreClarify") : undefined}>
-                            <ScoreRing score={score.totalScore} size={48} strokeWidth={3} recommendation={score.recommendation.replace("_", " ")} />
-                            {ai && aiLevel !== 0 && (
-                                <div className="absolute -top-1.5 -right-1.5 flex flex-col items-center -space-y-1.5">
-                                    {Array.from({ length: Math.abs(aiLevel) }).map((_, i) => (
-                                        aiLevel > 0
-                                            ? <ChevronUp key={i} size={12} strokeWidth={3.5} style={{ color: "var(--signal-strong-buy)" }} />
-                                            : <ChevronDown key={i} size={12} strokeWidth={3.5} style={{ color: "var(--signal-avoid)" }} />
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                        <GlobalScoreRing fundamental={score.totalScore} technical={tech?.score ?? null} />
+                        <ScoreHeader
+                            fundamental={score.totalScore}
+                            recommendation={score.recommendation.replace("_", " ")}
+                            aiLevel={ai ? aiLevel : 0}
+                            aiTitle={ai ? t("scoreClarify") : undefined}
+                            technical={tech?.score ?? null}
+                        />
                         <div>
                             <div className="flex items-center gap-2">
                                 <span className="font-bold text-base" style={{ color: "var(--accent-cyan)" }}>

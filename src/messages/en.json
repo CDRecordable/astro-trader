@@ -1200,7 +1200,19 @@
         "unavailable": "Not available for this asset (insufficient history or provider throttling).",
         "openWorkbench": "Open in workbench",
         "globalLabel": "Global",
-        "globalTip": "Global score = fundamental blended with technical at {w}%. Configurable in Settings. Honest caveat: ~30% of the fundamental score (its timing pillar) is already price signal, so the global slightly over-weights the short term."
+        "globalTip": "Global score = fundamental blended with technical at {w}%. Configurable in Settings. Honest caveat: ~30% of the fundamental score (its timing pillar) is already price signal, so the global slightly over-weights the short term.",
+        "fundamentalLabel": "Fundamental",
+        "horizonLabel": "Horizon",
+        "horizon_short": "Short",
+        "horizon_medium": "Medium",
+        "horizon_long": "Long",
+        "horizonTip_short": "Weeks-months: at this range the chart is most of what you can know — the technical weight scales ×1.75.",
+        "horizonTip_medium": "6-18 months: the split you configured in Settings, as is.",
+        "horizonTip_long": "Years: volatility washes out and fundamentals dominate — the technical weight drops to about a third.",
+        "globalVerdict_strong": "STRONG",
+        "globalVerdict_constructive": "CONSTRUCTIVE",
+        "globalVerdict_weak": "WEAK",
+        "globalVerdict_adverse": "ADVERSE"
     },
     "technicalAi": {
         "title": "AI read",

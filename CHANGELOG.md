@@ -32,6 +32,16 @@ any line, the git history is the source of truth: commits use
   instead of a forced direction. Price targets are forbidden by prompt. The
   staleness warning fires at 3 days (a chart read is a photograph, not a
   thesis).
+- **Investment-horizon selector** — the detail header now carries a premium
+  score block showing both valuations side by side (fundamental ring with its
+  recommendation and AI arrows, global ring with its own verdict) plus a
+  Corto/Medio/Largo selector. The horizon reshapes the blend live and
+  transparently: short multiplies the technical weight ×1.75 (weeks-months —
+  the chart is most of what you can know), medium uses your configured
+  baseline, long drops it to ×0.375 (years — volatility washes out and
+  fundamentals dominate). The multipliers scale YOUR baseline, so a user who
+  set the technical weight to 0 keeps 0 at every horizon. The choice persists
+  across restarts, and every arithmetic line on screen updates in sync.
 - **Global score, configurable** — each detail card now shows the technical
   block (compact score, pillars, top signals, AI read) and a **global blend**:
   fundamental × (1−w) + technical × w, with the visible arithmetic and a

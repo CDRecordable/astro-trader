@@ -15,7 +15,6 @@ import type { EtfFundamentals } from "@/lib/etf-fundamentals";
 import type { EtfQualitative } from "@/lib/api/llm-client";
 import { ETF_CATEGORY_META } from "@/lib/etf-registry";
 import { useTranslations } from "next-intl";
-import ScoreRing from "./ScoreRing";
 import WatchlistButton from "./WatchlistButton";
 import DiscardButton from "./DiscardButton";
 import TradeButtons from "./TradeButtons";
@@ -24,11 +23,11 @@ import EtfAiSection from "./EtfAiSection";
 import { reinforcementLevel } from "./ReinforcementBadge";
 import { CoverageBar } from "./ScoreTransparency";
 import TechnicalSection from "./TechnicalSection";
-import { GlobalScoreRing } from "./GlobalScore";
+import ScoreHeader from "./ScoreHeader";
 import type { TechnicalScore } from "@/lib/technical-score";
 import {
     X, Landmark, PieChart, ActivitySquare, AlertTriangle, Loader2,
-    HelpCircle, ChevronUp, ChevronDown, ArrowLeftRight, LineChart as LineChartIcon,
+    HelpCircle, ArrowLeftRight, LineChart as LineChartIcon,
 } from "lucide-react";
 
 interface EtfDetailProps {
@@ -206,19 +205,12 @@ export default function EtfDetail({ company, score: initialScore, onClose }: Etf
                     style={{ background: "var(--bg-secondary)", borderBottom: "1px solid var(--border-subtle)", backdropFilter: "blur(12px)" }}
                 >
                     <div className="flex items-center gap-4">
-                        <div className="relative">
-                            <ScoreRing score={score.totalScore} size={48} strokeWidth={3} recommendation={score.recommendation.replace("_", " ")} />
-                            {ai && aiLevel !== 0 && (
-                                <div className="absolute -top-1.5 -right-1.5 flex flex-col items-center -space-y-1.5">
-                                    {Array.from({ length: Math.abs(aiLevel) }).map((_, i) => (
-                                        aiLevel > 0
-                                            ? <ChevronUp key={i} size={12} strokeWidth={3.5} style={{ color: "var(--signal-strong-buy)" }} />
-                                            : <ChevronDown key={i} size={12} strokeWidth={3.5} style={{ color: "var(--signal-avoid)" }} />
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                        <GlobalScoreRing fundamental={score.totalScore} technical={tech?.score ?? null} />
+                        <ScoreHeader
+                            fundamental={score.totalScore}
+                            recommendation={score.recommendation.replace("_", " ")}
+                            aiLevel={ai ? aiLevel : 0}
+                            technical={tech?.score ?? null}
+                        />
                         <div>
                             <div className="flex items-center gap-2">
                                 <span className="font-bold text-base" style={{ color: "var(--accent-cyan)" }}>{company.ticker}</span>

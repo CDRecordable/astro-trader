@@ -1200,7 +1200,19 @@
         "unavailable": "No disponible para este activo (historial insuficiente o proveedor limitando).",
         "openWorkbench": "Abrir en el workbench",
         "globalLabel": "Global",
-        "globalTip": "Score global = fundamental × {w}% técnico invertido. Configurable en Ajustes. Aviso honesto: ~30% del score fundamental (su pilar de timing) ya es señal de precio, así que el global sobrepondera ligeramente el corto plazo."
+        "globalTip": "Score global = fundamental × {w}% técnico invertido. Configurable en Ajustes. Aviso honesto: ~30% del score fundamental (su pilar de timing) ya es señal de precio, así que el global sobrepondera ligeramente el corto plazo.",
+        "fundamentalLabel": "Fundamental",
+        "horizonLabel": "Horizonte",
+        "horizon_short": "Corto",
+        "horizon_medium": "Medio",
+        "horizon_long": "Largo",
+        "horizonTip_short": "Semanas-meses: a este plazo el gráfico es casi lo único que se puede saber — el peso técnico se multiplica ×1.75.",
+        "horizonTip_medium": "6-18 meses: el reparto que configuraste en Ajustes, tal cual.",
+        "horizonTip_long": "Años: la volatilidad se diluye y mandan los fundamentales — el peso técnico se reduce a ~un tercio.",
+        "globalVerdict_strong": "FUERTE",
+        "globalVerdict_constructive": "CONSTRUCTIVO",
+        "globalVerdict_weak": "DÉBIL",
+        "globalVerdict_adverse": "ADVERSO"
     },
     "technicalAi": {
         "title": "Lectura con IA",
