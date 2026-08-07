@@ -25,5 +25,8 @@
     "drizzle-kit": "^0.31.10",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }
