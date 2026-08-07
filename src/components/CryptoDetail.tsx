@@ -24,6 +24,9 @@ import CryptoAiSection from "./CryptoAiSection";
 import CryptoBetaAnalysis from "./CryptoBetaAnalysis";
 import { reinforcementLevel } from "./ReinforcementBadge";
 import { CoverageBar, ScoreArithmetic } from "./ScoreTransparency";
+import TechnicalSection from "./TechnicalSection";
+import { GlobalScoreRing } from "./GlobalScore";
+import type { TechnicalScore } from "@/lib/technical-score";
 import {
     X, Coins, Network, ActivitySquare, Calendar,
     AlertTriangle, Loader2, HelpCircle, Gauge, ChevronUp, ChevronDown,
@@ -130,6 +133,7 @@ export default function CryptoDetail({ company, score: initialScore, onClose }: 
     const [loading, setLoading] = useState(true);
     const [ai, setAi] = useState<CryptoQualitative | null>(null);
     const aiLevel = ai ? reinforcementLevel(ai.qualitativeScore) : 0;
+    const [tech, setTech] = useState<TechnicalScore | null>(null);
 
     useEffect(() => {
         let active = true;
@@ -217,6 +221,7 @@ export default function CryptoDetail({ company, score: initialScore, onClose }: 
                                 </div>
                             )}
                         </div>
+                        <GlobalScoreRing fundamental={score.totalScore} technical={tech?.score ?? null} />
                         <div>
                             <div className="flex items-center gap-2">
                                 <span className="font-bold text-base" style={{ color: "var(--accent-amber)" }}>{company.ticker}</span>
@@ -394,6 +399,15 @@ export default function CryptoDetail({ company, score: initialScore, onClose }: 
                                 <Row label={t("change30d")} value={pctStr(f.change30d, true)} tone={f.change30d == null ? "na" : f.change30d > 0 ? "good" : "warn"} />
                                 <Row label={t("change1y")} value={pctStr(f.change1y, true)} tone={f.change1y == null ? "na" : f.change1y > 0 ? "good" : "warn"} />
                             </section>
+
+                            {/* Technical (chartist) read */}
+                            <TechnicalSection
+                                id={geckoId}
+                                type="c"
+                                name={company.name}
+                                fundamentalScore={score.totalScore}
+                                onScore={setTech}
+                            />
 
                             {/* Market sensitivity vs Bitcoin (beta) */}
                             <section className="glass-card p-4">

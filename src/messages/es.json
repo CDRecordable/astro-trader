@@ -725,7 +725,11 @@
         "betaInverse": "Se mueve en sentido contrario al mercado (beta negativa): cobertura natural.",
         "betaR2": "El mercado explica el {r2}% de sus movimientos; el resto es idiosincrásico (propio de la empresa).",
         "betaNeutral": "Apenas se mueve con el mercado: su comportamiento es casi independiente (beta ≈ 0).",
-        "peerLoading": "Buscando comparables del sector…"
+        "peerLoading": "Buscando comparables del sector…",
+        "technicalTitle": "Técnico",
+        "insightTechnical": "Qué es esto",
+        "insightTechnicalBody": "El análisis técnico lee solo el precio y el volumen: tendencia, momentum y volatilidad. No sabe nada del negocio — es la foto de qué está haciendo el mercado con la acción, en horizonte de días a semanas.",
+        "insightTechnicalLimits": "Límites honestos: es probabilístico, funciona peor de lo que sus defensores creen y mejor de lo que sus detractores admiten. Por eso su peso en el score global es configurable en Ajustes — incluido el 0%."
     },
     "watchlist": {
         "title": "Mi Watchlist",
@@ -785,7 +789,13 @@
         "saving": "Guardando...",
         "saved": "¡Guardado!",
         "storageTitle": "Almacenamiento local",
-        "storageDesc": "Todos tus datos (watchlist, claves de API) se guardan en la carpeta del proyecto:"
+        "storageDesc": "Todos tus datos (watchlist, claves de API) se guardan en la carpeta del proyecto:",
+        "scoringTitle": "Score global",
+        "technicalWeightHint": "El score global mezcla el análisis fundamental con el técnico. Elige cuánto pesa cada uno según tu filosofía de inversión.",
+        "weightFundamental": "Fundamental",
+        "weightTechnical": "Técnico",
+        "technicalWeightNote": "El score global aparecerá en las fichas como fundamental × {pct}% técnico invertido.",
+        "technicalWeightOff": "Score global desactivado: solo verás el score fundamental."
     },
     "screener": {
         "title": "Screener",
@@ -1185,7 +1195,12 @@
         "ind_volume_trend": "Volumen reciente",
         "ind_adx": "ADX (fuerza)",
         "ind_atr": "ATR% (volatilidad)",
-        "ind_divergence": "Divergencia RSI"
+        "ind_divergence": "Divergencia RSI",
+        "sectionTitle": "Análisis técnico",
+        "unavailable": "No disponible para este activo (historial insuficiente o proveedor limitando).",
+        "openWorkbench": "Abrir en el workbench",
+        "globalLabel": "Global",
+        "globalTip": "Score global = fundamental × {w}% técnico invertido. Configurable en Ajustes. Aviso honesto: ~30% del score fundamental (su pilar de timing) ya es señal de precio, así que el global sobrepondera ligeramente el corto plazo."
     },
     "technicalAi": {
         "title": "Lectura con IA",

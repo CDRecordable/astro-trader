@@ -23,6 +23,9 @@ import { PrintButton, PrintHeader } from "./PrintReport";
 import EtfAiSection from "./EtfAiSection";
 import { reinforcementLevel } from "./ReinforcementBadge";
 import { CoverageBar } from "./ScoreTransparency";
+import TechnicalSection from "./TechnicalSection";
+import { GlobalScoreRing } from "./GlobalScore";
+import type { TechnicalScore } from "@/lib/technical-score";
 import {
     X, Landmark, PieChart, ActivitySquare, AlertTriangle, Loader2,
     HelpCircle, ChevronUp, ChevronDown, ArrowLeftRight, LineChart as LineChartIcon,
@@ -133,6 +136,7 @@ export default function EtfDetail({ company, score: initialScore, onClose }: Etf
     const [ai, setAi] = useState<EtfQualitative | null>(null);
     const [tf, setTf] = useState<(typeof TIMEFRAMES)[number]["key"]>("1Y");
     const aiLevel = ai ? reinforcementLevel(ai.qualitativeScore) : 0;
+    const [tech, setTech] = useState<TechnicalScore | null>(null);
 
     useEffect(() => {
         let active = true;
@@ -214,6 +218,7 @@ export default function EtfDetail({ company, score: initialScore, onClose }: Etf
                                 </div>
                             )}
                         </div>
+                        <GlobalScoreRing fundamental={score.totalScore} technical={tech?.score ?? null} />
                         <div>
                             <div className="flex items-center gap-2">
                                 <span className="font-bold text-base" style={{ color: "var(--accent-cyan)" }}>{company.ticker}</span>
@@ -328,6 +333,15 @@ export default function EtfDetail({ company, score: initialScore, onClose }: Etf
                                     <ReactECharts option={chartOption} style={{ height: 220 }} notMerge lazyUpdate />
                                 </section>
                             )}
+
+                            {/* Technical (chartist) read */}
+                            <TechnicalSection
+                                id={symbol}
+                                type="e"
+                                name={company.name}
+                                fundamentalScore={score.totalScore}
+                                onScore={setTech}
+                            />
 
                             {/* Pillar 1 — Cost & Vehicle */}
                             <section className="glass-card p-4">

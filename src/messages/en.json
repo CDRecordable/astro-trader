@@ -725,7 +725,11 @@
         "betaInverse": "Moves opposite to the market (negative beta): a natural hedge.",
         "betaR2": "The market explains {r2}% of its moves; the rest is idiosyncratic (company-specific).",
         "betaNeutral": "Barely moves with the market: its behaviour is largely independent (beta ≈ 0).",
-        "peerLoading": "Finding sector peers…"
+        "peerLoading": "Finding sector peers…",
+        "technicalTitle": "Technical",
+        "insightTechnical": "What this is",
+        "insightTechnicalBody": "Technical analysis reads only price and volume: trend, momentum and volatility. It knows nothing about the business — it is a snapshot of what the market is doing with the stock, on a days-to-weeks horizon.",
+        "insightTechnicalLimits": "Honest limits: it is probabilistic, works worse than its fans believe and better than its detractors admit. That is why its weight in the global score is configurable in Settings — including 0%."
     },
     "watchlist": {
         "title": "My Watchlist",
@@ -785,7 +789,13 @@
         "saving": "Saving...",
         "saved": "Saved!",
         "storageTitle": "Local storage",
-        "storageDesc": "All your data (watchlist, API keys) is saved to the project folder:"
+        "storageDesc": "All your data (watchlist, API keys) is saved to the project folder:",
+        "scoringTitle": "Global score",
+        "technicalWeightHint": "The global score blends fundamental and technical analysis. Choose how much each weighs according to your investment philosophy.",
+        "weightFundamental": "Fundamental",
+        "weightTechnical": "Technical",
+        "technicalWeightNote": "The global score will appear on detail cards as fundamental blended with {pct}% technical.",
+        "technicalWeightOff": "Global score disabled: only the fundamental score will be shown."
     },
     "screener": {
         "title": "Screener",
@@ -1185,7 +1195,12 @@
         "ind_volume_trend": "Recent volume",
         "ind_adx": "ADX (strength)",
         "ind_atr": "ATR% (volatility)",
-        "ind_divergence": "RSI divergence"
+        "ind_divergence": "RSI divergence",
+        "sectionTitle": "Technical analysis",
+        "unavailable": "Not available for this asset (insufficient history or provider throttling).",
+        "openWorkbench": "Open in workbench",
+        "globalLabel": "Global",
+        "globalTip": "Global score = fundamental blended with technical at {w}%. Configurable in Settings. Honest caveat: ~30% of the fundamental score (its timing pillar) is already price signal, so the global slightly over-weights the short term."
     },
     "technicalAi": {
         "title": "AI read",
