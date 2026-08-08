@@ -193,4 +193,4 @@ export const HOME_ANCHORS = [
 
 export const GITHUB = "https://github.com/CDRecordable/astro-trader";
 export const SITE_URL =
-    process.env.NEXT_PUBLIC_SITE_URL ?? "https://astro-trader-production.up.railway.app";
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://astrotrader.club";

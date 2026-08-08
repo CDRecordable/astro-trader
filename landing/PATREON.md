@@ -31,7 +31,7 @@ puesto dentro de él se puede borrar editando dos líneas.
 3. En **Redirect URIs** pon exactamente:
 
    ```
-   https://TU-DOMINIO/api/patreon/callback
+   https://astrotrader.club/api/patreon/callback
    ```
 
    Para probar en local, añade también `http://localhost:3000/api/patreon/callback`.
@@ -60,13 +60,13 @@ En el servicio de la landing, **Variables**:
 | `PATREON_CLIENT_ID` | del paso 1 | Identifica tu app ante Patreon |
 | `PATREON_CLIENT_SECRET` | del paso 1 | **Secreto.** Nunca en el repo |
 | `PATREON_CREATOR_ACCESS_TOKEN` | de la ficha del cliente | Con esto el servidor averigua tu campaña solo |
-| `PATREON_REDIRECT_URI` | `https://TU-DOMINIO/api/patreon/callback` | Debe coincidir **carácter a carácter** con lo que pusiste en Patreon |
+| `PATREON_REDIRECT_URI` | `https://astrotrader.club/api/patreon/callback` | Debe coincidir **carácter a carácter** con lo que pusiste en Patreon |
 | `PATREON_MONTHLY_QUOTA` | `100` | Análisis incluidos al mes |
 | `PATREON_MIN_PLEDGE_CENTS` | `0`, o el mínimo de tu tramo en céntimos | Si solo quieres dar PRO a partir de cierto tramo |
 | `PRO_LLM_API_KEY` | la de DeepSeek | **Secreto.** La que se gasta |
 | `PRO_LLM_MODEL` | `deepseek-chat` | Modelo a usar |
 | `PRO_LLM_BASE_URL` | `https://api.deepseek.com` | Cambiando esto y el modelo puedes migrar a otro proveedor sin tocar código |
-| `SITE_URL` | `https://TU-DOMINIO` | Para las redirecciones |
+| `SITE_URL` | `https://astrotrader.club` | Para las redirecciones |
 | `LICENSE_PRIVATE_KEY` | tu clave privada Ed25519 | Firma los accesos PRO |
 | `LICENSE_PUBLIC_KEY` | la pública correspondiente | Los verifica |
 | `DATABASE_URL` | tu cadena de Neon | Guarda suscriptores y consumo |
@@ -89,7 +89,7 @@ Si algún día hay que cambiar el esquema, hazlo con SQL explícito.
 
 ## 4. Prueba el circuito completo (10 min)
 
-1. Entra en `https://TU-DOMINIO/pro` y pulsa **Conectar con Patreon**.
+1. Entra en `https://astrotrader.club/pro` y pulsa **Conectar con Patreon**.
 2. Autoriza. Deberías volver con un acceso largo que empieza por `ATI1.`
 3. Ábrelo en el programa: **Ajustes → Capa de IA**, pégalo y guarda.
 4. Abre cualquier acción y genera un análisis con IA. Si sale, el circuito
@@ -117,7 +117,7 @@ En `desktop/dist/` tendrás dos:
 - `AstroTrader-X.Y.Z-x64.zip` — el portátil. **Este es el que subes a Patreon.**
 
 En el post de Patreon, explica los tres pasos: descargar el ZIP, descomprimir y
-ejecutar, y entrar en `TU-DOMINIO/pro` para conectar la cuenta.
+ejecutar, y entrar en `astrotrader.club/pro` para conectar la cuenta.
 
 ### Por qué las actualizaciones siguen viniendo de GitHub
 

@@ -1,6 +1,6 @@
 import { MetadataRoute } from "next";
 
-const BASE_URL = "https://astro-trader.vercel.app";
+const BASE_URL = "https://astrotrader.club";
 
 const locales = ["en", "es"];
 

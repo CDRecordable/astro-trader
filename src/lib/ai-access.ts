@@ -26,7 +26,7 @@ const PROVIDERS: LLMProvider[] = ["gemini", "claude", "deepseek"];
 
 /** Where the PRO proxy lives. Overridable so a self-hoster can point elsewhere. */
 const PRO_API = (
-    process.env.ASTRO_PRO_API ?? "https://astro-trader-production.up.railway.app"
+    process.env.ASTRO_PRO_API ?? "https://astrotrader.club"
 ).replace(/\/$/, "");
 
 /** Renew once the token has less than this left, so it never lapses in use. */

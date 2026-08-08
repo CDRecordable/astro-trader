@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
             allow: "/",
             disallow: ["/api/"],
         },
-        sitemap: "https://astro-trader.vercel.app/sitemap.xml",
+        sitemap: "https://astrotrader.club/sitemap.xml",
     };
 }
