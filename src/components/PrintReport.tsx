@@ -38,17 +38,9 @@ export function PrintButton() {
     };
 
     return (
-        <button
-            onClick={print}
-            title={t("tooltip")}
-            className="no-print flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-all"
-            style={{
-                background: "rgba(34,211,238,0.10)",
-                border: "1px solid rgba(34,211,238,0.35)",
-                color: "var(--accent-cyan)",
-            }}
-        >
-            <FileDown size={14} /> <span className="hidden sm:inline">{t("button")}</span>
+        <button onClick={print} title={t("tooltip")} className="header-action">
+            <FileDown size={14} style={{ color: "var(--accent-cyan)", opacity: 0.8 }} />
+            <span className="hidden sm:inline">{t("button")}</span>
         </button>
     );
 }

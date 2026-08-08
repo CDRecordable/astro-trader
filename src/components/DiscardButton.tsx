@@ -97,12 +97,8 @@ export default function DiscardButton({
             onClick={toggle}
             disabled={busy}
             title={discarded ? t("discardedSince", { date: dateLabel, days: daysAgo ?? 0 }) : t("addToDiscards")}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer disabled:opacity-60"
-            style={{
-                background: discarded ? "rgba(251,113,133,0.12)" : "var(--bg-tertiary)",
-                border: discarded ? "1px solid rgba(251,113,133,0.4)" : "1px solid var(--border-subtle)",
-                color: discarded ? "var(--signal-avoid)" : "var(--text-secondary)",
-            }}
+            className="header-action"
+            style={{ color: discarded ? "var(--signal-avoid)" : undefined }}
         >
             {state === "saving" ? (
                 <Loader2 size={14} className="animate-spin" />

@@ -63,19 +63,19 @@ export default function TradeButtons({ company, assetType }: { company: Company;
         <>
             <button
                 onClick={() => { setOpen("buy"); setAmount(""); setErr(null); }}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-all"
-                style={{ background: "rgba(52,211,153,0.12)", border: "1px solid rgba(52,211,153,0.4)", color: "var(--signal-strong-buy)" }}
+                className="header-action"
             >
-                <TrendingUp size={14} /> <span className="hidden sm:inline">{t("buy")}</span>
+                <TrendingUp size={14} style={{ color: "var(--signal-strong-buy)", opacity: 0.85 }} />
+                <span className="hidden sm:inline">{t("buy")}</span>
             </button>
             <button
                 onClick={() => { if (posQty > 0) { setOpen("sell"); setAmount(""); setErr(null); } }}
                 disabled={posQty <= 0}
                 title={posQty <= 0 ? t("noPosition") : t("sell")}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                style={{ background: "rgba(251,113,133,0.10)", border: "1px solid rgba(251,113,133,0.4)", color: "var(--signal-avoid)" }}
+                className="header-action"
             >
-                <TrendingDown size={14} /> <span className="hidden sm:inline">{t("sell")}</span>
+                <TrendingDown size={14} style={{ color: "var(--signal-avoid)", opacity: 0.85 }} />
+                <span className="hidden sm:inline">{t("sell")}</span>
             </button>
 
             {/* Order dialog */}

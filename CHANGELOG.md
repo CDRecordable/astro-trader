@@ -51,6 +51,18 @@ any line, the git history is the source of truth: commits use
   number everywhere, and no cached score changes: the blend is pure
   presentation. Tooltip discloses that ~30% of the stock fundamental score
   (its timing pillar) is already price-based.
+- **Segmented action bar in the detail headers** — the row of five loose,
+  color-heavy buttons (PDF, buy, sell, discard, watchlist) is now one quiet
+  glass container with hairline dividers. Color retreats into the muted icons;
+  saved/discarded states tint text only. The close control becomes a bordered
+  circle, and the identity block gets a larger ticker and more air, matching
+  the premium score header. Applied to all three detail cards (stocks, crypto,
+  ETFs) and hidden in print.
+- **`landing/scripts/issue-license.ts`** — issues a signed `ai-lifetime`
+  licence from the CLI (`npm run issue-license -- email`), reading
+  `LICENSE_PRIVATE_KEY` from `landing/.env.local` and verifying the result
+  against the embedded public key before printing. Needed to re-issue the
+  admin licence after the production keypair rotation.
 
 
 ### Changed

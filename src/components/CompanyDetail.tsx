@@ -308,14 +308,14 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
 
                 {/* ── Header ── */}
                 <div
-                    className="sticky top-0 z-10 px-6 py-4 flex items-center justify-between"
+                    className="sticky top-0 z-10 px-6 py-3.5 flex items-center justify-between gap-4"
                     style={{
                         background: "var(--bg-secondary)",
                         borderBottom: "1px solid var(--border-subtle)",
                         backdropFilter: "blur(12px)",
                     }}
                 >
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-5 min-w-0">
                         <ScoreHeader
                             fundamental={score.totalScore}
                             recommendation={score.recommendation.replace("_", " ")}
@@ -325,7 +325,7 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                         />
                         <div>
                             <div className="flex items-center gap-2">
-                                <span className="font-bold text-base" style={{ color: "var(--accent-cyan)" }}>
+                                <span className="font-extrabold text-xl tracking-tight" style={{ color: "var(--accent-cyan)" }}>
                                     {company.ticker}
                                 </span>
                                 <span className="text-sm font-medium">{company.name}</span>
@@ -335,16 +335,19 @@ export default function CompanyDetail({ company, score, onClose }: CompanyDetail
                             </p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <PrintButton />
-                        <TradeButtons company={company} assetType="s" />
-                        <DiscardButton company={company} assetType="s" />
-                        <WatchlistButton company={company} assetType="s" />
+                    <div className="flex items-center gap-3">
+                        <div className="action-bar">
+                            <PrintButton />
+                            <TradeButtons company={company} assetType="s" />
+                            <DiscardButton company={company} assetType="s" />
+                            <WatchlistButton company={company} assetType="s" />
+                        </div>
                         <button
                             onClick={onClose}
-                            className="p-2 rounded-lg transition-colors hover:bg-white/5"
+                            className="flex items-center justify-center w-10 h-10 rounded-full transition-colors hover:bg-white/5 cursor-pointer"
+                            style={{ border: "1px solid var(--border-subtle)" }}
                         >
-                            <X size={18} style={{ color: "var(--text-muted)" }} />
+                            <X size={16} style={{ color: "var(--text-muted)" }} />
                         </button>
                     </div>
                 </div>

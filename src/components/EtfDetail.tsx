@@ -201,10 +201,10 @@ export default function EtfDetail({ company, score: initialScore, onClose }: Etf
 
                 {/* Header */}
                 <div
-                    className="sticky top-0 z-10 px-6 py-4 flex items-center justify-between"
+                    className="sticky top-0 z-10 px-6 py-3.5 flex items-center justify-between gap-4"
                     style={{ background: "var(--bg-secondary)", borderBottom: "1px solid var(--border-subtle)", backdropFilter: "blur(12px)" }}
                 >
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-5 min-w-0">
                         <ScoreHeader
                             fundamental={score.totalScore}
                             recommendation={score.recommendation.replace("_", " ")}
@@ -213,7 +213,7 @@ export default function EtfDetail({ company, score: initialScore, onClose }: Etf
                         />
                         <div>
                             <div className="flex items-center gap-2">
-                                <span className="font-bold text-base" style={{ color: "var(--accent-cyan)" }}>{company.ticker}</span>
+                                <span className="font-extrabold text-xl tracking-tight" style={{ color: "var(--accent-cyan)" }}>{company.ticker}</span>
                                 <span className="text-sm font-medium">{company.name}</span>
                             </div>
                             <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
@@ -221,13 +221,19 @@ export default function EtfDetail({ company, score: initialScore, onClose }: Etf
                             </p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <PrintButton />
-                        <TradeButtons company={company} assetType="e" />
-                        <DiscardButton company={company} assetType="e" />
-                        <WatchlistButton company={company} assetType="e" />
-                        <button onClick={onClose} className="p-2 rounded-lg transition-colors hover:bg-white/5">
-                            <X size={18} style={{ color: "var(--text-muted)" }} />
+                    <div className="flex items-center gap-3">
+                        <div className="action-bar">
+                            <PrintButton />
+                            <TradeButtons company={company} assetType="e" />
+                            <DiscardButton company={company} assetType="e" />
+                            <WatchlistButton company={company} assetType="e" />
+                        </div>
+                        <button
+                            onClick={onClose}
+                            className="flex items-center justify-center w-10 h-10 rounded-full transition-colors hover:bg-white/5 cursor-pointer"
+                            style={{ border: "1px solid var(--border-subtle)" }}
+                        >
+                            <X size={16} style={{ color: "var(--text-muted)" }} />
                         </button>
                     </div>
                 </div>

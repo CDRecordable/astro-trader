@@ -90,21 +90,15 @@ export default function WatchlistButton({
             onClick={toggle}
             disabled={busy}
             title={saved ? t("removeFromWatchlist") : t("addToWatchlist")}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer disabled:opacity-60"
-            style={{
-                background: saved ? "rgba(251,191,36,0.12)" : "var(--bg-tertiary)",
-                border: saved
-                    ? "1px solid rgba(251,191,36,0.4)"
-                    : "1px solid var(--border-subtle)",
-                color: saved ? "var(--accent-amber)" : "var(--text-secondary)",
-            }}
+            className="header-action"
+            style={{ color: saved ? "var(--accent-amber)" : undefined }}
         >
             {state === "saving" ? (
                 <Loader2 size={14} className="animate-spin" />
             ) : saved ? (
                 <Check size={14} />
             ) : (
-                <Star size={14} />
+                <Star size={14} style={{ color: "var(--accent-amber)", opacity: 0.7 }} />
             )}
             <span className="hidden sm:inline">
                 {saved ? t("inWatchlist") : t("addToWatchlist")}

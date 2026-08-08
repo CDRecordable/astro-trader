@@ -108,6 +108,37 @@ body {
 }
 
 /* ── Glass Card ────────────────────────────────────────────── */
+/* ── Action bar — the quiet, segmented control group in detail headers ──
+   One container, hairline dividers, no per-button pills: color lives only in
+   the icons, muted. States (saved / discarded) tint text+icon, nothing else. */
+.action-bar {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--glass-bg);
+  overflow: hidden;
+}
+.action-bar > button + button {
+  border-left: 1px solid var(--border-subtle);
+}
+.header-action {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 14px;
+  height: 40px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  white-space: nowrap;
+}
+.header-action:hover { background: rgba(255, 255, 255, 0.045); }
+.header-action:disabled { opacity: 0.35; cursor: not-allowed; }
+
 .glass-card {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
@@ -307,6 +338,7 @@ input[type="range"]::-moz-range-thumb {
   }
 
   /* ── What never belongs in the document ─────────────────── */
+  .action-bar,
   .no-print,
   aside,                      /* the fixed sidebar */
   nav,
