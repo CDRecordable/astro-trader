@@ -57,7 +57,16 @@ any line, the git history is the source of truth: commits use
   saved/discarded states tint text only. The close control becomes a bordered
   circle, and the identity block gets a larger ticker and more air, matching
   the premium score header. Applied to all three detail cards (stocks, crypto,
-  ETFs) and hidden in print.
+  ETFs) and hidden in print. The header then splits into two rows — identity
+  and tools above, the score block spanning the full width below — because
+  everything on one line overflowed the card and the action bar landed on top
+  of the asset's name. The button labels used to hide themselves below the
+  `sm` breakpoint, which measures the *viewport*: the card is far narrower
+  than the window, so the labels stayed visible and the overlap only appeared
+  on real screens. Labels are now always shown but shortened (the date and
+  the full phrasing moved into the tooltips), the identity truncates instead
+  of pushing, and the horizon chips run horizontally in the wider block.
+  Verified from 780px to 1440px with no collision.
 - **`landing/scripts/issue-license.ts`** — issues a signed `ai-lifetime`
   licence from the CLI (`npm run issue-license -- email`), reading
   `LICENSE_PRIVATE_KEY` from `landing/.env.local` and verifying the result

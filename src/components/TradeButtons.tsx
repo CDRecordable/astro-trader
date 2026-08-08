@@ -66,7 +66,7 @@ export default function TradeButtons({ company, assetType }: { company: Company;
                 className="header-action"
             >
                 <TrendingUp size={14} style={{ color: "var(--signal-strong-buy)", opacity: 0.85 }} />
-                <span className="hidden sm:inline">{t("buy")}</span>
+                <span>{t("buy")}</span>
             </button>
             <button
                 onClick={() => { if (posQty > 0) { setOpen("sell"); setAmount(""); setErr(null); } }}
@@ -75,7 +75,7 @@ export default function TradeButtons({ company, assetType }: { company: Company;
                 className="header-action"
             >
                 <TrendingDown size={14} style={{ color: "var(--signal-avoid)", opacity: 0.85 }} />
-                <span className="hidden sm:inline">{t("sell")}</span>
+                <span>{t("sell")}</span>
             </button>
 
             {/* Order dialog */}

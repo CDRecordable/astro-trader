@@ -60,7 +60,7 @@ export default function ScoreHeader({
 
     return (
         <div
-            className="flex items-center gap-4 pl-3 pr-4 py-2 rounded-2xl"
+            className="flex items-center gap-5 w-full pl-4 pr-4 py-2.5 rounded-2xl"
             style={{
                 background: "linear-gradient(135deg, rgba(34,211,238,0.06), rgba(167,139,250,0.04))",
                 border: "1px solid var(--border-active)",
@@ -100,13 +100,15 @@ export default function ScoreHeader({
                         </span>
                     </div>
 
-                    {/* ── Horizon selector ── */}
-                    <div className="flex flex-col gap-1">
+                    {/* ── Horizon selector — pushed to the far edge: the block
+                        spans the header row, so the choice reads as a control
+                        for the whole group rather than a third score. ── */}
+                    <div className="flex flex-col items-end gap-1 ml-auto">
                         <span className="text-[8px] uppercase tracking-[0.14em] font-semibold" style={{ color: "var(--text-muted)" }}>
                             {t("horizonLabel")}
                         </span>
                         <div
-                            className="no-print flex flex-col gap-0.5 p-0.5 rounded-lg"
+                            className="no-print flex gap-0.5 p-0.5 rounded-lg"
                             style={{ background: "var(--bg-tertiary)", border: "1px solid var(--border-subtle)" }}
                         >
                             {HORIZONS.map((h) => {
@@ -116,7 +118,7 @@ export default function ScoreHeader({
                                         key={h}
                                         onClick={() => setHorizon(h)}
                                         title={t(`horizonTip_${h}`)}
-                                        className="px-2 py-[3px] rounded-md text-[9px] font-semibold text-left transition-all cursor-pointer leading-none"
+                                        className="px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all cursor-pointer leading-none"
                                         style={{
                                             background: active ? "var(--glass-bg)" : "transparent",
                                             border: active ? "1px solid var(--border-active)" : "1px solid transparent",

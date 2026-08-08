@@ -100,9 +100,9 @@ export default function WatchlistButton({
             ) : (
                 <Star size={14} style={{ color: "var(--accent-amber)", opacity: 0.7 }} />
             )}
-            <span className="hidden sm:inline">
-                {saved ? t("inWatchlist") : t("addToWatchlist")}
-            </span>
+            {/* Short label: the bar shares a header row with the identity and
+                the close control, and the full phrase lives in the tooltip. */}
+            <span>{saved ? t("inWatchlist") : t("watchlistShort")}</span>
         </button>
     );
 }

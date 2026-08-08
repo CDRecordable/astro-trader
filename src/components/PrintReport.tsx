@@ -40,7 +40,7 @@ export function PrintButton() {
     return (
         <button onClick={print} title={t("tooltip")} className="header-action">
             <FileDown size={14} style={{ color: "var(--accent-cyan)", opacity: 0.8 }} />
-            <span className="hidden sm:inline">{t("button")}</span>
+            <span>{t("button")}</span>
         </button>
     );
 }

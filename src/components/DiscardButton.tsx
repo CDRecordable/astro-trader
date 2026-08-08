@@ -107,11 +107,9 @@ export default function DiscardButton({
             ) : (
                 <Ban size={14} />
             )}
-            <span className="hidden sm:inline">
-                {discarded
-                    ? t("discardedOn", { date: dateLabel })
-                    : t("addToDiscards")}
-            </span>
+            {/* Short label — the date and the staleness nudge live in the
+                tooltip, which is where a header row has space for them. */}
+            <span>{discarded ? t("discardedShort") : t("discardShort")}</span>
         </button>
     );
 }

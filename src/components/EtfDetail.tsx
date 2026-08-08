@@ -201,41 +201,48 @@ export default function EtfDetail({ company, score: initialScore, onClose }: Etf
 
                 {/* Header */}
                 <div
-                    className="sticky top-0 z-10 px-6 py-3.5 flex items-center justify-between gap-4"
+                    className="sticky top-0 z-10 px-6 py-4 flex flex-col gap-3"
                     style={{ background: "var(--bg-secondary)", borderBottom: "1px solid var(--border-subtle)", backdropFilter: "blur(12px)" }}
                 >
-                    <div className="flex items-center gap-5 min-w-0">
-                        <ScoreHeader
-                            fundamental={score.totalScore}
-                            recommendation={score.recommendation.replace("_", " ")}
-                            aiLevel={ai ? aiLevel : 0}
-                            technical={tech?.score ?? null}
-                        />
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <span className="font-extrabold text-xl tracking-tight" style={{ color: "var(--accent-cyan)" }}>{company.ticker}</span>
-                                <span className="text-sm font-medium">{company.name}</span>
+                    {/* Row 1 — identity and the tools that act on it */}
+                    <div className="flex items-start justify-between gap-5">
+                        <div className="min-w-0">
+                            <div className="flex items-baseline gap-2.5 min-w-0">
+                                <span className="font-extrabold text-2xl tracking-tight shrink-0" style={{ color: "var(--accent-cyan)" }}>
+                                    {company.ticker}
+                                </span>
+                                <span className="text-sm font-medium truncate" style={{ color: "var(--text-secondary)" }}>
+                                    {company.name}
+                                </span>
                             </div>
-                            <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+                            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
                                 {catMeta ? `${catMeta.emoji} ${catMeta.label}` : "ETF"}{f?.region ? ` · ${f.region}` : ""} · {symbol}
                             </p>
                         </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className="action-bar">
-                            <PrintButton />
-                            <TradeButtons company={company} assetType="e" />
-                            <DiscardButton company={company} assetType="e" />
-                            <WatchlistButton company={company} assetType="e" />
+                        <div className="flex items-center gap-3 shrink-0">
+                            <div className="action-bar">
+                                <PrintButton />
+                                <TradeButtons company={company} assetType="e" />
+                                <DiscardButton company={company} assetType="e" />
+                                <WatchlistButton company={company} assetType="e" />
+                            </div>
+                            <button
+                                onClick={onClose}
+                                className="no-print flex items-center justify-center w-10 h-10 rounded-full transition-colors hover:bg-white/5 cursor-pointer shrink-0"
+                                style={{ border: "1px solid var(--border-subtle)" }}
+                            >
+                                <X size={16} style={{ color: "var(--text-muted)" }} />
+                            </button>
                         </div>
-                        <button
-                            onClick={onClose}
-                            className="flex items-center justify-center w-10 h-10 rounded-full transition-colors hover:bg-white/5 cursor-pointer"
-                            style={{ border: "1px solid var(--border-subtle)" }}
-                        >
-                            <X size={16} style={{ color: "var(--text-muted)" }} />
-                        </button>
                     </div>
+
+                    {/* Row 2 — the valuations, given the full width */}
+                    <ScoreHeader
+                        fundamental={score.totalScore}
+                        recommendation={score.recommendation.replace("_", " ")}
+                        aiLevel={ai ? aiLevel : 0}
+                        technical={tech?.score ?? null}
+                    />
                 </div>
 
                 <div className="px-6 py-4 space-y-5">
