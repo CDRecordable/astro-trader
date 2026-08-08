@@ -16,7 +16,7 @@ import { userDataPath } from "./paths";
 
 /** Ed25519 public key matching the issuer's private key. */
 const PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
-MCowBQYDK2VwAyEAQu1VdrOF1lHK4UuWZW85NKNdCUBkq+YGKuS2pZETjAg=
+MCowBQYDK2VwAyEA6OnvZcA/hfc3i9ZyPasNdJ6wgTjfqujL3f49M21iO+Q=
 -----END PUBLIC KEY-----`;
 
 const LICENSE_PREFIX = "ATI1";
