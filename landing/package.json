@@ -10,7 +10,8 @@
     "lint": "eslint",
     "db:push": "drizzle-kit push",
     "issue-license": "tsx scripts/issue-license.ts",
-    "rotate-keys": "tsx scripts/rotate-keys.ts"
+    "rotate-keys": "tsx scripts/rotate-keys.ts",
+    "railway-vars": "tsx scripts/railway-vars.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

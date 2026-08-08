@@ -91,6 +91,20 @@ conectado de una sola vez, que es donde se rompen estas cosas:
 Antes de rotar, mira si hay licencias vivas: `select count(*) from licenses`.
 Rotar invalida todas las emitidas con el par anterior.
 
+Si borraste el archivo de pegado y Railway aún necesita los valores, usa
+`npm run railway-vars`: reescribe `.env.railway-paste` con el par **actual**,
+sin generar nada. Volver a lanzar `rotate-keys` para eso acuñaría un par nuevo
+y mataría las licencias ya emitidas.
+
+Para comprobar que Railway se quedó con la pareja correcta, verifica una
+licencia contra el servidor — si devuelve `invalid_signature`, su
+`LICENSE_PUBLIC_KEY` no es la del par que firma:
+
+```
+curl -X POST https://astrotrader.club/api/license/verify \
+  -H "Content-Type: application/json" -d '{"key":"ATI1.…"}'
+```
+
 ### Emitir una licencia a mano
 
 `npm run issue-license -- correo@ejemplo.com` firma una licencia vitalicia
