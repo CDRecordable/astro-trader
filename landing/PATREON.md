@@ -75,6 +75,30 @@ En el servicio de la landing, **Variables**:
 > abrir esto al público** y sustituye la pública también en
 > `src/lib/license.ts` de la app. Quien tenga la privada puede emitir accesos.
 
+### Rotar el par de claves
+
+`npm run rotate-keys` (desde `landing/`) genera un par nuevo y lo deja
+conectado de una sola vez, que es donde se rompen estas cosas:
+
+- `landing/.env.local` → privada + pública, para firmar en local
+- `src/lib/license.ts` → la pública **que la app acepta** (commitea el cambio)
+- `landing/.env.railway-paste` → los dos valores listos para Railway, **en una
+  sola línea cada uno** (los saltos van como `\n` literales, que
+  `lib/license.ts` restaura). Pegar un PEM de varias líneas en Railway es
+  justamente lo que hace que llegue truncado en `-----BEGIN PRIVATE KEY-----`
+  y que el servidor no pueda firmar nada. Borra ese archivo al terminar.
+
+Antes de rotar, mira si hay licencias vivas: `select count(*) from licenses`.
+Rotar invalida todas las emitidas con el par anterior.
+
+### Emitir una licencia a mano
+
+`npm run issue-license -- correo@ejemplo.com` firma una licencia vitalicia
+(la tuya de administrador, un caso de soporte, una cortesía). Verifica el
+resultado contra la clave pública embebida en la app antes de imprimirlo, así
+que si tu privada local no es la de producción te lo dice ahí mismo en vez de
+darte una clave que la app rechaza en silencio.
+
 ### Las tablas ya están creadas
 
 `patrons`, `ai_usage` y `licenses` existen ya en Neon.

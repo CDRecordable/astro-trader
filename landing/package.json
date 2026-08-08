@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "eslint",
     "db:push": "drizzle-kit push",
-    "issue-license": "tsx scripts/issue-license.ts"
+    "issue-license": "tsx scripts/issue-license.ts",
+    "rotate-keys": "tsx scripts/rotate-keys.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
