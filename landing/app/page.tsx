@@ -79,14 +79,15 @@ export default function Home() {
                     </p>
 
                     <h1 className="rise text-4xl sm:text-6xl font-bold tracking-tight leading-[1.06] mb-5" style={{ animationDelay: ".1s" }}>
-                        Analiza como un profesional.<br />
-                        <span className="grad">Con cada número a la vista.</span>
+                        Análisis de acciones, cripto y ETFs<br />
+                        <span className="grad">con la nota explicada.</span>
                     </h1>
 
                     <p className="rise text-base sm:text-lg leading-relaxed max-w-2xl mx-auto mb-8" style={{ color: "var(--text-soft)", animationDelay: ".18s" }}>
-                        Acciones, cripto y ETFs puntuados con el mismo método. Cuando falta un dato
-                        aparece como N/D: <strong style={{ color: "var(--amber)" }}>no lo rellenamos con un cero</strong> que
-                        hunda la nota. Y si una señal no predice nada, verás el número que lo demuestra.
+                        Aplicación de escritorio, gratuita y de código abierto. Cada activo recibe una
+                        puntuación de 0 a 100 y puedes ver de dónde sale, métrica a métrica. Lo que no
+                        hay forma de medir se marca como <strong style={{ color: "var(--amber)" }}>N/D</strong> y
+                        no cuenta como un cero.
                     </p>
 
                     <div className="rise flex flex-wrap items-center justify-center gap-3 mb-4" style={{ animationDelay: ".26s" }}>
