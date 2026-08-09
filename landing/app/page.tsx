@@ -80,13 +80,13 @@ export default function Home() {
 
                     <h1 className="rise text-4xl sm:text-6xl font-bold tracking-tight leading-[1.06] mb-5" style={{ animationDelay: ".1s" }}>
                         Analiza como un profesional.<br />
-                        <span className="grad">Sin que nadie te venda humo.</span>
+                        <span className="grad">Con cada número a la vista.</span>
                     </h1>
 
                     <p className="rise text-base sm:text-lg leading-relaxed max-w-2xl mx-auto mb-8" style={{ color: "var(--text-soft)", animationDelay: ".18s" }}>
-                        Acciones, cripto y ETFs puntuados con el mismo rigor. Cuando falta un dato,
-                        te lo decimos — <strong style={{ color: "var(--amber)" }}>no lo rellenamos con un cero</strong> que
-                        hunda la nota. Y cuando algo no predice nada, también te lo decimos.
+                        Acciones, cripto y ETFs puntuados con el mismo método. Cuando falta un dato
+                        aparece como N/D: <strong style={{ color: "var(--amber)" }}>no lo rellenamos con un cero</strong> que
+                        hunda la nota. Y si una señal no predice nada, verás el número que lo demuestra.
                     </p>
 
                     <div className="rise flex flex-wrap items-center justify-center gap-3 mb-4" style={{ animationDelay: ".26s" }}>
@@ -122,7 +122,7 @@ export default function Home() {
                 <div className="max-w-6xl mx-auto px-5">
                     <div className="text-center mb-11">
                         <Eyebrow>Tres clases de activo</Eyebrow>
-                        <SectionTitle>Un rigor, tres mundos</SectionTitle>
+                        <SectionTitle>Qué puedes analizar</SectionTitle>
                     </div>
                     <div className="grid md:grid-cols-3 gap-5">
                         <AnalyzerCard
@@ -170,7 +170,7 @@ export default function Home() {
                         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] mb-3" style={{ color: "var(--violet)" }}>
                             La otra mitad de la app
                         </p>
-                        <SectionTitle sub="Siete dimensiones de análisis esotérico calculadas sobre efemérides astronómicas reales — y sometidas a la misma estadística que exigirías a cualquier estrategia.">
+                        <SectionTitle sub="Siete dimensiones calculadas sobre efemérides astronómicas reales, sometidas a las mismas pruebas estadísticas que le exigirías a cualquier estrategia.">
                             Exploración esotérica
                         </SectionTitle>
 
@@ -193,9 +193,9 @@ export default function Home() {
 
                         <div className="rounded-xl px-4 py-3.5 mb-6" style={{ background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.2)" }}>
                             <p className="text-xs leading-relaxed" style={{ color: "var(--text-soft)" }}>
-                                <strong style={{ color: "var(--emerald)" }}>Y aquí está la gracia:</strong> los tests de
-                                permutación dicen que estas señales <em>no</em> baten al azar. La app lo muestra en su
-                                propia pantalla, con el p-valor delante. Es exploración, no una promesa.
+                                <strong style={{ color: "var(--emerald)" }}>El resultado:</strong> los tests de
+                                permutación dicen que estas señales <em>no</em> baten al azar. La app lo enseña en su
+                                propia pantalla, con el p-valor al lado. Es exploración, no una promesa.
                             </p>
                         </div>
 
@@ -218,14 +218,14 @@ export default function Home() {
             <section className="py-20" style={{ background: "var(--bg-soft)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
                 <div className="max-w-6xl mx-auto px-5 grid md:grid-cols-2 gap-12 items-center">
                     <div>
-                        <Eyebrow>Lo que nos hace distintos</Eyebrow>
-                        <SectionTitle sub="La mayoría de herramientas te dan un número bonito y se callan lo que no saben. Aquí el listón es otro.">
-                            Honestidad estadística
+                        <Eyebrow>Cómo se calcula la nota</Eyebrow>
+                        <SectionTitle sub="Casi todas las herramientas dan un número y no cuentan de dónde sale. Estas son las tres reglas que sigue el motor.">
+                            Lo que falta, también se ve
                         </SectionTitle>
                         <div className="mt-7 space-y-5">
                             {[
                                 ["Dato ausente = neutro, nunca cero", "Una small-cap con datos escasos no merece un suspenso por serlo. Lo que falta se excluye y el pilar se renormaliza."],
-                                ["Decimos cuándo algo no funciona", "El módulo esotérico se calcula con efemérides astronómicas reales… y con tests de permutación que muestran que no predice el mercado. Lo decimos en la propia app."],
+                                ["Cuando algo no funciona, aparece igual", "El módulo esotérico usa efemérides astronómicas reales, y sus tests de permutación salen negativos: no predice el mercado. Ese resultado está en la propia app, no escondido en la letra pequeña."],
                                 ["La IA no inventa precios", "Tiene prohibido dar precios objetivo. Aporta lo que las APIs no ven: pipeline regulatorio, riesgos de gobernanza, tecnología, narrativa."],
                             ].map(([t, d]) => (
                                 <div key={t} className="flex gap-3.5">
@@ -271,7 +271,7 @@ export default function Home() {
                                     "Watchlist, descartes y notas",
                                     "Cartera simulada con curva de valor",
                                     "Macro por países y régimen de volatilidad",
-                                    "Módulo esotérico con estadística honesta",
+                                    "Módulo esotérico con sus p-valores a la vista",
                                 ].map((f) => (
                                     <li key={f} className="flex gap-2"><span style={{ color: "var(--emerald)" }}>✓</span>{f}</li>
                                 ))}
@@ -298,7 +298,7 @@ export default function Home() {
                                 {[
                                     "Análisis cualitativo: catalizadores, riesgos, tesis",
                                     "Capa narrativa apoyada en noticias reales",
-                                    "Refuerza o debilita la nota con flechas, sin inventar un score rival",
+                                    "Refuerza o debilita la nota con flechas, sin inventar una puntuación paralela",
                                     "Funciona con Claude, Gemini o DeepSeek",
                                 ].map((f) => (
                                     <li key={f} className="flex gap-2"><span style={{ color: "var(--violet)" }}>✓</span>{f}</li>
@@ -329,8 +329,8 @@ export default function Home() {
                     </h2>
                     <p className="text-sm leading-relaxed mb-8" style={{ color: "var(--text-soft)" }}>
                         No es un servicio en la nube: corre en tu máquina, con tu conexión.
-                        Por eso es gratis, rápido y privado — y por eso tu watchlist, tu cartera y
-                        tus claves nunca salen de tu disco.
+                        Por eso es gratis y rápido, y por eso tu watchlist, tu cartera y tus
+                        claves se quedan en tu disco.
                     </p>
 
                     {/* Primary: the installer. No terminal, no Node, no README. */}

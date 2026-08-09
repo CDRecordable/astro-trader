@@ -77,7 +77,7 @@ export default function SiteFooter() {
                 <p className="text-[11px] leading-relaxed mb-3" style={{ color: "var(--text-mute)" }}>
                     <strong style={{ color: "var(--text-soft)" }}>Esto no es asesoramiento financiero.</strong> Astro Trader
                     Insights es una herramienta de investigación y educación. Los datos pueden estar incompletos o ser
-                    erróneos; verifica siempre antes de invertir. Los mercados —y las criptomonedas muy en particular—
+                    erróneos; verifica siempre antes de invertir. Los mercados, y las criptomonedas muy en particular,
                     son altamente especulativos y puedes perder tu dinero.
                 </p>
                 <p className="text-[11px]" style={{ color: "var(--text-mute)" }}>

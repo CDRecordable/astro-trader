@@ -21,7 +21,7 @@ export default function VixPage() {
             steps={[
                 { title: "El VIX de hoy, en contexto", detail: "El nivel actual situado en su régimen: complacencia (<15), normal (15-20), elevado (20-30) o pánico (>30)." },
                 { title: "La historia de cada régimen", detail: "Miles de sesiones clasificadas: cuántos días pasó el mercado en cada régimen y qué retorno a un mes siguió a cada uno." },
-                { title: "La lectura empírica", detail: "El patrón documentado — el miedo extremo ha precedido históricamente retornos mejores que la complacencia — con sus números delante." },
+                { title: "La lectura empírica", detail: "El patrón documentado, el miedo extremo ha precedido históricamente retornos mejores que la complacencia, con sus números delante." },
             ]}
             features={[
                 { name: "Regímenes estándar del mercado", detail: "Los cortes clásicos (15 / 20 / 30) que usa la industria, no umbrales inventados para que el gráfico quede bonito." },
@@ -32,11 +32,11 @@ export default function VixPage() {
             ]}
             differentiator={{
                 title: "La parte empírica del par esotérico",
-                body: "Esta app mide la «turbulencia astral» con tests estadísticos — y muestra que no predice nada. El VIX es su contrapunto deliberado: un indicador de volatilidad que sí tiene un efecto documentado en la literatura (la reversión tras el miedo extremo), presentado con la misma vara de medir. Cuando algo funciona lo decimos, y cuando no, también. Esa simetría es el producto.",
+                body: "Esta app mide la «turbulencia astral» con tests estadísticos, y muestra que no predice nada. El VIX es su contrapunto deliberado: un indicador de volatilidad que sí tiene un efecto documentado en la literatura (la reversión tras el miedo extremo), presentado con la misma vara de medir. Cuando algo funciona lo decimos, y cuando no, también. Esa simetría es el producto.",
             }}
             faq={[
-                { q: "¿Qué es exactamente el VIX?", a: "El índice de volatilidad implícita del S&P 500 que publica CBOE: mide cuánta volatilidad descuentan las opciones para el próximo mes. Coloquialmente, «el índice del miedo» — sube cuando el mercado se asusta." },
-                { q: "¿VIX alto significa comprar?", a: "Históricamente, los retornos a un mes tras VIX de pánico han sido en promedio mejores que tras VIX de complacencia — es el patrón de reversión que el panel cuantifica. Pero es una media con mucha dispersión, no una garantía, y el panel te enseña ambas cosas." },
+                { q: "¿Qué es exactamente el VIX?", a: "El índice de volatilidad implícita del S&P 500 que publica CBOE: mide cuánta volatilidad descuentan las opciones para el próximo mes. Coloquialmente, «el índice del miedo», sube cuando el mercado se asusta." },
+                { q: "¿VIX alto significa comprar?", a: "Históricamente, los retornos a un mes tras VIX de pánico han sido en promedio mejores que tras VIX de complacencia, es el patrón de reversión que el panel cuantifica. Pero es una media con mucha dispersión, no una garantía, y el panel te enseña ambas cosas." },
                 { q: "¿Se actualiza en tiempo real?", a: "Se consulta el nivel vigente del VIX cada vez que abres el panel, junto al histórico completo para el análisis de regímenes." },
                 { q: "¿Por qué está esto en una app de análisis fundamental?", a: "Porque el timing de entrada importa incluso al inversor de largo plazo, y el VIX es de las pocas variables de timing con respaldo empírico serio. Complementa el pilar de timing del análisis de cada valor." },
             ]}

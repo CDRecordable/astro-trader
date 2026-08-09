@@ -42,7 +42,7 @@ export default function KeyReveal() {
                     setState({ s: "ready", key: d.licenseKey, email: d.email });
                     return;
                 }
-            } catch { /* transient — keep polling */ }
+            } catch { /* transient, keep polling */ }
             if (tries >= MAX_TRIES) { setState({ s: "timeout" }); return; }
             setState({ s: "polling", tries });
             timer.current = setTimeout(poll, INTERVAL_MS);
@@ -58,7 +58,7 @@ export default function KeyReveal() {
             await navigator.clipboard.writeText(state.key);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
-        } catch { /* clipboard unavailable — the key is selectable anyway */ }
+        } catch { /* clipboard unavailable, the key is selectable anyway */ }
     };
 
     if (state.s === "none") return null;
@@ -85,7 +85,7 @@ export default function KeyReveal() {
             <div className="glass rounded-2xl p-6 mb-6 text-left rise" style={{ border: "1px solid rgba(251,191,36,0.25)" }}>
                 <p className="text-xs leading-relaxed" style={{ color: "var(--text-soft)" }}>
                     El pago está registrado pero la clave aún no aparece. No te preocupes: quedó
-                    emitida a tu nombre — recupérala en un minuto desde{" "}
+                    emitida a tu nombre, recupérala en un minuto desde{" "}
                     <a href="/licencia" className="underline" style={{ color: "var(--cyan)" }}>/licencia</a>{" "}
                     con el correo de la compra.
                 </p>

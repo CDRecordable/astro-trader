@@ -5,7 +5,7 @@ import { ETF_VOXELS } from "@/components/Voxel";
 export const metadata: Metadata = {
     title: "Análisis de ETFs UCITS · Coste real, cartera y valoración",
     description:
-        "57 ETFs UCITS comprables desde España, analizados por coste (TER real del folleto), qué contienen de verdad (concentración del top-10, P/E de la cesta, sectores) y momentum. Economías, sectores, temáticos y oro.",
+        "57 ETFs UCITS comprables desde España, analizados por coste (TER real del folleto), qué contienen (concentración del top-10, P/E de la cesta, sectores) y momentum. Economías, sectores, temáticos y oro.",
     keywords: ["ETF UCITS", "análisis ETF", "TER", "MSCI World", "S&P 500 UCITS", "ETF acumulación distribución", "invertir ETFs España"],
     alternates: { canonical: "/etfs" },
 };
@@ -15,7 +15,7 @@ export default function EtfPage() {
         <AnalyzerPage
             eyebrow="ETFs"
             title={<>Qué compras<br /><span className="grad">cuando compras un ETF</span></>}
-            lead="Un ETF parece una caja negra barata. Esto la abre: cuánto te cuesta de verdad, qué hay dentro, a qué precio cotiza esa cesta y si tu «diversificación» son en realidad siete empresas."
+            lead="Un ETF parece una caja negra barata. Esto la abre: cuánto te cuesta al año, qué hay dentro, a qué precio cotiza esa cesta y si tu «diversificación» son en realidad siete empresas."
             accent="var(--violet)"
             voxels={ETF_VOXELS}
             pillars={[
@@ -36,8 +36,8 @@ export default function EtfPage() {
                 { name: "Volatilidad anualizada", detail: "Cuánto se mueve en un año típico: la calidad del viaje, no solo el destino." },
             ]}
             differentiator={{
-                title: "UCITS primero: solo lo que puedes comprar de verdad",
-                body: "La mayoría de herramientas analizan ETFs estadounidenses que un inversor minorista europeo no puede comprar. El universo aquí son 57 fondos UCITS reales, verificados uno a uno, listados en Xetra, Londres, Ámsterdam, París o Milán. Cuando el listado europeo no publica su cartera, se completa con la del fondo americano equivalente —misma cesta subyacente— y la ficha lo dice abiertamente en lugar de disimularlo. Y los fondos sectoriales o temáticos no se penalizan por estar concentrados: eso es exactamente lo que el comprador eligió.",
+                title: "UCITS primero: solo lo que puedes comprar desde España",
+                body: "La mayoría de herramientas analizan ETFs estadounidenses que un inversor minorista europeo no puede comprar. El universo aquí son 57 fondos UCITS reales, verificados uno a uno, listados en Xetra, Londres, Ámsterdam, París o Milán. Cuando el listado europeo no publica su cartera, se completa con la del fondo americano equivalente (misma cesta subyacente), y la ficha lo dice abiertamente en lugar de disimularlo. Y los fondos sectoriales o temáticos no se penalizan por estar concentrados: eso es exactamente lo que el comprador eligió.",
             }}
             faq={[
                 { q: "¿Qué ETFs incluye?", a: "Global (MSCI World, FTSE All-World), EE.UU. (S&P 500, Nasdaq, Russell 2000), Europa, emergentes, países sueltos (India, China, Japón, Brasil, Corea, España), los nueve sectores del S&P, temáticos (semiconductores, IA, defensa, ciberseguridad, agua, robótica, baterías), factores y oro físico." },

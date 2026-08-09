@@ -14,9 +14,9 @@
 import React from "react";
 
 export interface Cube {
-    x: number;      // lattice column — larger is farther
+    x: number;      // lattice column, larger is farther
     y: number;      // height, up is positive
-    z: number;      // lattice row — larger is nearer
+    z: number;      // lattice row, larger is nearer
     tone?: Tone;
 }
 
@@ -144,7 +144,7 @@ function slab(w: number, d: number, y: number, tone: Tone): Cube[] {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   Compositions — one per concept on the site
+   Compositions, one per concept on the site
    ══════════════════════════════════════════════════════════════ */
 
 /** Bar towers rising left→right: the stock analyzer. */

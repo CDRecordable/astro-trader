@@ -5,7 +5,7 @@ import SiteFooter from "@/components/SiteFooter";
 import { VoxelScene, ESOTERIC_VOXELS, SCORE_VOXELS } from "@/components/Voxel";
 
 export const metadata: Metadata = {
-    title: "Análisis esotérico de mercados · Efemérides reales y estadística honesta",
+    title: "Análisis esotérico de mercados · Efemérides reales y p-valores a la vista",
     description:
         "Siete dimensiones de análisis esotérico calculadas sobre efemérides astronómicas reales: turbulencia astral, ciclos lunares, Mercurio retrógrado, actividad solar, rotación sectorial planetaria, confluencias Fibonacci y un backtester. Con tests de permutación que dicen cuándo una señal NO predice nada.",
     keywords: [
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     alternates: { canonical: "/esoterico" },
     openGraph: {
         type: "article",
-        title: "Análisis esotérico de mercados · Efemérides reales y estadística honesta",
+        title: "Análisis esotérico de mercados · Efemérides reales y p-valores a la vista",
         description:
             "Siete dimensiones sobre astronomía real, medidas con tests de permutación. La única herramienta astro-financiera que te dice cuándo su propia señal no funciona.",
     },
@@ -36,7 +36,7 @@ const DIMENSIONS: Dimension[] = [
         n: "01",
         href: "/esoterico/turbulencia-astral",
         title: "Turbulencia Astral",
-        what: "Un índice de tensión construido con los aspectos duros entre planetas lentos (Saturno, Urano, Plutón) — los ciclos generacionales que la tradición asocia a crisis.",
+        what: "Un índice de tensión construido con los aspectos duros entre planetas lentos (Saturno, Urano, Plutón), los ciclos generacionales que la tradición asocia a crisis.",
         how: "Aspectos calculados con astronomy-engine a partir de longitudes eclípticas reales, no de fechas escogidas a mano.",
         tone: "var(--violet)",
     },
@@ -190,7 +190,7 @@ export default function EsotericPage() {
                     <div className="max-w-5xl mx-auto px-5 grid md:grid-cols-2 gap-10 items-center">
                         <div>
                             <Eyebrow color="var(--cyan)">Bajo el capó</Eyebrow>
-                            <h2 className="text-2xl font-bold tracking-tight mb-4">Un motor de efemérides de verdad</h2>
+                            <h2 className="text-2xl font-bold tracking-tight mb-4">Un motor de efemérides real</h2>
                             <p className="text-sm leading-relaxed mb-5" style={{ color: "var(--text-soft)" }}>
                                 Nada está codificado a mano. Las posiciones planetarias se calculan con
                                 <strong style={{ color: "var(--text)" }}> astronomy-engine</strong>, la misma clase de
@@ -206,7 +206,7 @@ export default function EsotericPage() {
                                     <li key={t} className="flex gap-3 text-sm">
                                         <span style={{ color: "var(--cyan)" }}>›</span>
                                         <span style={{ color: "var(--text-soft)" }}>
-                                            <strong style={{ color: "var(--text)" }}>{t}</strong> — {d}
+                                            <strong style={{ color: "var(--text)" }}>{t}</strong>, {d}
                                         </span>
                                     </li>
                                 ))}

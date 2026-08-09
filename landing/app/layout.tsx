@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://astrotrader.app";
-const TITLE = "Astro Trader Insights · Analiza acciones, cripto y ETFs con honestidad estadística";
+const TITLE = "Astro Trader Insights · Análisis de acciones, cripto y ETFs con las cuentas a la vista";
 const DESC =
     "Copiloto de inversión que se instala en tu ordenador: puntuación fundamental de acciones, cripto y ETFs UCITS. " +
     "Los datos que faltan puntúan NEUTRO, nunca como fallo. Gratis; la capa de IA se desbloquea una sola vez por 9,90 € y usa tu propia API key.";

@@ -14,7 +14,7 @@ export default function StocksPage() {
     return (
         <AnalyzerPage
             eyebrow="Acciones"
-            title={<>Lo que un balance<br /><span className="grad">cuenta de verdad</span></>}
+            title={<>Lo que un balance<br /><span className="grad">dice de una empresa</span></>}
             lead="Cualquier acción cotizada del mundo, puntuada con criterios de inversor value: qué caja genera, cuánta deuda esconde y si el precio ya lo descuenta todo."
             accent="var(--cyan)"
             voxels={STOCK_VOXELS}

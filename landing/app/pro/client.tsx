@@ -51,7 +51,7 @@ export default function ProClient() {
             {token ? (
                 <section className="mt-8 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-5">
                     <h2 className="text-sm font-semibold uppercase tracking-wider text-emerald-400">
-                        Listo — este es tu acceso
+                        Listo, este es tu acceso
                     </h2>
                     <p className="mt-2 text-sm leading-relaxed opacity-80">
                         Ábrelo en el programa: <strong>Ajustes → Capa de IA</strong>, pégalo y

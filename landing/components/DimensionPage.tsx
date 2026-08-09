@@ -85,7 +85,7 @@ export default function DimensionPage({
                 {/* Measurement */}
                 <section className="py-14" style={{ background: "var(--bg-soft)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
                     <div className="max-w-3xl mx-auto px-5">
-                        <h2 className="text-2xl font-bold tracking-tight mb-8 text-center">Cómo lo medimos de verdad</h2>
+                        <h2 className="text-2xl font-bold tracking-tight mb-8 text-center">Cómo se mide</h2>
                         <div className="space-y-3">
                             {measurement.map((m, i) => (
                                 <div key={m.title} className="glass rounded-2xl p-5 flex gap-4">
@@ -107,7 +107,7 @@ export default function DimensionPage({
                     <div className="max-w-3xl mx-auto px-5">
                         <div className="rounded-2xl p-6 sm:p-7" style={{ background: "rgba(52,211,153,0.05)", border: "1px solid rgba(52,211,153,0.22)" }}>
                             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] mb-2.5" style={{ color: "var(--emerald)" }}>
-                                El veredicto honesto
+                                Qué dicen los datos
                             </p>
                             <h2 className="text-lg font-bold mb-3">{verdict.headline}</h2>
                             <p className="text-sm leading-relaxed" style={{ color: "var(--text-soft)" }}>{verdict.body}</p>

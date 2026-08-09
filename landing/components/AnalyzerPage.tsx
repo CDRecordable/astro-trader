@@ -65,8 +65,8 @@ export default function AnalyzerPage({
                         <div className="text-center mb-10">
                             <h2 className="text-2xl font-bold tracking-tight mb-3">Cómo se puntúa</h2>
                             <p className="text-sm max-w-xl mx-auto" style={{ color: "var(--text-soft)" }}>
-                                Tres pilares con peso propio. Cada uno se renormaliza sobre los datos que
-                                existen de verdad, así que una métrica ausente puntúa neutro y no como un cero.
+                                Tres pilares con peso propio. Cada uno se renormaliza sobre los datos
+                                disponibles, así que una métrica ausente puntúa neutro y no como un cero.
                             </p>
                         </div>
                         <div className="grid md:grid-cols-3 gap-4">
@@ -113,7 +113,7 @@ export default function AnalyzerPage({
                     </div>
                 </section>
 
-                {/* FAQ — plain markup so it's easy to read and to crawl */}
+                {/* FAQ, plain markup so it's easy to read and to crawl */}
                 <section className="py-16" style={{ background: "var(--bg-soft)", borderTop: "1px solid var(--border)" }}>
                     <div className="max-w-3xl mx-auto px-5">
                         <h2 className="text-2xl font-bold tracking-tight mb-8 text-center">Preguntas frecuentes</h2>

@@ -24,7 +24,7 @@ export default function CryptoPage() {
                 { name: "Momentum", weight: 25, detail: "Distancia al máximo histórico y tendencia a medio plazo, ajustado por el índice de miedo y codicia." },
             ]}
             signals={[
-                { name: "«P/S cripto»", detail: "Capitalización entre comisiones anualizadas del protocolo. El equivalente al PER cuando hay ingresos de verdad." },
+                { name: "«P/S cripto»", detail: "Capitalización entre comisiones anualizadas del protocolo. El equivalente al PER cuando el protocolo ingresa comisiones." },
                 { name: "FDV / Market cap", detail: "Cuánta emisión futura pende sobre el precio. Cerca de 1 es sano; 5× es una losa." },
                 { name: "Supply en circulación", detail: "Qué porcentaje del máximo ya circula. Bajo significa dilución pendiente." },
                 { name: "MC / TVL", detail: "Capitalización frente al valor realmente bloqueado en el protocolo." },
@@ -37,10 +37,10 @@ export default function CryptoPage() {
             ]}
             differentiator={{
                 title: "Ningún dato inventado, ninguna predicción de precio",
-                body: "La capa de IA tiene explícitamente prohibido dar precios objetivo o decir si algo «va a subir». Se dedica a lo que las APIs no capturan: qué hace realmente la tecnología, qué riesgos de gobernanza y centralización existen, quién compite. Y cuando un dato on-chain no está disponible —muy habitual fuera de las redes EVM— se marca como N/D y se excluye del cálculo, en lugar de castigar al activo por una limitación nuestra.",
+                body: "La capa de IA tiene explícitamente prohibido dar precios objetivo o decir si algo «va a subir». Se dedica a lo que las APIs no capturan: qué hace realmente la tecnología, qué riesgos de gobernanza y centralización existen, quién compite. Y cuando un dato on-chain no está disponible (algo habitual fuera de las redes EVM), se marca como N/D y se excluye del cálculo, en lugar de castigar al activo por una limitación nuestra.",
             }}
             faq={[
-                { q: "¿Qué criptomonedas puedo analizar?", a: "Cualquiera listada en CoinGecko, que son varios miles. Los datos on-chain de holders y concentración están disponibles en redes EVM vía Blockscout; en otras cadenas se muestran como N/D honestamente." },
+                { q: "¿Qué criptomonedas puedo analizar?", a: "Cualquiera listada en CoinGecko, que son varios miles. Los datos on-chain de holders y concentración están disponibles en redes EVM vía Blockscout; en otras cadenas aparecen como N/D." },
                 { q: "¿Necesito claves de API de pago?", a: "No. CoinGecko, DeFiLlama, Blockscout, el índice de miedo y codicia y el nodo de Hedera funcionan sin clave. Solo el calendario de catalizadores usa una clave gratuita opcional." },
                 { q: "¿Qué es eso de la acumulación de ballenas?", a: "Los datos de holders son una foto del momento, no un histórico. La app guarda una instantánea local cada vez que consultas un activo y, con el tiempo, construye tu propio histórico para medir si las grandes carteras acumulan o distribuyen." },
                 { q: "¿Sirve para hacer trading?", a: "No está pensado para eso. No hay señales de entrada ni salida, ni indicadores de corto plazo. Es una herramienta para decidir en qué proyectos merece la pena estar, no cuándo apretar el botón." },
