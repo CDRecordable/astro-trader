@@ -74,9 +74,11 @@ export function authorizeUrl(state: string): string {
     u.searchParams.set("response_type", "code");
     u.searchParams.set("client_id", required("PATREON_CLIENT_ID"));
     u.searchParams.set("redirect_uri", required("PATREON_REDIRECT_URI"));
-    // identity[email] is the only personal scope we ask for; the memberships
-    // scope is what actually answers "is this person a supporter?".
-    u.searchParams.set("scope", "identity identity[email]");
+    // identity[email] is the only personal scope we ask for; identity.memberships
+    // is what actually answers "is this person a supporter?" — without it the
+    // ?include=memberships below comes back empty and every patron reads as
+    // status "none", so nobody is ever granted PRO.
+    u.searchParams.set("scope", "identity identity[email] identity.memberships");
     u.searchParams.set("state", state);
     return u.toString();
 }
