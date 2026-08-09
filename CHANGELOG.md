@@ -10,7 +10,7 @@ any line, the git history is the source of truth: commits use
 `docs:`…) with a body explaining the *why*, and feature branches are merged with
 `--no-ff` so the full history is preserved.
 
-## [Unreleased]
+## [0.7.0] — 2026-08-09
 
 ### Added
 - **Technical (chartist) analysis** — a fourth leg of the product, built with
@@ -72,6 +72,13 @@ any line, the git history is the source of truth: commits use
   `LICENSE_PRIVATE_KEY` from `landing/.env.local` and verifying the result
   against the embedded public key before printing. Needed to re-issue the
   admin licence after the production keypair rotation.
+- **The installed app updates itself.** `/api/update` only ever worked for git
+  clones — it runs `git pull` — so anyone who installed the `.exe` had no way
+  to receive a fix. The shell now checks GitHub Releases at startup and every
+  six hours, downloads in the background, and interrupts only once the update
+  is on disk: restart now, or later. A failed check stays silent (no network,
+  GitHub down, a rate limit); nobody should open their program and be greeted
+  by an error box. Personal data survives the upgrade.
 
 
 ### Changed
@@ -100,6 +107,16 @@ any line, the git history is the source of truth: commits use
   Ethereum's composite moves from **83 STRONG_BUY to 64 BUY** as a result.
 
 ### Fixed
+- **Installers were a blend of two versions of the program.** The step that
+  wipes the packaged bundle before reassembling it deleted nothing:
+  `fs.rmSync(dir, {recursive:true, force:true})` returns cleanly on this tree
+  while leaving it intact, and `force` swallows the error that would say why.
+  Every build layered itself on the last — 1157 of 1877 files in the most
+  recent installer dated from July 28th, including chunks compiled before the
+  licence keypair rotation, so one package carried two different answers to
+  "which issuer does this app trust". The delete now retries, then walks the
+  tree by hand, and aborts the build if anything survives. `.next` is wiped
+  too, so shipped code traces back to the current commit and nothing else.
 - **CoinGecko rate limits no longer masquerade as "asset not found".** Every
   failure collapsed into `return null`, which the API reported as
   `Crypto asset "x" not found`. In a live sweep **8 of 12 valid coins "did not
