@@ -141,6 +141,20 @@ mensaje de "suscripción no activa" y no gastar ni una llamada.
 
 ## 5. Publica en Patreon
 
+### Primero: un nivel de membresía, no un producto de tienda
+
+Patreon vende de dos formas y aquí solo sirve una. El servidor concede PRO
+cuando Patreon responde `patron_status = "active_patron"` para **tu** campaña
+(ver `lib/patreon.ts`). Eso lo da una **membresía**; una compra en la tienda de
+Patreon (*Shop*, pago único) no crea membresía, así que quien compre por ahí
+pagará y se quedará fuera. Crea un **nivel** (*tier*) de pago mensual y publica
+la campaña: sin publicar, nadie puede suscribirse.
+
+> ⚠️ **Si activas el nivel gratuito, se lo das todo gratis.** Un miembro sin
+> pagar también figura como `active_patron`, con 0 céntimos. Con
+> `PATREON_MIN_PLEDGE_CENTS = 0` (el valor por defecto) entraría igual. Pon ahí
+> el precio de tu nivel más barato en céntimos: `500` para 5 €/mes.
+
 Genera los archivos:
 
 ```bash
