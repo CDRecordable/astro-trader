@@ -111,10 +111,13 @@ any line, the git history is the source of truth: commits use
   wipes the packaged bundle before reassembling it deleted nothing:
   `fs.rmSync(dir, {recursive:true, force:true})` returns cleanly on this tree
   while leaving it intact, and `force` swallows the error that would say why.
-  Every build layered itself on the last — 1157 of 1877 files in the most
-  recent installer dated from July 28th, including chunks compiled before the
-  licence keypair rotation, so one package carried two different answers to
-  "which issuer does this app trust". The delete now retries, then walks the
+  Every build layered itself on the last. The proof is not file dates — on
+  Windows a copy inherits its source's timestamp, so those say when npm
+  installed a package, not when it was bundled — it is content: the installer
+  carried chunks holding the licence public key from *before* the keypair
+  rotation, while the freshly built `.next` contained no such file anywhere.
+  They could only be survivors. One package therefore shipped two different
+  answers to "which issuer does this app trust". The delete now retries, then walks the
   tree by hand, and aborts the build if anything survives. `.next` is wiped
   too, so shipped code traces back to the current commit and nothing else.
 - **CoinGecko rate limits no longer masquerade as "asset not found".** Every
