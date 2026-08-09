@@ -18,8 +18,10 @@ const path = require("path");
 const http = require("http");
 const { fork } = require("child_process");
 const net = require("net");
+const { autoUpdater } = require("electron-updater");
 
 const isDev = !app.isPackaged;
+const UPDATE_INTERVAL_MS = 6 * 60 * 60 * 1000;
 let serverProcess = null;
 let mainWindow = null;
 let serverPort = 0;
@@ -121,6 +123,49 @@ function createWindow() {
     mainWindow.on("closed", () => { mainWindow = null; });
 }
 
+/**
+ * Keep the installed app current from GitHub Releases.
+ *
+ * The in-app updater (/api/update) only works for git clones — it shells out
+ * to `git pull`. Anyone who installed the .exe had no update path at all,
+ * which is the whole point of shipping to subscribers. electron-builder
+ * already publishes the `latest.yml` this reads.
+ *
+ * Deliberately quiet: it downloads in the background and only interrupts once
+ * the update is on disk and ready. A failed check is a non-event — no network,
+ * GitHub down, a rate limit — and must never greet someone with an error box.
+ */
+function setupUpdates() {
+    if (isDev) return;
+
+    autoUpdater.autoDownload = true;
+    autoUpdater.autoInstallOnAppQuit = true;   // silent catch-up if they never click
+    autoUpdater.logger = null;
+
+    autoUpdater.on("update-downloaded", async ({ version }) => {
+        if (!mainWindow) return;
+        const { response } = await dialog.showMessageBox(mainWindow, {
+            type: "info",
+            buttons: ["Reiniciar ahora", "Más tarde"],
+            defaultId: 0,
+            cancelId: 1,
+            title: "Actualización lista",
+            message: `Astro Trader ${version} está preparada.`,
+            detail:
+                "Se instalará al reiniciar la aplicación. Tu watchlist, tu cartera y " +
+                "tus análisis se conservan.",
+        });
+        if (response === 0) autoUpdater.quitAndInstall();
+    });
+
+    // Swallowed on purpose: see above.
+    autoUpdater.on("error", (err) => console.error("[updater]", err?.message ?? err));
+
+    const check = () => autoUpdater.checkForUpdates().catch(() => { });
+    check();
+    setInterval(check, UPDATE_INTERVAL_MS).unref();
+}
+
 async function boot() {
     try {
         serverPort = isDev ? 3100 : await findFreePort();
@@ -137,6 +182,7 @@ async function boot() {
 
         createWindow();
         mainWindow.loadURL(`http://127.0.0.1:${serverPort}`);
+        setupUpdates();
     } catch (err) {
         dialog.showErrorBox(
             "No se pudo iniciar Astro Trader",

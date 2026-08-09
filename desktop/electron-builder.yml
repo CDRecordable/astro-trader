@@ -18,6 +18,11 @@ directories:
 files:
   - main.js
   - package.json
+  # An explicit list REPLACES electron-builder's default, so node_modules must
+  # be named or the shell ships without electron-updater and dies on its first
+  # require. Only production dependencies are collected here; electron and
+  # electron-builder stay out.
+  - node_modules/**/*
 
 extraResources:
   - from: app-server
