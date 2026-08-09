@@ -14,7 +14,40 @@ const ROOT = path.resolve(__dirname, "..", "..");   // repo root (the Next.js ap
 const DESKTOP = path.resolve(__dirname, "..");
 const OUT = path.join(DESKTOP, "app-server");
 
-function rmrf(p) { fs.rmSync(p, { recursive: true, force: true }); }
+/**
+ * Delete a tree, and PROVE it is gone.
+ *
+ * fs.rmSync(…, {recursive:true, force:true}) returns cleanly on this tree
+ * while leaving it untouched — `force` swallows the very error that would
+ * explain why. The bundle was silently assembled on top of the previous one:
+ * 1157 of 1877 files in the last installer were two weeks stale, including
+ * chunks holding a licence public key from before the keypair rotation.
+ *
+ * So: retry, then walk it by hand, then refuse to continue if anything
+ * survives. A release that half-overwrites the previous one is not a release.
+ */
+function rmrf(p) {
+    if (!fs.existsSync(p)) return;
+
+    try { fs.rmSync(p, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 }); } catch { /* fall through */ }
+    if (!fs.existsSync(p)) return;
+
+    const walk = (target) => {
+        const stat = fs.lstatSync(target);
+        if (stat.isDirectory()) {
+            for (const entry of fs.readdirSync(target)) walk(path.join(target, entry));
+            fs.rmdirSync(target);
+        } else {
+            fs.chmodSync(target, 0o666);   // read-only leftovers block the unlink
+            fs.unlinkSync(target);
+        }
+    };
+    walk(p);
+
+    if (fs.existsSync(p)) {
+        throw new Error(`No pude borrar ${p}. Ciérralo (explorador, antivirus, app abierta) y repite.`);
+    }
+}
 
 /**
  * Recursive copy. Implemented by hand rather than with fs.cpSync because that
@@ -37,6 +70,15 @@ function copy(from, to) {
 }
 
 function main() {
+    // Wipe .next first. Next never prunes chunks from earlier builds, so an
+    // incremental output carries dead code from every past version — and the
+    // installer shipped it. That was not merely bloat: chunks from before the
+    // keypair rotation still held the OLD licence public key, so the bundle
+    // contained two different answers to "which issuer does this app trust".
+    // A release must be reproducible from source alone.
+    console.log("▸ Cleaning .next (stale chunks must not reach the installer)…");
+    rmrf(path.join(ROOT, ".next"));
+
     console.log("▸ Building the Next.js app (standalone)…");
     execSync("npx next build", { cwd: ROOT, stdio: "inherit" });
 
